@@ -87,6 +87,14 @@ input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:var(
 input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--accent);border:0}
 #toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(22px + env(safe-area-inset-bottom, 0px));z-index:5;
   background:#1c1d2e;border:1px solid var(--line);border-radius:14px;padding:11px 16px;font-size:14px;max-width:min(88vw,420px);text-align:center}
+#rate{position:fixed;z-index:4;left:max(14px, env(safe-area-inset-left, 0px));right:max(14px, env(safe-area-inset-right, 0px));bottom:calc(14px + env(safe-area-inset-bottom, 0px));
+  max-width:524px;margin:0 auto;background:#141525;border:1px solid var(--line);border-radius:22px;padding:18px 16px 12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 -20px 60px rgba(0,0,0,.6)}
+.rate-q{font-family:var(--display);font-size:23px;margin:0;text-align:center}
+.rate-stars{display:flex;justify-content:space-between;gap:8px}
+.rate-stars button{flex:1;height:48px;border:1px solid var(--line);border-radius:14px;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.rate-stars button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#0b0c14}
+.rate-ends{display:flex;justify-content:space-between;font-size:12px;color:var(--faint);margin-top:-4px}
+#rateNote{font:inherit;font-size:16px;color:var(--ink);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;padding:11px 12px;-webkit-user-select:text;user-select:text;width:100%}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (max-height:620px){ h1{font-size:25px} .big{width:104px;height:104px} .sub{font-size:13px} .lib{max-height:70px} }
 @media (prefers-reduced-motion: reduce){ .cue{transition:none} }
@@ -137,6 +145,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
     <div class="center"><h1>Escuchando…</h1><p class="sub" style="margin:6px auto 0">Acerca el móvil al sonido. Para cuando quieras: un golpe basta con 2 s, un río agradece 20.</p></div>
     <div class="stage" data-stage><button class="big" id="btnStop">Listo<small>toca para parar</small></button></div>
     <p class="count" id="recCount">0,0 s</p>
+    <p class="sub center" id="recHint" style="min-height:1.5em;margin:0 auto"></p>
   </section>
 
   <!-- PROCESSING -->
@@ -188,6 +197,18 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
   </section>
 </main>
 
+<div id="rate" role="dialog" aria-label="Valoración de la sesión" hidden>
+  <p class="rate-q">¿Cómo te ha sentado esta sesión?</p>
+  <div class="rate-stars" id="rateStars">
+    <button data-v="1" aria-pressed="false" aria-label="1 de 5">1</button><button data-v="2" aria-pressed="false" aria-label="2 de 5">2</button><button data-v="3" aria-pressed="false" aria-label="3 de 5">3</button><button data-v="4" aria-pressed="false" aria-label="4 de 5">4</button><button data-v="5" aria-pressed="false" aria-label="5 de 5">5</button>
+  </div>
+  <div class="rate-ends"><span>Nada bien</span><span>Muy bien</span></div>
+  <input type="text" id="rateNote" maxlength="140" placeholder="¿Qué cambiarías? (opcional)" aria-label="Comentario opcional">
+  <div class="row" style="justify-content:space-between">
+    <button class="ghost" id="rateSkip">Ahora no</button>
+    <button class="pill" id="rateSend" aria-pressed="true">Enviar valoración</button>
+  </div>
+</div>
 <div id="toast" role="status" hidden></div>
 
 <script>
@@ -199,6 +220,8 @@ const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const rand = (a, b) => a + Math.random() * (b - a);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const REC_MAX = 30, MAKEUP = 2;
 
 /* ───────────── FFT ───────────── */
 const fftCache = {};
@@ -227,27 +250,69 @@ function hann(N) { const w = new Float32Array(N); for (let i = 0; i < N; i++) w[
 /* ───────────── Analysis: the sound's "huella" ───────────── */
 const NOTES = ['La', 'La♯', 'Si', 'Do', 'Do♯', 'Re', 'Re♯', 'Mi', 'Fa', 'Fa♯', 'Sol', 'Sol♯'];
 
-function trimNorm(x, sr) {
-  let peak = 0, mean = 0;
-  for (let i = 0; i < x.length; i++) mean += x[i];
-  mean /= x.length || 1;
-  for (let i = 0; i < x.length; i++) { const a = Math.abs(x[i] - mean); if (a > peak) peak = a; }
-  if (!(peak > 0.004)) return null;
-  const thr = peak * 0.03;
-  let a = 0, b = x.length - 1;
-  while (a < b && Math.abs(x[a] - mean) < thr) a++;
-  while (b > a && Math.abs(x[b] - mean) < thr) b--;
-  const pad = Math.floor(sr * 0.06);
-  a = Math.max(0, a - pad); b = Math.min(x.length - 1, b + pad * 4);
-  const maxLen = Math.floor(sr * (REC_MAX + 1));
-  if (b - a > maxLen) b = a + maxLen;
-  if (b - a < sr * 0.05) return null;
-  const out = new Float32Array(b - a);
-  const g = 0.9 / peak, fade = Math.min(Math.floor(sr * 0.01), out.length >> 1);
-  for (let i = 0; i < out.length; i++) out[i] = (x[a + i] - mean) * g;
-  for (let i = 0; i < fade; i++) { const f = i / fade; out[i] *= f; out[out.length - 1 - i] *= f; }
-  return out;
+/* Auto-realce: lifts quiet recordings by their *content* level (not their loudest click),
+   cleans the background hiss first so it is not amplified with it, and tames stray peaks. */
+function softLimit(v) { const a = Math.abs(v); return a <= .6 ? v : Math.sign(v) * (.6 + .35 * Math.tanh((a - .6) / .35)); }
+function levels(x, sr) {
+  const fr = Math.floor(sr * .02), n = Math.floor(x.length / fr); if (n < 3) return null;
+  const r = new Float32Array(n); let mx = 0;
+  for (let i = 0; i < n; i++) { let q = 0; const o = i * fr; for (let j = 0; j < fr; j++) q += x[o + j] * x[o + j]; r[i] = Math.sqrt(q / fr); if (r[i] > mx) mx = r[i]; }
+  const sorted = Float32Array.from(r).sort();
+  return { r, fr, max: mx, p10: sorted[Math.floor(n * .1)], p90: sorted[Math.min(n - 1, Math.floor(n * .9))] };
 }
+function contentLevel(lv) {
+  // The level of the moments where something is actually sounding: frames clearly above the background.
+  // A whisper next to one loud bump is judged by the whisper; a steady river (nothing stands out) by its bulk.
+  const thr = Math.max(2.5 * lv.p10, .002 * lv.max), act = [];
+  for (const v of lv.r) if (v > thr) act.push(v);
+  if (!act.length) return lv.p90;
+  act.sort((a, b) => a - b);
+  return act[Math.floor(act.length * .7)];
+}
+function denoise(x, sr) {
+  const N = 2048, H = 512, half = N / 2, fft = getFFT(N), w = hann(N), F = Math.ceil((x.length + N) / H);
+  const re = new Float32Array(N), im = new Float32Array(N), inside = [];
+  const load = f => { const o = f * H - N + H; for (let n = 0; n < N; n++) { const j = o + n; re[n] = (j >= 0 && j < x.length) ? x[j] * w[n] : 0; im[n] = 0; } fft(re, im); return o; };
+  const en = new Float32Array(F);
+  for (let f = 0; f < F; f++) { const o = load(f); let e = 0; for (let k = 1; k < half; k++) e += re[k] * re[k] + im[k] * im[k]; en[f] = e; if (o >= 0 && o + N <= x.length) inside.push(f); }
+  if (inside.length < 12) return x;
+  inside.sort((a, b) => en[a] - en[b]);
+  const quiet = inside.slice(0, Math.max(3, Math.floor(inside.length * .12))), noise = new Float32Array(half + 1);
+  for (const f of quiet) { load(f); for (let k = 0; k <= half; k++) noise[k] += (re[k] * re[k] + im[k] * im[k]) / quiet.length; }
+  const y = new Float32Array(x.length), g = new Float32Array(half + 1), prev = new Float32Array(half + 1);
+  for (let f = 0; f < F; f++) {
+    const o = load(f);
+    for (let k = 0; k <= half; k++) { const P = re[k] * re[k] + im[k] * im[k]; g[k] = Math.max(.12, Math.sqrt(Math.max(0, 1 - 2.2 * noise[k] / (P + 1e-20))), prev[k] * .7); }
+    for (let k = 0; k <= half; k++) { const v = (g[Math.max(0, k - 1)] + 2 * g[k] + g[Math.min(half, k + 1)]) / 4; prev[k] = g[k]; re[k] *= v; im[k] *= v; if (k > 0 && k < half) { re[N - k] *= v; im[N - k] *= v; } }
+    fft(im, re);
+    for (let n = 0; n < N; n++) { const j = o + n; if (j >= 0 && j < y.length) y[j] += re[n] * w[n] / (N * 1.5); }
+  }
+  return y;
+}
+function prepare(x0, sr) {
+  // remove DC and handling rumble (two one-pole high-passes at 55 Hz)
+  let x = new Float32Array(x0.length); const a = Math.exp(-TAU * 55 / sr); let l1 = 0, l2 = 0;
+  for (let i = 0; i < x0.length; i++) { l1 = a * l1 + (1 - a) * x0[i]; const h = x0[i] - l1; l2 = a * l2 + (1 - a) * h; x[i] = h - l2; }
+  let lv = levels(x, sr); if (!lv) return null;
+  let L = contentLevel(lv); if (!(L > 0.0004)) return null;
+  let cleaned = false;
+  if (L < .05 && lv.max / (lv.p10 + 1e-9) > 3) { x = denoise(x, sr); cleaned = true; lv = levels(x, sr); L = contentLevel(lv); if (!(L > 0)) return null; }
+  const gain = clamp(.18 / L, .25, 400);
+  for (let i = 0; i < x.length; i++) x[i] = softLimit(x[i] * gain);
+  // trim silence relative to the content, not to the loudest peak
+  lv = levels(x, sr);
+  const thr = Math.max(Math.min(lv.p90 * .25, Math.max(lv.p10 * 1.8, lv.p90 * .08)), lv.max * .03);
+  let fa = 0, fb = lv.r.length - 1;
+  while (fa < fb && lv.r[fa] < thr) fa++;
+  while (fb > fa && lv.r[fb] < thr) fb--;
+  let A = Math.max(0, fa * lv.fr - Math.floor(sr * .06)), B = Math.min(x.length, (fb + 1) * lv.fr + Math.floor(sr * .24));
+  const maxLen = Math.floor(sr * (REC_MAX + 1)); if (B - A > maxLen) B = A + maxLen;
+  if (B - A < sr * .05) return null;
+  const out = x.slice(A, B), fade = Math.min(Math.floor(sr * .01), out.length >> 1);
+  for (let i = 0; i < fade; i++) { const f = i / fade; out[i] *= f; out[out.length - 1 - i] *= f; }
+  return { x: out, boost: 20 * Math.log10(gain), cleaned };
+}
+function trimNorm(x, sr) { const p = prepare(x, sr); return p && p.x; }
 
 function analyze(x, sr) {
   const N = 16384, fft = getFFT(N), w = hann(N), half = N / 2;
@@ -451,9 +516,8 @@ const DEMO_NAMES = { madera: 'Toque en madera', agua: 'Gotas de agua', voz: 'Voz
 
 /* ───────────── Audio engine ───────────── */
 const S = { ctx: null, sound: null, pads: {}, mode: 'calma', playing: false, dur: 10, remain: 600, breath: '6',
-  pres: .45, vol: .8, view: 'home', micLevel: 0, recStart: 0, progress: 0, group: null, ending: false, busy: false };
+  pres: .45, vol: .8, listened: 0, view: 'home', micLevel: 0, recStart: 0, progress: 0, group: null, ending: false, busy: false };
 let E = null;   // engine nodes
-const REC_MAX = 30, MAKEUP = 2;
 
 function setSession(type) { try { if (navigator.audioSession) navigator.audioSession.type = type; } catch (e) {} }
 
@@ -583,6 +647,7 @@ function tick() {
     if (t >= nextGrain) { if (S.pres > .02) playGrain(); nextGrain = t + rand(cfg.grain[0], cfg.grain[1]) * (1.5 - S.pres); }
     if (cfg.bellGain && t >= nextBell) { playBell(cfg.bellGain); nextBell = t + rand(cfg.bell[0], cfg.bell[1]); }
   }
+  if (lastTick) S.listened += t - lastTick;
   if (lastTick && S.dur > 0 && !S.ending) {
     S.remain -= t - lastTick;
     if (S.remain <= 0) { S.remain = 0; endSession(); }
@@ -617,7 +682,7 @@ function endSession() {
   const c = S.ctx; S.ending = true;
   playBell(.09, 4);
   const t = c.currentTime; E.master.gain.cancelScheduledValues(t); E.master.gain.setTargetAtTime(0, t + 2, 4);
-  setTimeout(() => { if (S.ending) { pause(); S.ending = false; S.remain = S.dur * 60; showTime(); toast('Sesión completa. Quédate un momento en silencio.', 6000); } }, 16000);
+  setTimeout(() => { if (S.ending) { pause(); S.ending = false; S.remain = S.dur * 60; showTime(); toast('Sesión completa. Quédate un momento en silencio.', 6000); setTimeout(() => maybeRate(), 6500); } }, 16000);
 }
 function teardown() {
   if (!S.ctx) return;
@@ -656,19 +721,19 @@ function uiPlay() {
 }
 function showFacts(extra) {
   const a = S.sound.an, f = $('sFacts'); f.textContent = '';
-  const b = document.createElement('b'); b.textContent = a.note; f.append('Afinado a ', b, ' · ' + fmtHz(a.domHz) + ' · ' + a.kind + ' · brillo ' + Math.round(a.bright * 100) + ' %' + (extra ? ' · ' + extra : ''));
+  const b = document.createElement('b'); b.textContent = a.note; f.append('Afinado a ', b, ' · ' + fmtHz(a.domHz) + ' · ' + a.kind + ' · brillo ' + Math.round(a.bright * 100) + ' %' + (S.sound.boost >= 6 ? ' · realzado +' + Math.round(S.sound.boost) + ' dB' : '') + (extra ? ' · ' + extra : ''));
 }
 
-async function loadSound(samples, sr, name, save) {
+async function loadSound(samples, sr, name, save, src) {
   if (S.busy || !ensureCtx()) return; S.busy = true;
   try {
     teardown();
     setView('proc'); S.progress = 0; $('procTitle').textContent = 'Leyendo la huella…'; $('procSub').textContent = name;
     await sleep(60);
-    const x = trimNorm(samples, sr);
+    const pr = prepare(samples, sr), x = pr && pr.x;
     if (!x) { toast('No he oído nada claro. Prueba más cerca del sonido o con más volumen.'); setView('home'); return; }
     const an = analyze(x, sr);
-    S.sound = { x, sr, name, an }; S.pads = {}; setHue(an.hue);
+    S.sound = { x, sr, name, an, src: src || '', boost: pr.boost, cleaned: pr.cleaned }; S.listened = 0; S.pads = {}; setHue(an.hue);
     $('procTitle').textContent = 'Afinando a ' + an.note + '…'; $('procSub').textContent = 'Estirando ' + an.dur.toFixed(1).replace('.', ',') + ' s en un paisaje sin final';
     await sleep(30);
     S.pads[S.mode] = toBuf(await renderPad(x, sr, an.rootHz, MODES[S.mode], p => { S.progress = p; }));
@@ -679,7 +744,8 @@ async function loadSound(samples, sr, name, save) {
     if (save === true) { S.sound.id = Date.now(); const q = new Int16Array(x.length); for (let i = 0; i < x.length; i++) q[i] = Math.round(clamp(x[i], -1, 1) * 32767); saveSound({ id: S.sound.id, name, sr, data: q, note: an.note }); }
     else if (save) S.sound.id = save;
     play();
-    if (!S.tipped) { S.tipped = true; toast('Mejor con auriculares.', 3500); }
+    if (pr.boost >= 12) toast('Sonido suave: lo he amplificado +' + Math.round(pr.boost) + ' dB' + (pr.cleaned ? ' y he reducido el ruido de fondo.' : '.'), 5500);
+    else if (!S.tipped) { S.tipped = true; toast('Mejor con auriculares.', 3500); }
   } catch (err) {
     console.error(err); toast('No he podido transformar ese sonido. Prueba con otro.'); setView('home');
   } finally { S.busy = false; }
@@ -709,11 +775,11 @@ async function startRec() {
     rec = { stream, src, proc, mute, chunks: [], len: 0, sr: c.sampleRate };
     proc.onaudioprocess = e => {
       if (!rec) return; const d = e.inputBuffer.getChannelData(0); rec.chunks.push(new Float32Array(d)); rec.len += d.length;
-      let s = 0; for (let i = 0; i < d.length; i++) s += d[i] * d[i]; S.micLevel = Math.max(Math.sqrt(s / d.length) * 6, S.micLevel * .8);
+      let s = 0; for (let i = 0; i < d.length; i++) s += d[i] * d[i]; const rm = Math.sqrt(s / d.length); S.micLevel = Math.max(Math.min(1, Math.sqrt(rm * 40)), S.micLevel * .8); S.micRaw = Math.max(rm, (S.micRaw || 0) * .97);
       if (rec.len >= REC_MAX * rec.sr) stopRec();
     };
     src.connect(proc); proc.connect(mute); mute.connect(c.destination);
-    S.recStart = performance.now(); setView('rec');
+    S.recStart = performance.now(); S.micRaw = 0; setView('rec');
   } catch (err) { setSession('playback'); micUnavailable(err); }
 }
 function stopRec() {
@@ -722,7 +788,7 @@ function stopRec() {
   r.stream.getTracks().forEach(t => t.stop()); setSession('playback'); S.micLevel = 0;
   if (r.len < r.sr * .35) { toast('Demasiado corto. Mantén la grabación al menos medio segundo.'); setView('home'); return; }
   const x = new Float32Array(r.len); let o = 0; for (const ch of r.chunks) { x.set(ch, o); o += ch.length; }
-  const d = new Date(); loadSound(x, r.sr, 'Grabación ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'), true);
+  const d = new Date(); loadSound(x, r.sr, 'Grabación ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'), true, 'grabación');
 }
 function micUnavailable(err) {
   const n = $('micNote'); n.hidden = false;
@@ -745,7 +811,7 @@ async function onFile(file) {
     // keep the loudest 30 s window of long files
     let start = 0; const win = Math.floor(buf.sampleRate * REC_MAX);
     if (n > win) { const st = Math.floor(buf.sampleRate * .25); let best = -1; for (let s = 0; s + win <= n; s += st) { let e = 0; for (let i = s; i < s + win; i += 16) e += x[i] * x[i]; if (e > best) { best = e; start = s; } } }
-    await loadSound(n > win ? x.subarray(start, start + win) : x, buf.sampleRate, file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'Audio', true);
+    await loadSound(n > win ? x.subarray(start, start + win) : x, buf.sampleRate, file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'Audio', true, 'archivo');
   } catch (e) { console.error(e); toast('No he podido leer ese archivo. Prueba con m4a, mp3, wav o un vídeo corto.'); setView('home'); }
 }
 
@@ -764,7 +830,7 @@ async function renderLib() {
   for (const it of all) {
     const row = document.createElement('div'); row.className = 'lib-item';
     const open = document.createElement('button'); open.className = 'open'; open.textContent = it.name;
-    open.onclick = () => { ensureCtx(); let d = it.data; if (d instanceof Int16Array) { const f = new Float32Array(d.length); for (let i = 0; i < d.length; i++) f[i] = d[i] / 32767; d = f; } else d = new Float32Array(d); loadSound(d, it.sr, it.name, it.id); };
+    open.onclick = () => { ensureCtx(); let d = it.data; if (d instanceof Int16Array) { const f = new Float32Array(d.length); for (let i = 0; i < d.length; i++) f[i] = d[i] / 32767; d = f; } else d = new Float32Array(d); loadSound(d, it.sr, it.name, it.id, 'biblioteca'); };
     const meta = document.createElement('span'); meta.textContent = it.note || '';
     const del = document.createElement('button'); del.className = 'del'; del.textContent = '×'; del.setAttribute('aria-label', 'Borrar ' + it.name);
     let armed = false; del.onclick = () => { if (armed) return delSound(it.id); armed = true; del.textContent = '¿Borrar?'; del.style.fontSize = '12px'; setTimeout(() => { armed = false; del.textContent = '×'; del.style.fontSize = ''; }, 2500); };
@@ -772,13 +838,45 @@ async function renderLib() {
   }
 }
 
+/* ───────────── Session log + rating (kept on this device; sent only if the person shares it) ───────────── */
+const LOGKEY = 'resona.log', MODE_NAMES = { calma: 'Calma', foco: 'Foco', sueno: 'Sueño' };
+function getLog() { try { return JSON.parse(localStorage.getItem(LOGKEY) || '[]'); } catch (e) { return []; } }
+function putLog(l) { try { localStorage.setItem(LOGKEY, JSON.stringify(l.slice(-200))); } catch (e) {} }
+let rateCtx = null;
+function maybeRate(after) {
+  if (rateCtx) return;
+  if (!S.sound || S.listened < 60) { after && after(); return; }
+  const a = S.sound.an;
+  rateCtx = { after, rating: 0, entry: { d: new Date().toISOString().slice(0, 16), m: S.mode, k: a.kind, n: a.note, s: S.sound.src, len: Math.round(a.dur), min: Math.round(S.listened / 6) / 10, r: 0, c: '' } };
+  S.listened = 0;
+  const log = getLog(); log.push(rateCtx.entry); putLog(log);
+  $('rateNote').value = ''; $('rateStars').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  $('rate').hidden = false;
+}
+function closeRate() { $('rate').hidden = true; const a = rateCtx && rateCtx.after; rateCtx = null; a && a(); }
+$('rateStars').onclick = e => { const b = e.target.closest('button'); if (!b || !rateCtx) return; rateCtx.rating = +b.dataset.v; $('rateStars').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.v <= rateCtx.rating))); };
+$('rateSkip').onclick = closeRate;
+$('rateSend').onclick = () => {
+  if (!rateCtx) return;
+  if (!rateCtx.rating) { toast('Elige primero de 1 a 5.', 2500); return; }
+  const en = rateCtx.entry; en.r = rateCtx.rating; en.c = $('rateNote').value.trim().slice(0, 140);
+  const log = getLog(); if (log.length) log[log.length - 1] = en; else log.push(en); putLog(log);
+  const days = new Set(log.map(x => x.d.slice(0, 10))).size, rated = log.filter(x => x.r), avg = (rated.reduce((q, x) => q + x.r, 0) / rated.length).toFixed(1).replace('.', ',');
+  const text = 'Resona · valoración\n' + '★'.repeat(en.r) + '☆'.repeat(5 - en.r) + ' (' + en.r + '/5)' + (en.c ? '\n«' + en.c + '»' : '') +
+    '\nSonido: ' + en.k + ', ' + en.n + ', ' + en.len + ' s' + (en.s ? ' (' + en.s + ')' : '') + ' · Intención: ' + MODE_NAMES[en.m] + ' · Escuchado: ' + String(en.min).replace('.', ',') + ' min' +
+    '\nUso: ' + log.length + (log.length === 1 ? ' sesión' : ' sesiones') + ' en ' + days + (days === 1 ? ' día' : ' días') + ' · media ' + avg + '/5';
+  const copy = () => { try { navigator.clipboard.writeText(text).then(() => toast('Valoración copiada. Pégala en un mensaje a quien te invitó.', 6000)).catch(() => toast('No se pudo compartir desde aquí.')); } catch (e) { toast('No se pudo compartir desde aquí.'); } };
+  if (navigator.share) navigator.share({ text }).then(() => toast('Gracias.', 2500)).catch(e => { if (!e || e.name !== 'AbortError') copy(); }); else copy();
+  closeRate();
+};
+
 /* ───────────── UI wiring ───────────── */
 function pressSeg(id, v) { $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === String(v)))); }
 $('btnRec').onclick = startRec;
 $('btnStop').onclick = stopRec;
 $('lblFile').addEventListener('click', () => ensureCtx());
 $('file').onchange = e => { const f = e.target.files[0]; e.target.value = ''; onFile(f); };
-document.querySelectorAll('[data-demo]').forEach(b => b.onclick = () => { const c = ensureCtx(); if (!c) return; const k = b.dataset.demo; loadSound(DEMOS[k](c.sampleRate), c.sampleRate, DEMO_NAMES[k], false); });
+document.querySelectorAll('[data-demo]').forEach(b => b.onclick = () => { const c = ensureCtx(); if (!c) return; const k = b.dataset.demo; loadSound(DEMOS[k](c.sampleRate), c.sampleRate, DEMO_NAMES[k], false, 'ejemplo'); });
 $('sName').onclick = () => {
   const el = $('sName'); if (!S.sound || el.querySelector('input')) return;
   const inp = document.createElement('input'); inp.type = 'text'; inp.id = 'inpName'; inp.maxLength = 40; inp.value = S.sound.name; inp.setAttribute('aria-label', 'Nombre del sonido');
@@ -788,7 +886,7 @@ $('sName').onclick = () => {
 };
 $('btnPlay').onclick = () => S.playing ? pause() : play();
 $('btnOrig').onclick = playOriginal;
-$('btnBack').onclick = () => { teardown(); setTimeout(() => { if (!S.playing && S.ctx) S.ctx.suspend().catch(() => {}); }, 900); setView('home'); renderLib(); };
+$('btnBack').onclick = () => { teardown(); setTimeout(() => { if (!S.playing && S.ctx) S.ctx.suspend().catch(() => {}); }, 900); maybeRate(() => { setView('home'); renderLib(); }); };
 $('segMode').onclick = e => { const b = e.target.closest('button'); if (b) switchMode(b.dataset.v); };
 $('segDur').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.dur = +b.dataset.v; S.remain = S.dur * 60; S.ending = false; pressSeg('segDur', b.dataset.v); showTime(); };
 $('segBreath').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.breath = b.dataset.v; if (S.ctx) S.breathT0 = S.ctx.currentTime; pressSeg('segBreath', b.dataset.v); };
@@ -804,7 +902,7 @@ document.addEventListener('visibilitychange', () => {
 const cv = $('cv'), g = cv.getContext('2d');
 let W = 0, H = 0, dpr = 1;
 const idleSig = new Float32Array(64); for (let i = 0; i < 64; i++) idleSig[i] = .45 + .35 * Math.sin(i / 64 * Math.PI * 3) ** 2;
-const live = new Float32Array(64), liveRaw = new Float32Array(64); let energy = 0, cueShown = '';
+const live = new Float32Array(64), liveRaw = new Float32Array(64); let energy = 0, cueShown = '', recHintShown = '';
 function resize() { dpr = Math.min(2, window.devicePixelRatio || 1); W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
 window.addEventListener('resize', resize); resize();
 function samp(arr, u) { const p = u * 63, i = Math.floor(p), f = p - i; return arr[i] * (1 - f) + arr[Math.min(63, i + 1)] * f; }
@@ -853,14 +951,15 @@ function draw(ts) {
     g.closePath(); g.strokeStyle = `hsla(${hue + j * 9},78%,${74 - j * 3}%,${.5 - j * .06})`; g.lineWidth = 1.2; g.stroke();
   }
   let p = -1;
-  if (S.view === 'rec') { p = clamp((performance.now() - S.recStart) / (REC_MAX * 1000), 0, 1); $('recCount').textContent = (p * REC_MAX).toFixed(1).replace('.', ',') + ' / ' + REC_MAX + ' s'; }
+  if (S.view === 'rec') { p = clamp((performance.now() - S.recStart) / (REC_MAX * 1000), 0, 1); $('recCount').textContent = (p * REC_MAX).toFixed(1).replace('.', ',') + ' / ' + REC_MAX + ' s';
+    const hint = (performance.now() - S.recStart > 1500 && S.micRaw < .012) ? 'Suena suave. Sigue: Resona lo amplificará.' : ''; if (hint !== recHintShown) { recHintShown = hint; $('recHint').textContent = hint; } }
   else if (S.view === 'proc') p = S.progress;
   if (p >= 0) { g.beginPath(); g.arc(cx, cy, Rr * 1.22, -Math.PI / 2, -Math.PI / 2 + TAU * Math.max(.002, p)); g.strokeStyle = `hsla(${hue},80%,78%,.85)`; g.lineWidth = 2; g.lineCap = 'round'; g.stroke(); }
 }
 requestAnimationFrame(draw);
 
 setHue(232); renderLib(); showTime();
-window.__resona = { S, renderPad, analyze, trimNorm, DEMOS, MODES, get E() { return E; } };   // test hook
+window.__resona = { S, renderPad, analyze, trimNorm, prepare, DEMOS, MODES, get E() { return E; } };   // test hook
 })();
 </script>
 
