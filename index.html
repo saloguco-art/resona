@@ -52,14 +52,26 @@ button:focus-visible,label.btn:focus-within,input:focus-visible{outline:2px soli
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 6px}
 .note{font-size:13px;color:var(--warn);margin:0;border:1px solid rgba(240,178,122,.3);border-radius:12px;padding:10px 12px;background:rgba(240,178,122,.06)}
-.lib{display:flex;flex-direction:column;gap:6px;max-height:112px;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain}
+.lib{display:flex;flex-direction:column;gap:6px;max-height:96px;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain}
 .lib-item{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:2px 4px 2px 12px}
 .lib-item button.open{flex:1;min-width:0;text-align:left;padding:9px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lib-item span{color:var(--faint);font-size:12px;flex:none}
 .lib-item button.del{color:var(--faint);padding:8px 10px;font-size:16px}
-details{font-size:13px;color:var(--dim)}
-details summary{cursor:pointer;color:var(--faint);padding:4px 0}
-details p{margin:6px 0 0}
+.nav .pill{flex:1;justify-content:center;padding:9px 8px;white-space:nowrap}
+.scroll{flex:1;min-height:0;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px;padding-bottom:14px}
+.card{border:1px solid var(--line);border-radius:16px;padding:12px 14px;background:var(--panel);display:flex;flex-direction:column;gap:6px}
+.card .cname{font-family:var(--display);font-size:22px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card .cname input{font:inherit;color:inherit;background:transparent;border:0;border-bottom:1px solid var(--accent);width:100%;-webkit-user-select:text;user-select:text;border-radius:0;padding:0}
+.card .cmeta{font-size:12.5px;color:var(--faint);font-variant-numeric:tabular-nums}
+.card .row .pill{min-height:34px;padding:6px 13px;font-size:13px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{border:1px solid var(--line);border-radius:16px;padding:12px 14px;background:var(--panel)}
+.tile b{display:block;font-family:var(--display);font-weight:400;font-size:30px;line-height:1.1;color:var(--accent);font-variant-numeric:tabular-nums}
+.tile span{font-size:12.5px;color:var(--dim)}
+.hist{font-size:13.5px;color:var(--dim);border-bottom:1px solid var(--line);padding:8px 0;font-variant-numeric:tabular-nums}
+.guide h3{font-family:var(--display);font-weight:400;font-size:21px;margin:8px 0 0;color:var(--ink)}
+.guide p{margin:0;color:var(--dim)}
+.guide b{color:var(--ink);font-weight:600}
 .home-foot{display:flex;flex-direction:column;gap:12px;flex:none}
 .count{font-family:var(--display);font-size:44px;font-variant-numeric:tabular-nums;text-align:center;margin:0}
 .center{text-align:center}
@@ -137,13 +149,49 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
         </div>
       </div>
       <div id="libWrap" hidden>
-        <p class="label">Tus sonidos</p>
+        <p class="label">Recientes</p>
         <div class="lib" id="lib"></div>
       </div>
-      <details>
-        <summary>¿Qué mide exactamente?</summary>
-        <p>La vibración acústica que capta el micrófono: su nota dominante, sus armónicos, su brillo y cómo evoluciona en el tiempo. Con esa huella se afina y se construye todo lo que oyes. No mide campos electromagnéticos; todo ocurre en tu dispositivo y nada se envía a ningún servidor.</p>
-      </details>
+      <nav class="row nav" aria-label="Apartados">
+        <button class="pill" data-go="lib">Tus sonidos</button>
+        <button class="pill" data-go="stats">Tu práctica</button>
+        <button class="pill" data-go="guide">Guía</button>
+      </nav>
+    </div>
+  </section>
+
+  <!-- LIBRARY -->
+  <section class="view" id="vLib" hidden>
+    <div><h1>Tus sonidos</h1><p class="sub">Guardados solo en este dispositivo. Aquí puedes ponerles nombre con calma.</p></div>
+    <div class="scroll" id="libFull"></div>
+  </section>
+
+  <!-- PRACTICE -->
+  <section class="view" id="vStats" hidden>
+    <div><h1>Tu práctica</h1><p class="sub">Lo que la app anota en este dispositivo. Nada sale de aquí si no lo envías tú.</p></div>
+    <div class="scroll" id="statsBody"></div>
+  </section>
+
+  <!-- GUIDE -->
+  <section class="view" id="vGuide" hidden>
+    <div><h1>Guía</h1></div>
+    <div class="scroll guide">
+      <h3>Qué grabar</h3>
+      <p>Cualquier cosa que suene: un toque en la madera, el agua, tu voz, la de alguien querido, tu casa por la noche. Un golpe basta con 2 segundos; un río o una voz agradecen 20 o 30. Acerca el móvil al sonido. Si suena muy flojo, la app lo amplifica y limpia el ruido de fondo.</p>
+      <h3>Cómo escuchar</h3>
+      <p>Con auriculares y a volumen moderado. Siéntate o túmbate, cierra los ojos y deja la pantalla a un lado: la app la mantiene encendida para que el sonido no se corte.</p>
+      <h3>Respirar con el sonido</h3>
+      <p>El paisaje se abre al inhalar y se recoge al exhalar. Elige el ritmo que te resulte cómodo, entre 4,5 y 7 respiraciones por minuto; 6 es un buen punto de partida. Respirar despacio y con la exhalación más larga es lo que mejor respaldo científico tiene para calmar el cuerpo. Si te mareas, vuelve a respirar normal.</p>
+      <h3>Tararear</h3>
+      <p>Activa «Tararear» y, al exhalar, haz «mmm» con la boca cerrada en la nota que oyes. Alarga la exhalación y te da algo sencillo en lo que posar la atención.</p>
+      <h3>Intenciones</h3>
+      <p><b>Calma</b> es cálida y abierta. <b>Foco</b> es estable, con pocos cambios, para trabajar o leer. <b>Sueño</b> es grave y se va apagando sola, sin campana final.</p>
+      <h3>Cuando la mente se va</h3>
+      <p>Es normal y le pasa a todo el mundo. Darte cuenta y volver al sonido, sin regañarte, es justo el ejercicio.</p>
+      <h3>En el iPhone</h3>
+      <p>En Safari, pulsa Compartir y «Añadir a pantalla de inicio» para abrirla como una app. El sonido se detiene si bloqueas la pantalla.</p>
+      <h3>Qué mide y qué no</h3>
+      <p>Mide la vibración acústica que capta el micrófono: su nota dominante, sus armónicos, su brillo y cómo evoluciona. No mide campos electromagnéticos ni promete curar nada. Todo ocurre en tu dispositivo y nada se envía a ningún servidor.</p>
     </div>
   </section>
 
@@ -213,9 +261,10 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 
 <div id="pre" role="dialog" aria-label="Cómo llegas" hidden>
   <p class="rate-q">Antes de empezar, ¿cómo llegas?</p>
+  <p class="sub center" style="margin:-4px auto 0;font-size:13px">La sesión empieza cuando respondas.</p>
   <div class="rate-stars" id="preStars"><button data-v="1" aria-pressed="false" aria-label="1 de 5">1</button><button data-v="2" aria-pressed="false" aria-label="2 de 5">2</button><button data-v="3" aria-pressed="false" aria-label="3 de 5">3</button><button data-v="4" aria-pressed="false" aria-label="4 de 5">4</button><button data-v="5" aria-pressed="false" aria-label="5 de 5">5</button></div>
   <div class="rate-ends"><span>Con tensión</span><span>En calma</span></div>
-  <div class="row" style="justify-content:center"><button class="ghost" id="preSkip">Saltar</button></div>
+  <div class="row" style="justify-content:center"><button class="ghost" id="preSkip">Saltar y empezar</button></div>
 </div>
 <div id="rate" role="dialog" aria-label="Valoración de la sesión" hidden>
   <p class="rate-q">¿Cómo estás ahora?</p>
@@ -747,8 +796,9 @@ function playOriginal() {
 /* ───────────── Flow ───────────── */
 function setView(v) {
   S.view = v;
-  for (const id of ['Home', 'Rec', 'Proc', 'Session']) $('v' + id).hidden = id.toLowerCase() !== v;
-  $('btnBack').hidden = v !== 'session';
+  for (const id of ['Home', 'Rec', 'Proc', 'Session', 'Lib', 'Stats', 'Guide']) $('v' + id).hidden = id.toLowerCase() !== v;
+  const sub = v === 'lib' || v === 'stats' || v === 'guide';
+  $('btnBack').hidden = v !== 'session' && !sub; $('btnBack').textContent = sub ? '← Inicio' : '← Otro sonido';
   if (v === 'home' && typeof applyUpdate === 'function') setTimeout(applyUpdate, 50);
 }
 let toastT = 0;
@@ -784,7 +834,6 @@ async function loadSound(samples, sr, name, save, src) {
     setView('session');
     if (save === true) { S.sound.id = Date.now(); const q = new Int16Array(x.length); for (let i = 0; i < x.length; i++) q[i] = Math.round(clamp(x[i], -1, 1) * 32767); saveSound({ id: S.sound.id, name, sr, data: q, note: an.note }); }
     else if (save) S.sound.id = save;
-    play();
     if (pr.boost >= 12) toast('Sonido suave: lo he amplificado +' + Math.round(pr.boost) + ' dB' + (pr.cleaned ? ' y he reducido el ruido de fondo.' : '.'), 5500);
     else if (!S.tipped) { S.tipped = true; toast('Mejor con auriculares y a volumen moderado.', 3500); }
     askBefore();
@@ -866,17 +915,35 @@ async function saveSound(item) {
 }
 async function renameSound(id, name) { try { const db = await idb(); const st = db.transaction('sounds', 'readwrite').objectStore('sounds'); const q = st.get(id); q.onsuccess = () => { if (q.result) { q.result.name = name; st.put(q.result); } }; } catch (e) {} }
 async function delSound(id) { try { const db = await idb(); const tx = db.transaction('sounds', 'readwrite'); tx.objectStore('sounds').delete(id); tx.oncomplete = renderLib; } catch (e) {} }
+function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+function openSound(it) {
+  if (!ensureCtx()) return; let d = it.data;
+  if (d instanceof Int16Array) { const f = new Float32Array(d.length); for (let i = 0; i < d.length; i++) f[i] = d[i] / 32767; d = f; } else d = new Float32Array(d);
+  loadSound(d, it.sr, it.name, it.id, 'biblioteca');
+}
 async function renderLib() {
-  const all = (await dbAll()).sort((a, b) => b.id - a.id), wrap = $('libWrap'), lib = $('lib');
-  wrap.hidden = !all.length; lib.textContent = '';
-  for (const it of all) {
-    const row = document.createElement('div'); row.className = 'lib-item';
-    const open = document.createElement('button'); open.className = 'open'; open.textContent = it.name;
-    open.onclick = () => { ensureCtx(); let d = it.data; if (d instanceof Int16Array) { const f = new Float32Array(d.length); for (let i = 0; i < d.length; i++) f[i] = d[i] / 32767; d = f; } else d = new Float32Array(d); loadSound(d, it.sr, it.name, it.id, 'biblioteca'); };
-    const meta = document.createElement('span'); meta.textContent = it.note || '';
-    const del = document.createElement('button'); del.className = 'del'; del.textContent = '×'; del.setAttribute('aria-label', 'Borrar ' + it.name);
-    let armed = false; del.onclick = () => { if (armed) return delSound(it.id); armed = true; del.textContent = '¿Borrar?'; del.style.fontSize = '12px'; setTimeout(() => { armed = false; del.textContent = '×'; del.style.fontSize = ''; }, 2500); };
-    row.append(open, meta, del); lib.append(row);
+  const all = (await dbAll()).sort((a, b) => b.id - a.id), wrap = $('libWrap'), lib = $('lib'), full = $('libFull');
+  wrap.hidden = !all.length; lib.textContent = ''; full.textContent = '';
+  for (const it of all.slice(0, 3)) {                                  // home: quick access only
+    const row = el('div', 'lib-item'), open = el('button', 'open', it.name); open.onclick = () => openSound(it);
+    row.append(open, el('span', '', it.note || '')); row.style.paddingRight = '12px'; lib.append(row);
+  }
+  if (!all.length) { full.append(el('p', 'sub', 'Todavía no has guardado ningún sonido. Cada grabación o archivo que transformes aparecerá aquí.')); return; }
+  for (const it of all) {                                              // section: rename, delete, details
+    const card = el('div', 'card'), name = el('div', 'cname', it.name);
+    const secs = Math.round((it.data ? it.data.length : 0) / it.sr), date = new Date(it.id).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    const meta = el('div', 'cmeta', [it.note, secs + ' s', date].filter(Boolean).join(' · '));
+    const row = el('div', 'row'), go = el('button', 'pill', 'Meditar'), ren = el('button', 'pill', 'Cambiar nombre'), del = el('button', 'ghost', 'Borrar');
+    go.setAttribute('aria-pressed', 'true'); go.onclick = () => openSound(it);
+    ren.onclick = () => {
+      if (name.querySelector('input')) return;
+      const inp = el('input'); inp.type = 'text'; inp.maxLength = 40; inp.value = it.name; inp.id = 'ren' + it.id; inp.setAttribute('aria-label', 'Nombre del sonido');
+      name.textContent = ''; name.append(inp); inp.focus(); inp.select();
+      const done = () => { const v = inp.value.trim() || it.name; it.name = v; name.textContent = v; renameSound(it.id, v); if (S.sound && S.sound.id === it.id) { S.sound.name = v; $('sName').textContent = v; } };
+      inp.onblur = done; inp.onkeydown = e => { if (e.key === 'Enter') inp.blur(); };
+    };
+    let armed = false; del.onclick = () => { if (armed) return delSound(it.id); armed = true; del.textContent = '¿Seguro? Toca otra vez'; setTimeout(() => { armed = false; del.textContent = 'Borrar'; }, 3000); };
+    row.append(go, ren, del); card.append(name, meta, row); full.append(card);
   }
 }
 
@@ -884,16 +951,50 @@ async function renderLib() {
 const LOGKEY = 'resona.log', MODE_NAMES = { calma: 'Calma', foco: 'Foco', sueno: 'Sueño' };
 function getLog() { try { return JSON.parse(localStorage.getItem(LOGKEY) || '[]'); } catch (e) { return []; } }
 function putLog(l) { try { localStorage.setItem(LOGKEY, JSON.stringify(l.slice(-200))); } catch (e) {} }
+function shareText(text, okMsg) {
+  const copy = () => { try { navigator.clipboard.writeText(text).then(() => toast('Copiado. Pégalo en un mensaje a quien te invitó.', 6000)).catch(() => toast('No se pudo compartir desde aquí.')); } catch (e) { toast('No se pudo compartir desde aquí.'); } };
+  if (navigator.share) navigator.share({ text }).then(() => toast(okMsg || 'Gracias.', 2500)).catch(e => { if (!e || e.name !== 'AbortError') copy(); }); else copy();
+}
+function practice() {
+  const log = getLog(), days = [...new Set(log.map(x => x.d.slice(0, 10)))].sort(), mins = log.reduce((q, x) => q + (x.min || 0), 0);
+  let streak = 0; const day = 864e5, has = new Set(days), today = new Date().toISOString().slice(0, 10);
+  let cur = has.has(today) ? Date.parse(today) : Date.parse(today) - day;
+  while (has.has(new Date(cur).toISOString().slice(0, 10))) { streak++; cur -= day; }
+  const both = log.filter(x => x.a && x.b), rated = log.filter(x => x.r);
+  return { log, days: days.length, mins, streak, n: log.length,
+    calm: both.length ? both.reduce((q, x) => q + (x.a - x.b), 0) / both.length : null, calmN: both.length,
+    avg: rated.length ? rated.reduce((q, x) => q + x.r, 0) / rated.length : null };
+}
+const num = (v, d) => v.toFixed(d).replace('.', ',');
+function renderStats() {
+  const body = $('statsBody'), st = practice(); body.textContent = '';
+  if (!st.n) { body.append(el('p', 'sub', 'Aún no hay sesiones. Cuando medites más de un minuto, aparecerá aquí.')); return; }
+  const tiles = el('div', 'tiles');
+  const tile = (v, label) => { const t = el('div', 'tile'); t.append(el('b', '', v), el('span', '', label)); tiles.append(t); };
+  tile(String(st.n), st.n === 1 ? 'sesión' : 'sesiones'); tile(num(st.mins, 0), 'minutos escuchados');
+  tile(String(st.days), st.days === 1 ? 'día de práctica' : 'días de práctica'); tile(String(st.streak), st.streak === 1 ? 'día seguido' : 'días seguidos');
+  tile(st.calm == null ? '–' : (st.calm >= 0 ? '+' : '') + num(st.calm, 1), 'cambio medio de calma' + (st.calmN ? ' (' + st.calmN + ')' : ''));
+  tile(st.avg == null ? '–' : num(st.avg, 1), 'valoración media de 5');
+  body.append(tiles, el('p', 'label', 'Últimas sesiones'));
+  for (const x of st.log.slice(-8).reverse()) {
+    const d = new Date(x.d + 'Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+    body.append(el('div', 'hist', d + ' · ' + MODE_NAMES[x.m] + ' · ' + num(x.min || 0, 1) + ' min' + (x.a && x.b ? ' · calma ' + x.b + ' → ' + x.a : '') + (x.r ? ' · ' + x.r + '/5' : '')));
+  }
+  const send = el('button', 'pill', 'Enviar resumen'); send.setAttribute('aria-pressed', 'true'); send.style.alignSelf = 'flex-start';
+  send.onclick = () => shareText('Resona · mi práctica\n' + st.n + (st.n === 1 ? ' sesión' : ' sesiones') + ' · ' + num(st.mins, 0) + ' min · ' + st.days + (st.days === 1 ? ' día' : ' días') + ' · racha ' + st.streak +
+    (st.calm == null ? '' : '\nCambio medio de calma: ' + (st.calm >= 0 ? '+' : '') + num(st.calm, 1) + ' (en ' + st.calmN + ')') + (st.avg == null ? '' : '\nValoración media: ' + num(st.avg, 1) + '/5'), 'Enviado.');
+  body.append(send);
+}
 let rateCtx = null, preTimer = 0;
 function hidePre() { clearTimeout(preTimer); $('pre').hidden = true; }
 function askBefore() {
   if (!S.sound) return; S.sound.before = 0;
   $('preStars').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', 'false'));
-  $('pre').hidden = false; clearTimeout(preTimer); preTimer = setTimeout(hidePre, 20000);
+  $('pre').hidden = false; clearTimeout(preTimer);       // the session starts only once this is answered or skipped
 }
 $('preStars').onclick = e => { const b = e.target.closest('button'); if (!b || !S.sound) return; S.sound.before = +b.dataset.v;
-  $('preStars').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.v <= S.sound.before))); clearTimeout(preTimer); preTimer = setTimeout(hidePre, 450); };
-$('preSkip').onclick = hidePre;
+  $('preStars').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.v <= S.sound.before))); clearTimeout(preTimer); preTimer = setTimeout(hidePre, 450); play(); };
+$('preSkip').onclick = () => { hidePre(); play(); };
 function maybeRate(after) {
   if (rateCtx) return;
   if (!S.sound || S.listened < 60) { after && after(); return; }
@@ -920,8 +1021,7 @@ $('rateSend').onclick = () => {
     '\nSonido: ' + en.k + ', ' + en.n + ', ' + en.len + ' s' + (en.s ? ' (' + en.s + ')' : '') + ' · Intención: ' + MODE_NAMES[en.m] + ' · Escuchado: ' + String(en.min).replace('.', ',') + ' min' +
     '\nRespiración: ' + (BREATH[en.br] ? String(en.br).replace('.', ',') + '/min' : 'libre') + ' · Tarareo: ' + (en.h ? 'sí' : 'no') +
     '\nUso: ' + log.length + (log.length === 1 ? ' sesión' : ' sesiones') + ' en ' + days + (days === 1 ? ' día' : ' días') + ' · media ' + avg + '/5';
-  const copy = () => { try { navigator.clipboard.writeText(text).then(() => toast('Valoración copiada. Pégala en un mensaje a quien te invitó.', 6000)).catch(() => toast('No se pudo compartir desde aquí.')); } catch (e) { toast('No se pudo compartir desde aquí.'); } };
-  if (navigator.share) navigator.share({ text }).then(() => toast('Gracias.', 2500)).catch(e => { if (!e || e.name !== 'AbortError') copy(); }); else copy();
+  shareText(text);
   closeRate();
 };
 
@@ -929,13 +1029,13 @@ $('rateSend').onclick = () => {
 for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, e => e.preventDefault(), { passive: false });
 document.addEventListener('touchmove', e => {
   if (e.touches.length > 1) { e.preventDefault(); return; }                       // pinch
-  if (e.target.closest && e.target.closest('.panel, .lib, input[type=range]')) return;   // the only things that may move
+  if (e.target.closest && e.target.closest('.panel, .lib, .scroll, input[type=range]')) return;   // the only things that may move
   e.preventDefault();
 }, { passive: false });
 window.addEventListener('scroll', () => { if (window.scrollX || window.scrollY) window.scrollTo(0, 0); });
 
 /* ───────────── Self-update: load the newest version without the person reloading ───────────── */
-const BUILD = '20261124212608'; let pendingBuild = '';
+const BUILD = '20261124213804'; let pendingBuild = '';
 function applyUpdate() {
   if (!pendingBuild || S.view !== 'home' || S.busy || rec || rateCtx) return;      // never interrupt a session
   try { if (sessionStorage.getItem('resona.tried') === pendingBuild) return; sessionStorage.setItem('resona.tried', pendingBuild); } catch (e) {}
@@ -948,6 +1048,8 @@ function checkUpdate() {
 document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
 window.addEventListener('pageshow', checkUpdate);
 setInterval(checkUpdate, 5 * 60 * 1000);
+
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { const v = b.dataset.go; if (v === 'lib') renderLib(); if (v === 'stats') renderStats(); setView(v); });
 
 /* ───────────── UI wiring ───────────── */
 function pressSeg(id, v) { $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === String(v)))); }
@@ -963,9 +1065,10 @@ $('sName').onclick = () => {
   const done = () => { const v = inp.value.trim() || S.sound.name; S.sound.name = v; el.textContent = v; if (S.sound.id) renameSound(S.sound.id, v); };
   inp.onblur = done; inp.onkeydown = e => { if (e.key === 'Enter') inp.blur(); };
 };
-$('btnPlay').onclick = () => S.playing ? pause() : play();
+$('btnPlay').onclick = () => { hidePre(); S.playing ? pause() : play(); };
 $('btnOrig').onclick = playOriginal;
-$('btnBack').onclick = () => { hidePre(); teardown(); setTimeout(() => { if (!S.playing && S.ctx) S.ctx.suspend().catch(() => {}); }, 900); maybeRate(() => { setView('home'); renderLib(); }); };
+$('btnBack').onclick = () => { if (S.view !== 'session') { setView('home'); renderLib(); return; }
+  hidePre(); teardown(); setTimeout(() => { if (!S.playing && S.ctx) S.ctx.suspend().catch(() => {}); }, 900); maybeRate(() => { setView('home'); renderLib(); }); };
 $('segMode').onclick = e => { const b = e.target.closest('button'); if (b) switchMode(b.dataset.v); };
 $('segDur').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.dur = +b.dataset.v; S.remain = S.dur * 60; S.ending = false; pressSeg('segDur', b.dataset.v); showTime(); };
 $('segBreath').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.breath = b.dataset.v; if (S.ctx) S.breathT0 = S.ctx.currentTime; pressSeg('segBreath', b.dataset.v);
@@ -994,7 +1097,8 @@ function draw(ts) {
   requestAnimationFrame(draw);
   if (cv.clientWidth !== W || cv.clientHeight !== H) resize();
   const t = ts / 1000, hue = S.hue || 232;
-  const st = document.querySelector('.view:not([hidden]) [data-stage]'); if (!st) return;
+  const st = document.querySelector('.view:not([hidden]) [data-stage]');
+  if (!st) { g.setTransform(dpr, 0, 0, dpr, 0, 0); g.globalCompositeOperation = 'source-over'; g.fillStyle = '#07080e'; g.fillRect(0, 0, W, H); return; }
   const rc = st.getBoundingClientRect(), cx = rc.left + rc.width / 2, cy = rc.top + rc.height / 2, Rr = Math.min(rc.width, rc.height) * .4;
   let sig = idleSig, sym = 5, br = .5 + .5 * Math.sin(t * .5), e = 0, speed = REDUCED ? .2 : 1;
   if (S.view === 'rec') { e = clamp(S.micLevel, 0, 1); br = e; }
