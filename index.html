@@ -712,6 +712,7 @@ function setView(v) {
   S.view = v;
   for (const id of ['Home', 'Rec', 'Proc', 'Session']) $('v' + id).hidden = id.toLowerCase() !== v;
   $('btnBack').hidden = v !== 'session';
+  if (v === 'home' && typeof applyUpdate === 'function') setTimeout(applyUpdate, 50);
 }
 let toastT = 0;
 function toast(msg, ms) { const el = $('toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, ms || 4200); }
@@ -881,6 +882,21 @@ document.addEventListener('touchmove', e => {
   e.preventDefault();
 }, { passive: false });
 window.addEventListener('scroll', () => { if (window.scrollX || window.scrollY) window.scrollTo(0, 0); });
+
+/* ───────────── Self-update: load the newest version without the person reloading ───────────── */
+const BUILD = '20261124211113'; let pendingBuild = '';
+function applyUpdate() {
+  if (!pendingBuild || S.view !== 'home' || S.busy || rec || rateCtx) return;      // never interrupt a session
+  try { if (sessionStorage.getItem('resona.tried') === pendingBuild) return; sessionStorage.setItem('resona.tried', pendingBuild); } catch (e) {}
+  location.replace(location.pathname + '?v=' + pendingBuild);
+}
+function checkUpdate() {
+  if (BUILD.charAt(0) === '_') return;
+  fetch('version.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(j => { if (j && j.v && j.v !== BUILD) { pendingBuild = j.v; applyUpdate(); } }).catch(() => {});
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
+window.addEventListener('pageshow', checkUpdate);
+setInterval(checkUpdate, 5 * 60 * 1000);
 
 /* ───────────── UI wiring ───────────── */
 function pressSeg(id, v) { $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === String(v)))); }
