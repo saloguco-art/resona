@@ -1,169 +1,252 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="theme-color" content="#07080e"><meta name="apple-mobile-web-app-title" content="Resona"><link rel="apple-touch-icon" href="icon-180.png"><link rel="manifest" href="manifest.webmanifest"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);box-sizing:border-box}*,*:before,*:after{box-sizing:inherit}body{margin:0}[hidden]{display:none!important}</style></head><body>
-<title>Resona</title>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#f3efe6"><meta name="apple-mobile-web-app-title" content="Arrullo"><link rel="apple-touch-icon" href="icon-180.png"><link rel="manifest" href="manifest.webmanifest"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);box-sizing:border-box}*,*:before,*:after{box-sizing:inherit}body{margin:0}[hidden]{display:none!important}</style></head><body>
+<title>Arrullo</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600&display=swap">
 <style>
-/* Layout: one screen. A full-bleed canvas draws the sound's "huella" as a living orb;
-   the UI floats over it: brand on top, the orb's stage in the middle, controls at the bottom. */
+/* Layout: one fixed screen per step. Warm paper for recording, comparing and saving; a dark room for listening.
+   A full-bleed canvas draws each sound's "huella" as rings of thin lines in the stage of the visible view. */
 :root{
-  color-scheme: dark;
-  --hue: 232;
-  --bg: #07080e;
-  --ink: #eceaf4;
-  --dim: #a3a1b8;
-  --faint: #6d6b85;
-  --line: rgba(236,234,244,.14);
-  --panel: rgba(18,19,32,.66);
-  --accent: hsl(var(--hue) 78% 76%);
-  --accent-soft: hsl(var(--hue) 60% 60% / .22);
-  --warn: #f0b27a;
-  --display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
-  --ui: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: light;
+  --bg:#f3efe6; --ink:#1c1b17; --dim:#5d5b50; --faint:#8b887a; --line:rgba(28,27,23,.18);
+  --panel:#faf7f0; --accent:#2f4526; --on:#f3efe6; --warn:#8a4b12;
+  --display:"Instrument Serif","Iowan Old Style",Georgia,serif;
+  --ui:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
 }
+html.dark{ --bg:#0e1b18; --ink:#f1ecdf; --dim:#b7bfb4; --faint:#819087; --line:rgba(241,236,223,.22);
+  --panel:#16271f; --accent:#f1ecdf; --on:#0e1b18; --warn:#f0b27a }
 html,body{height:100%}
 /* The app is one fixed screen: no page scroll, no rubber-band, no pinch or double-tap zoom. Only the inner lists scroll. */
-html{overflow:hidden;overscroll-behavior:none;touch-action:none}
-body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.45;
+html{overflow:hidden;overscroll-behavior:none;touch-action:none;background:var(--bg);transition:background-color .6s}
+body{background:var(--bg);color:var(--ink);font-family:var(--ui);font-size:15px;line-height:1.45;transition:background-color .6s,color .4s;
   overflow:hidden;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;
   -webkit-text-size-adjust:100%;overscroll-behavior:none;touch-action:none;-webkit-touch-callout:none;
-  position:fixed;left:0;right:0;top:env(safe-area-inset-top, 0px);bottom:env(safe-area-inset-bottom, 0px);height:auto;width:100%}
+  position:fixed;left:0;right:0;top:env(safe-area-inset-top, 0px);bottom:max(env(safe-area-inset-bottom, 0px), var(--kb, 0px));height:auto;width:100%}
 #cv{position:fixed;inset:0;width:100%;height:100%;display:block;pointer-events:none}
 .app{position:relative;height:100%;display:flex;flex-direction:column;
-  padding-left:max(18px, env(safe-area-inset-left, 0px));padding-right:max(18px, env(safe-area-inset-right, 0px));
-  padding-block:10px 12px;max-width:560px;margin:0 auto}
-.top{display:flex;align-items:center;justify-content:space-between;min-height:40px;flex:none}
-.brand{font-family:var(--display);font-size:24px;letter-spacing:.01em}
+  padding-left:max(22px, env(safe-area-inset-left, 0px));padding-right:max(22px, env(safe-area-inset-right, 0px));
+  padding-block:8px 14px;max-width:520px;margin:0 auto}
+.top{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;min-height:44px;flex:none}
+.top .mid{text-align:center;font-size:17px}
+.top .mid.brand{font-family:var(--display);font-style:italic;font-size:27px;line-height:1}
+.top.left{grid-template-columns:1fr 44px}
+.top.left #btnBack{display:none}
+.top.left .mid{text-align:left}
+.icon{width:44px;height:44px;display:grid;place-items:center;color:var(--ink)}
+.icon svg{width:24px;height:24px}
+.top #btnBack{justify-self:start;margin-left:-10px}
+.top #btnOpts{justify-self:end;margin-right:-10px}
 .view{flex:1;min-height:0;display:flex;flex-direction:column;gap:12px}
-.stage{flex:1;min-height:190px;display:flex;align-items:center;justify-content:center;position:relative}
-h1{font-family:var(--display);font-weight:400;font-size:clamp(27px,7.6vw,38px);line-height:1.08;margin:6px 0 0;text-wrap:balance}
-h1 em{color:var(--accent);font-style:italic}
-.sub{color:var(--dim);margin:0;max-width:34em}
-button,.btn{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation}
+.col{display:flex;flex-direction:column;gap:10px;min-height:0}
+.grow{flex:1}
+.stage{flex:1;min-height:110px;position:relative}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(31px,9.6vw,44px);line-height:1.04;margin:2px 0 0;text-wrap:balance;letter-spacing:-.005em}
+h1.it,.iname{font-family:var(--display);font-style:italic;font-weight:400}
+.center{text-align:center}
+.sub{color:var(--dim);margin:6px 0 0}
+.mark{display:block;margin:-2px auto 6px;width:46px;height:18px;color:var(--accent);opacity:.75}
+button,.btn{font:inherit;color:inherit;background:none;border:0;cursor:pointer;touch-action:manipulation;padding:0}
 button:focus-visible,label.btn:focus-within,input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.ghost{color:var(--dim);padding:8px 2px;font-size:14px}
-.pill{border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:14px;background:rgba(255,255,255,.03);
-  min-height:40px;display:inline-flex;align-items:center;gap:6px}
-.pill[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
-.big{width:128px;height:128px;border-radius:50%;border:1px solid hsl(var(--hue) 70% 80% / .5);
-  background:radial-gradient(circle at 50% 40%, hsl(var(--hue) 70% 70% / .28), hsl(var(--hue) 70% 40% / .08) 70%);
-  font-size:16px;font-weight:600;letter-spacing:.04em;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
-.big small{display:block;font-weight:400;font-size:12px;color:var(--dim);letter-spacing:0;margin-top:2px}
-.big:active{transform:scale(.97)}
+.primary{width:100%;min-height:56px;border-radius:13px;background:var(--accent);color:var(--on);font-size:17px;font-weight:500;
+  display:flex;align-items:center;justify-content:center;gap:10px;letter-spacing:.01em}
+.primary.serif{font-family:var(--display);font-size:25px;font-weight:400}
+.primary svg{width:22px;height:22px}
+.primary:active,.round:active{transform:scale(.98)}
+.text{min-height:44px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-size:16px;color:var(--ink)}
+.text svg{width:20px;height:20px}
+.text.under{text-decoration:underline;text-underline-offset:4px;font-size:15px}
+.text.small{font-size:14px;color:var(--dim);min-height:40px}
+.fine{font-size:13.5px;color:var(--faint);margin:0;text-align:center}
+.kicker{font-size:13px;letter-spacing:.14em;color:var(--dim);margin:0}
+.lbl{display:block;font-size:14px;letter-spacing:.06em;color:var(--dim);margin:0 0 6px}
+.round{width:64px;height:64px;border-radius:50%;background:var(--accent);color:var(--on);display:grid;place-items:center;flex:none}
+.round svg{width:26px;height:26px;fill:currentColor}
+.center>.round,.foot>.round{margin-inline:auto}
+.round.xl{width:84px;height:84px}
+.round.xl svg{width:30px;height:30px}
+.round.sm{width:50px;height:50px}
+.round.sm svg{width:22px;height:22px}
+.foot{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none}
+.foot .primary{margin-bottom:2px}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);margin:0 0 6px}
-.note{font-size:13px;color:var(--warn);margin:0;border:1px solid rgba(240,178,122,.3);border-radius:12px;padding:10px 12px;background:rgba(240,178,122,.06)}
-.lib{display:flex;flex-direction:column;gap:6px;max-height:96px;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain}
-.lib-item{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:2px 4px 2px 12px}
-.lib-item button.open{flex:1;min-width:0;text-align:left;padding:9px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lib-item span{color:var(--faint);font-size:12px;flex:none}
-.lib-item button.del{color:var(--faint);padding:8px 10px;font-size:16px}
-.nav .pill{flex:1;justify-content:center;padding:9px 8px;white-space:nowrap}
+.between{justify-content:space-between;width:100%}
+.note{font-size:13.5px;color:var(--warn);margin:0 0 6px;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.links{margin:0;font-size:13.5px;color:var(--faint);text-align:center;line-height:2.1}
+.links button{color:var(--dim);text-decoration:underline;text-underline-offset:3px;padding:6px 3px}
+/* home, returning */
+.hero{display:flex;align-items:center;gap:10px;flex:none}
+.hero-txt{flex:1;min-width:0}
+.hero .iname{font-size:28px;line-height:1.08;margin:0;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
+.hero .meta{margin:2px 0 0;color:var(--accent);font-size:14.5px}
+.dots{width:40px;height:44px;color:var(--faint);font-size:20px;letter-spacing:1px;flex:none}
+.list{flex:0 1 auto;max-height:31%;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.li{display:flex;align-items:center;gap:6px;border-top:1px solid var(--line);padding:6px 0}
+.li canvas{width:74px;height:52px;flex:none}
+.li .open{flex:1;min-width:0;text-align:left;font-family:var(--display);font-style:italic;font-size:23px;line-height:1.15;padding:8px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .tri{width:40px;height:44px;display:grid;place-items:center;color:var(--accent);flex:none}
+.li .tri svg{width:20px;height:20px;fill:currentColor}
+/* recording, session */
+.count{font-family:var(--display);font-size:clamp(52px,16vw,68px);line-height:1;font-variant-numeric:tabular-nums;text-align:center;margin:0}
+.cue{position:absolute;bottom:0;left:0;right:0;text-align:center;font-family:var(--display);font-style:italic;font-size:21px;color:var(--dim);pointer-events:none;min-height:1.4em}
+#sName{font-size:clamp(30px,9.4vw,42px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
+/* compare */
+.seg2{display:flex;border:1px solid var(--line);border-radius:999px;padding:3px;width:min(100%,300px);margin:0 auto;flex:none}
+.seg2 button{flex:1;min-height:42px;border-radius:999px;font-family:var(--display);font-size:21px;color:var(--ink)}
+.seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--on)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent;touch-action:none;--p:45%;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--accent) var(--p),var(--line) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--panel);margin-top:-10px;border:1px solid var(--line);box-shadow:0 1px 4px rgba(0,0,0,.22)}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--accent) var(--p),var(--line) var(--p))}
+input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;background:var(--panel);border:1px solid var(--line);box-shadow:0 1px 4px rgba(0,0,0,.22)}
+/* fragment */
+.trim{position:relative;flex:1;min-height:120px;max-height:240px;border-block:1px solid var(--line);touch-action:none;cursor:ew-resize}
+.trim canvas{position:absolute;inset:0;width:100%;height:100%}
+.trim-sel{position:absolute;top:0;bottom:0;background:rgba(47,69,38,.09);border-inline:2px solid var(--accent);pointer-events:none}
+.trim-sel i{position:absolute;top:50%;width:14px;height:44px;margin-top:-22px;border-radius:7px;background:var(--accent)}
+.trim-sel i.l{left:-8px} .trim-sel i.r{right:-8px}
+.field{font:inherit;font-size:17px;color:var(--ink);background:transparent;border:1px solid var(--dim);border-radius:9px;padding:13px 14px;width:100%;-webkit-user-select:text;user-select:text}
+/* sheets */
+.sheet{position:fixed;z-index:4;left:max(14px, env(safe-area-inset-left, 0px));right:max(14px, env(safe-area-inset-right, 0px));
+  bottom:calc(14px + max(env(safe-area-inset-bottom, 0px), var(--kb, 0px)));max-width:492px;margin:0 auto;background:var(--panel);border:1px solid var(--line);
+  border-radius:20px;padding:18px 16px 12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 -14px 50px rgba(0,0,0,.2);max-height:calc(100% - 90px);overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain}
+.rate-q{font-family:var(--display);font-size:24px;line-height:1.15;margin:0;text-align:center}
+.rate-q.second{font-size:20px;color:var(--dim);margin-top:4px}
+.rate-stars{display:flex;justify-content:space-between;gap:8px}
+.rate-stars button{flex:1;height:48px;border:1px solid var(--line);border-radius:12px;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.rate-stars button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on)}
+.rate-ends{display:flex;justify-content:space-between;font-size:12.5px;color:var(--faint);margin-top:-4px}
+.pill{border:1px solid var(--line);border-radius:999px;padding:7px 13px;font-size:14px;min-height:38px;display:inline-flex;align-items:center;gap:6px}
+.pill[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on)}
+.opt{display:grid;grid-template-columns:84px 1fr;align-items:center;gap:8px}
+.opt .lbl{margin:0;font-size:13px}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+#segBreath{gap:4px}
+#segBreath .pill{padding:7px 8px}
+html:not(.dark) #optPres{display:none}
+#toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(58px + env(safe-area-inset-top, 0px));z-index:5;
+  background:var(--ink);color:var(--bg);border-radius:13px;padding:11px 16px;font-size:14px;max-width:min(88vw,420px);width:max-content;text-align:center}
+/* practice, guide */
 .scroll{flex:1;min-height:0;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:10px;padding-bottom:14px}
-.card{border:1px solid var(--line);border-radius:16px;padding:12px 14px;background:var(--panel);display:flex;flex-direction:column;gap:6px}
-.card .cname{font-family:var(--display);font-size:22px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.card .cname input{font:inherit;color:inherit;background:transparent;border:0;border-bottom:1px solid var(--accent);width:100%;-webkit-user-select:text;user-select:text;border-radius:0;padding:0}
-.card .cmeta{font-size:12.5px;color:var(--faint);font-variant-numeric:tabular-nums}
-.card .row .pill{min-height:34px;padding:6px 13px;font-size:13px}
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.tile{border:1px solid var(--line);border-radius:16px;padding:12px 14px;background:var(--panel)}
-.tile b{display:block;font-family:var(--display);font-weight:400;font-size:30px;line-height:1.1;color:var(--accent);font-variant-numeric:tabular-nums}
-.tile span{font-size:12.5px;color:var(--dim)}
-.hist{font-size:13.5px;color:var(--dim);border-bottom:1px solid var(--line);padding:8px 0;font-variant-numeric:tabular-nums}
-.guide h3{font-family:var(--display);font-weight:400;font-size:21px;margin:8px 0 0;color:var(--ink)}
+.tile{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--panel)}
+.tile b{display:block;font-family:var(--display);font-weight:400;font-size:32px;line-height:1.1;color:var(--accent);font-variant-numeric:tabular-nums}
+.tile span{font-size:13px;color:var(--dim)}
+.hist{font-size:14px;color:var(--dim);border-bottom:1px solid var(--line);padding:8px 0;font-variant-numeric:tabular-nums}
+.guide h3{font-family:var(--display);font-weight:400;font-size:23px;margin:8px 0 0}
 .guide p{margin:0;color:var(--dim)}
 .guide b{color:var(--ink);font-weight:600}
-.home-foot{display:flex;flex-direction:column;gap:12px;flex:none}
-.count{font-family:var(--display);font-size:44px;font-variant-numeric:tabular-nums;text-align:center;margin:0}
-.center{text-align:center}
-.cue{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-family:var(--display);font-style:italic;font-size:20px;color:var(--dim);
-  transition:opacity 1.2s;pointer-events:none}
-.print{text-align:center;flex:none}
-.print .name{font-family:var(--display);font-size:25px;line-height:1.1;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.print .name{cursor:pointer}
-.print .name input{font:inherit;color:inherit;background:transparent;border:0;border-bottom:1px solid var(--line);text-align:center;width:100%;max-width:300px;font-size:25px;-webkit-user-select:text;user-select:text;border-radius:0}
-.print .facts{color:var(--dim);font-size:13px;margin:4px 0 0;font-variant-numeric:tabular-nums}
-.print .facts b{color:var(--accent);font-weight:600}
-.panel{flex:none;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:12px 14px 14px;
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;flex-direction:column;gap:11px;max-height:52%;overflow-y:auto;touch-action:pan-y;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-.transport{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
-.transport .time{font-variant-numeric:tabular-nums;color:var(--dim);font-size:14px}
-.transport .right{justify-self:end}
-.playbtn{width:62px;height:62px;border-radius:50%;background:var(--accent);color:#0b0c14;display:grid;place-items:center}
-.playbtn svg{width:24px;height:24px;fill:currentColor}
-.playbtn:active{transform:scale(.96)}
-.opt{display:grid;grid-template-columns:86px 1fr;align-items:center;gap:8px}
-.opt .label{margin:0}
-.seg{display:flex;gap:6px;flex-wrap:wrap}
-.seg .pill{padding:6px 12px;min-height:34px;font-size:13px}
-#segBreath{gap:4px}
-#segBreath .pill{padding:6px 9px}
-input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:28px;background:transparent;touch-action:none}
-input[type=range]::-webkit-slider-runnable-track{height:3px;border-radius:2px;background:var(--line)}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:var(--accent);margin-top:-10px;border:0}
-input[type=range]::-moz-range-track{height:3px;border-radius:2px;background:var(--line)}
-input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--accent);border:0}
-#toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(58px + env(safe-area-inset-top, 0px));z-index:5;
-  background:#1c1d2e;border:1px solid var(--line);border-radius:14px;padding:11px 16px;font-size:14px;max-width:min(88vw,420px);text-align:center}
-#rate,#pre{position:fixed;z-index:4;left:max(14px, env(safe-area-inset-left, 0px));right:max(14px, env(safe-area-inset-right, 0px));bottom:calc(14px + env(safe-area-inset-bottom, 0px));
-  max-width:524px;margin:0 auto;background:#141525;border:1px solid var(--line);border-radius:22px;padding:18px 16px 12px;display:flex;flex-direction:column;gap:10px;box-shadow:0 -20px 60px rgba(0,0,0,.6)}
-.rate-q{font-family:var(--display);font-size:22px;margin:0;text-align:center}
-.rate-q.second{font-size:18px;color:var(--dim);margin-top:4px}
-.time small{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);margin-top:2px}
-.rate-stars{display:flex;justify-content:space-between;gap:8px}
-.rate-stars button{flex:1;height:48px;border:1px solid var(--line);border-radius:14px;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
-.rate-stars button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#0b0c14}
-.rate-ends{display:flex;justify-content:space-between;font-size:12px;color:var(--faint);margin-top:-4px}
-#rateNote{font:inherit;font-size:16px;color:var(--ink);background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:12px;padding:11px 12px;-webkit-user-select:text;user-select:text;width:100%}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-@media (max-height:620px){ h1{font-size:25px} .big{width:104px;height:104px} .sub{font-size:13px} .lib{max-height:70px} }
-@media (prefers-reduced-motion: reduce){ .cue{transition:none} }
+@media (max-height:640px){ h1{font-size:29px} .count{font-size:46px} .round.xl{width:70px;height:70px} .primary{min-height:50px} .view{gap:8px} .hero .iname{font-size:25px} }
+@media (prefers-reduced-motion: reduce){ html,body{transition:none} }
 </style>
 
 <canvas id="cv" aria-hidden="true"></canvas>
 
 <main class="app">
-  <header class="top">
-    <span class="brand">Resona</span>
-    <button class="ghost" id="btnBack" hidden>← Otro sonido</button>
+  <header class="top" id="top">
+    <button class="icon" id="btnBack" aria-label="Atrás" style="visibility:hidden"></button>
+    <span class="mid brand" id="topMid">arrullo</span>
+    <button class="icon" id="btnOpts" aria-label="Ajustes de la sesión" style="visibility:hidden"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 8h9M19 8h1M4 16h1M11 16h9"/><circle cx="16" cy="8" r="2.5"/><circle cx="8" cy="16" r="2.5"/></svg></button>
   </header>
 
-  <!-- HOME -->
+  <!-- HOME: first time = record or import; returning = play your last landscape -->
   <section class="view" id="vHome">
-    <div>
-      <h1>Medita <em>dentro</em> de cualquier sonido</h1>
-      <p class="sub">Graba un toque en la madera, tu voz, el agua. Resona lee su huella y la convierte en un paisaje sonoro afinado a ese sonido.</p>
+    <div class="col grow" id="homeFirst">
+      <svg class="mark" viewBox="0 0 46 18" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" aria-hidden="true"><path d="M3 4c5-3 8 3 13 0s8-3 13 0 8 3 14 0M7 9c4-3 7 3 11 0s7-3 11 0 6 3 10 0M12 14c3-2 5 2 8 0s5-2 8 0 4 2 6 0"/></svg>
+      <h1 class="center">¿Qué te gustaría volver a escuchar?</h1>
+      <div class="stage" data-stage></div>
     </div>
-    <div class="stage" data-stage>
-      <button class="big" id="btnRec">Grabar<small>hasta 30 s</small></button>
+    <div class="col grow" id="homeBack" hidden>
+      <h1>Tus sonidos</h1>
+      <div class="stage" data-stage></div>
+      <div class="hero">
+        <div class="hero-txt"><p class="iname" id="heroName"></p><p class="meta" id="heroMeta"></p></div>
+        <button class="dots" id="heroEdit" aria-label="Cambiar nombre o borrar">···</button>
+        <button class="round sm" id="heroPlay" aria-label="Reproducir este paisaje"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+      </div>
+      <div class="list" id="lib"></div>
     </div>
-    <div class="home-foot">
+    <div class="foot">
       <p class="note" id="micNote" hidden></p>
-      <div>
-        <p class="label">O empieza con</p>
-        <div class="row">
-          <label class="pill btn" id="lblFile">Subir audio o vídeo<input class="sr" type="file" id="file" accept="audio/*,video/*"></label>
-          <button class="pill" data-demo="madera">Madera</button>
-          <button class="pill" data-demo="agua">Agua</button>
-          <button class="pill" data-demo="voz">Voz</button>
-          <button class="pill" data-demo="pajaro">Pájaro</button>
-        </div>
-      </div>
-      <div id="libWrap" hidden>
-        <p class="label">Recientes</p>
-        <div class="lib" id="lib"></div>
-      </div>
-      <nav class="row nav" aria-label="Apartados">
-        <button class="pill" data-go="lib">Tus sonidos</button>
-        <button class="pill" data-go="stats">Tu práctica</button>
-        <button class="pill" data-go="guide">Guía</button>
-      </nav>
+      <button class="primary" id="btnRec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg><span id="btnRecTxt">Grabar un sonido</span></button>
+      <label class="text btn" id="lblFile">Importar audio o vídeo<input class="sr" type="file" id="file" accept="audio/*,video/*"></label>
+      <p class="fine" id="homeFine">Tu sonido se queda en este dispositivo.</p>
+      <p class="links"><span id="demoLinks">Sin micrófono: <button data-demo="madera">madera</button> <button data-demo="agua">agua</button> <button data-demo="voz">voz</button> <button data-demo="pajaro">pájaro</button><br></span><button data-go="stats">Tu práctica</button> · <button data-go="guide">Guía</button></p>
     </div>
   </section>
 
-  <!-- LIBRARY -->
-  <section class="view" id="vLib" hidden>
-    <div><h1>Tus sonidos</h1><p class="sub">Guardados solo en este dispositivo. Aquí puedes ponerles nombre con calma.</p></div>
-    <div class="scroll" id="libFull"></div>
+  <!-- RECORDING -->
+  <section class="view" id="vRec" hidden>
+    <div class="center"><h1>Escuchando…</h1></div>
+    <div class="stage" data-stage></div>
+    <div class="center"><p class="count" id="recCount">00:00</p><p class="fine" style="margin-top:6px">de 00:30</p><p class="fine" id="recHint" style="min-height:1.5em;margin-top:6px"></p></div>
+    <div class="foot">
+      <button class="round xl" id="btnStop" aria-label="Terminar grabación"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg></button>
+      <span class="text" aria-hidden="true">Terminar grabación</span>
+    </div>
+  </section>
+
+  <!-- PROCESSING -->
+  <section class="view" id="vProc" hidden>
+    <div class="center"><h1 id="procTitle">Creando tu paisaje…</h1><p class="sub" id="procSub">&nbsp;</p></div>
+    <div class="stage" data-stage></div>
+    <p class="fine" style="min-height:3em">Unos segundos. Todo ocurre en tu dispositivo.<br>Se escucha mejor con auriculares.</p>
+  </section>
+
+  <!-- COMPARE: original against landscape, before configuring anything -->
+  <section class="view" id="vLand" hidden>
+    <div class="center"><h1>Tu paisaje</h1></div>
+    <div class="stage" data-stage></div>
+    <div class="seg2" id="segSrc" role="group" aria-label="Qué escuchar">
+      <button data-v="orig" aria-pressed="false">Original</button>
+      <button data-v="land" aria-pressed="true">Paisaje</button>
+    </div>
+    <div class="center"><button class="round" id="pvPlay" aria-label="Reproducir"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+      <p class="fine" id="pvHint" style="min-height:1.5em;margin-top:6px"></p></div>
+    <div><label class="lbl" for="rngPres">Presencia del original</label>
+      <input type="range" id="rngPres" min="0" max="100" value="45"></div>
+    <div class="foot">
+      <button class="primary serif" id="btnStart">Empezar sesión</button>
+      <div class="row between">
+        <button class="text small" id="btnSummary" aria-label="Cambiar intención y duración"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 8h9M19 8h1M4 16h1M11 16h9"/><circle cx="16" cy="8" r="2.5"/><circle cx="8" cy="16" r="2.5"/></svg><span id="sumTxt">Calma · 5 min</span></button>
+        <button class="text small" id="btnTrim">Elegir otro fragmento</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FRAGMENT -->
+  <section class="view" id="vTrim" hidden>
+    <div class="center"><h1>Elige el fragmento</h1><p class="sub">Arrastra los bordes y quédate con la parte que quieres volver a escuchar.</p></div>
+    <div class="trim" id="trim"><canvas id="trimCv"></canvas><div class="trim-sel" id="trimSel"><i class="l"></i><i class="r"></i></div></div>
+    <p class="fine" id="trimInfo" style="font-variant-numeric:tabular-nums">&nbsp;</p>
+    <div class="grow"></div>
+    <div class="foot">
+      <button class="text" id="trimPlay">Escuchar el fragmento</button>
+      <button class="primary" id="trimUse">Usar este fragmento</button>
+    </div>
+  </section>
+
+  <!-- SESSION -->
+  <section class="view" id="vSession" hidden>
+    <div class="center"><h1 class="it" id="sName">—</h1><p class="kicker" id="sSub" style="margin-top:6px">Calma</p></div>
+    <div class="stage" data-stage><div class="cue" id="cue"></div></div>
+    <div class="center"><p class="count" id="sTime">05:00</p><p class="kicker" id="sRest" style="margin-top:6px">restantes</p></div>
+    <div class="foot">
+      <button class="round xl" id="btnPlay" aria-label="Reproducir"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+      <button class="text" id="btnEnd">Terminar sesión</button>
+    </div>
+  </section>
+
+  <!-- END: keep it or not -->
+  <section class="view" id="vEnd" hidden>
+    <p class="kicker center" id="endKick" style="margin-top:8px">Sesión terminada</p>
+    <div class="stage" data-stage></div>
+    <h1 class="it" id="endQ">¿Volverías a este sonido?</h1>
+    <div><label class="lbl" for="endName">Nombre del sonido</label>
+      <input class="field" type="text" id="endName" maxlength="40" autocomplete="off"></div>
+    <div class="foot" style="margin-top:6px">
+      <button class="primary" id="endSave">Guardar mi paisaje</button>
+      <button class="text under" id="endDrop">Salir sin guardar</button>
+    </div>
   </section>
 
   <!-- PRACTICE -->
@@ -177,13 +260,17 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
     <div><h1>Guía</h1></div>
     <div class="scroll guide">
       <h3>Qué grabar</h3>
-      <p>Cualquier cosa que suene: un toque en la madera, el agua, tu voz, la de alguien querido, tu casa por la noche. Un golpe basta con 2 segundos; un río o una voz agradecen 20 o 30. Acerca el móvil al sonido. Si suena muy flojo, la app lo amplifica y limpia el ruido de fondo.</p>
+      <p>Cualquier cosa que suene y a la que quieras volver. Un golpe basta con 2 segundos; un río o una voz agradecen 20 o 30. Acerca el móvil al sonido. Si suena muy flojo, la app lo amplifica y limpia el ruido de fondo.</p>
+      <h3>Original y paisaje</h3>
+      <p>Al terminar de grabar oyes primero tu sonido tal cual y después su paisaje. Alterna entre los dos con un toque. «Presencia del original» decide cuánto se reconoce la fuente: baja para que quede solo su color, alta para que vuelva a asomar de vez en cuando.</p>
+      <h3>Si el resultado no convence</h3>
+      <p>Pulsa «Elegir otro fragmento» y quédate con la parte buena de la grabación: la risa del final sin el golpe del principio. No hace falta volver a grabar.</p>
       <h3>Cómo escuchar</h3>
       <p>Con auriculares y a volumen moderado. Siéntate o túmbate, cierra los ojos y deja la pantalla a un lado: la app la mantiene encendida para que el sonido no se corte.</p>
       <h3>Respirar con el sonido</h3>
       <p>El paisaje se abre al inhalar y se recoge al exhalar. Elige el ritmo que te resulte cómodo, entre 4,5 y 7 respiraciones por minuto; 6 es un buen punto de partida. Respirar despacio y con la exhalación más larga es lo que mejor respaldo científico tiene para calmar el cuerpo. Si te mareas, vuelve a respirar normal.</p>
       <h3>Tararear</h3>
-      <p>Activa «Tararear» y, al exhalar, haz «mmm» con la boca cerrada en la nota que oyes. Alarga la exhalación y te da algo sencillo en lo que posar la atención.</p>
+      <p>En los ajustes de la sesión, activa «Tararear» y, al exhalar, haz «mmm» con la boca cerrada en la nota que oyes.</p>
       <h3>Intenciones</h3>
       <p><b>Calma</b> es cálida y abierta. <b>Foco</b> es estable, con pocos cambios, para trabajar o leer. <b>Sueño</b> es grave y se va apagando sola, sin campana final.</p>
       <h3>Cuando la mente se va</h3>
@@ -194,88 +281,70 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
       <p>Mide la vibración acústica que capta el micrófono: su nota dominante, sus armónicos, su brillo y cómo evoluciona. No mide campos electromagnéticos ni promete curar nada. Todo ocurre en tu dispositivo y nada se envía a ningún servidor.</p>
     </div>
   </section>
-
-  <!-- RECORDING -->
-  <section class="view" id="vRec" hidden>
-    <div class="center"><h1>Escuchando…</h1><p class="sub" style="margin:6px auto 0">Acerca el móvil al sonido. Para cuando quieras: un golpe basta con 2 s, un río agradece 20.</p></div>
-    <div class="stage" data-stage><button class="big" id="btnStop">Listo<small>toca para parar</small></button></div>
-    <p class="count" id="recCount">0,0 s</p>
-    <p class="sub center" id="recHint" style="min-height:1.5em;margin:0 auto"></p>
-  </section>
-
-  <!-- PROCESSING -->
-  <section class="view" id="vProc" hidden>
-    <div class="center"><h1 id="procTitle">Leyendo la huella…</h1><p class="sub" id="procSub" style="margin:6px auto 0">&nbsp;</p></div>
-    <div class="stage" data-stage></div>
-    <p class="count" style="visibility:hidden">·</p>
-  </section>
-
-  <!-- SESSION -->
-  <section class="view" id="vSession" hidden>
-    <div class="stage" data-stage><div class="cue" id="cue"></div></div>
-    <div class="print">
-      <p class="name" id="sName" role="button" tabindex="0" title="Toca para cambiar el nombre">—</p>
-      <p class="facts" id="sFacts">—</p>
-    </div>
-    <div class="panel">
-      <div class="transport">
-        <span class="time"><span id="sTime">10:00</span><small id="sPhase"></small></span>
-        <button class="playbtn" id="btnPlay" aria-label="Reproducir">
-          <svg viewBox="0 0 24 24" id="icoPlay"><path d="M7 4.5v15l13-7.5z"/></svg>
-        </button>
-        <button class="pill right" id="btnOrig" style="min-height:34px;padding:6px 12px;font-size:13px">Oír original</button>
-      </div>
-      <div class="opt"><p class="label">Intención</p>
-        <div class="seg" id="segMode">
-          <button class="pill" data-v="calma" aria-pressed="true">Calma</button>
-          <button class="pill" data-v="foco" aria-pressed="false">Foco</button>
-          <button class="pill" data-v="sueno" aria-pressed="false">Sueño</button>
-        </div></div>
-      <div class="opt"><p class="label">Duración</p>
-        <div class="seg" id="segDur">
-          <button class="pill" data-v="5" aria-pressed="false">5 min</button>
-          <button class="pill" data-v="10" aria-pressed="true">10</button>
-          <button class="pill" data-v="20" aria-pressed="false">20</button>
-          <button class="pill" data-v="0" aria-pressed="false">∞</button>
-        </div></div>
-      <div class="opt"><p class="label">Respira / min</p>
-        <div class="seg" id="segBreath">
-          <button class="pill" data-v="libre" aria-pressed="false">Libre</button>
-          <button class="pill" data-v="7" aria-pressed="false" aria-label="7 respiraciones por minuto">7</button>
-          <button class="pill" data-v="6" aria-pressed="true" aria-label="6 respiraciones por minuto">6</button>
-          <button class="pill" data-v="5.5" aria-pressed="false" aria-label="5,5 respiraciones por minuto">5,5</button>
-          <button class="pill" data-v="4.5" aria-pressed="false" aria-label="4,5 respiraciones por minuto">4,5</button>
-        </div></div>
-      <div class="opt"><p class="label">Tararear</p>
-        <div class="seg" id="segHum">
-          <button class="pill" data-v="0" aria-pressed="true">No</button>
-          <button class="pill" data-v="1" aria-pressed="false">Sí, al exhalar</button>
-        </div></div>
-      <div class="opt"><label class="label" for="rngPres">Sonido original</label>
-        <input type="range" id="rngPres" min="0" max="100" value="45" aria-label="Presencia del sonido original"></div>
-      <div class="opt"><label class="label" for="rngVol">Volumen</label>
-        <input type="range" id="rngVol" min="0" max="100" value="80" aria-label="Volumen"></div>
-    </div>
-  </section>
 </main>
 
-<div id="pre" role="dialog" aria-label="Cómo llegas" hidden>
+<div class="sheet" id="opts" role="dialog" aria-label="Ajustes de la sesión" hidden>
+  <div class="opt"><p class="lbl">Intención</p>
+    <div class="seg" id="segMode">
+      <button class="pill" data-v="calma" aria-pressed="true">Calma</button>
+      <button class="pill" data-v="foco" aria-pressed="false">Foco</button>
+      <button class="pill" data-v="sueno" aria-pressed="false">Sueño</button>
+    </div></div>
+  <div class="opt"><p class="lbl">Duración</p>
+    <div class="seg" id="segDur">
+      <button class="pill" data-v="5" aria-pressed="true">5 min</button>
+      <button class="pill" data-v="10" aria-pressed="false">10</button>
+      <button class="pill" data-v="20" aria-pressed="false">20</button>
+      <button class="pill" data-v="0" aria-pressed="false" aria-label="Sin límite">∞</button>
+    </div></div>
+  <div class="opt"><p class="lbl">Respira / min</p>
+    <div class="seg" id="segBreath">
+      <button class="pill" data-v="libre" aria-pressed="false">Libre</button>
+      <button class="pill" data-v="7" aria-pressed="false" aria-label="7 respiraciones por minuto">7</button>
+      <button class="pill" data-v="6" aria-pressed="true" aria-label="6 respiraciones por minuto">6</button>
+      <button class="pill" data-v="5.5" aria-pressed="false" aria-label="5,5 respiraciones por minuto">5,5</button>
+      <button class="pill" data-v="4.5" aria-pressed="false" aria-label="4,5 respiraciones por minuto">4,5</button>
+    </div></div>
+  <div class="opt"><p class="lbl">Tararear</p>
+    <div class="seg" id="segHum">
+      <button class="pill" data-v="0" aria-pressed="true">No</button>
+      <button class="pill" data-v="1" aria-pressed="false">Sí, al exhalar</button>
+    </div></div>
+  <div class="opt" id="optPres"><label class="lbl" for="rngPres2">Original</label>
+    <input type="range" id="rngPres2" min="0" max="100" value="45" aria-label="Presencia del sonido original"></div>
+  <div class="opt"><label class="lbl" for="rngVol">Volumen</label>
+    <input type="range" id="rngVol" min="0" max="100" value="80" style="--p:80%"></div>
+  <div class="row" style="justify-content:flex-end"><button class="pill" id="optsDone" aria-pressed="true">Hecho</button></div>
+</div>
+
+<div class="sheet" id="edit" role="dialog" aria-label="Editar sonido" hidden>
+  <p class="rate-q">Editar sonido</p>
+  <div><label class="lbl" for="editName">Nombre del sonido</label>
+    <input class="field" type="text" id="editName" maxlength="40" autocomplete="off"></div>
+  <p class="fine" id="editMeta" style="text-align:left"></p>
+  <div class="row between">
+    <button class="text small" id="editDel">Borrar</button>
+    <span class="row"><button class="text small" id="editCancel">Cancelar</button><button class="pill" id="editSave" aria-pressed="true">Guardar</button></span>
+  </div>
+</div>
+
+<div class="sheet" id="pre" role="dialog" aria-label="Cómo llegas" hidden>
   <p class="rate-q">Antes de empezar, ¿cómo llegas?</p>
-  <p class="sub center" style="margin:-4px auto 0;font-size:13px">La sesión empieza cuando respondas.</p>
+  <p class="fine" style="margin-top:-4px">La sesión empieza cuando respondas.</p>
   <div class="rate-stars" id="preStars"><button data-v="1" aria-pressed="false" aria-label="1 de 5">1</button><button data-v="2" aria-pressed="false" aria-label="2 de 5">2</button><button data-v="3" aria-pressed="false" aria-label="3 de 5">3</button><button data-v="4" aria-pressed="false" aria-label="4 de 5">4</button><button data-v="5" aria-pressed="false" aria-label="5 de 5">5</button></div>
   <div class="rate-ends"><span>Con tensión</span><span>En calma</span></div>
-  <div class="row" style="justify-content:center"><button class="ghost" id="preSkip">Saltar y empezar</button></div>
+  <div class="row" style="justify-content:center"><button class="text small" id="preSkip">Saltar y empezar</button></div>
 </div>
-<div id="rate" role="dialog" aria-label="Valoración de la sesión" hidden>
+<div class="sheet" id="rate" role="dialog" aria-label="Valoración de la sesión" hidden>
   <p class="rate-q">¿Cómo estás ahora?</p>
   <div class="rate-stars" id="calmStars"><button data-v="1" aria-pressed="false" aria-label="1 de 5">1</button><button data-v="2" aria-pressed="false" aria-label="2 de 5">2</button><button data-v="3" aria-pressed="false" aria-label="3 de 5">3</button><button data-v="4" aria-pressed="false" aria-label="4 de 5">4</button><button data-v="5" aria-pressed="false" aria-label="5 de 5">5</button></div>
   <div class="rate-ends"><span>Con tensión</span><span>En calma</span></div>
   <p class="rate-q second">¿Y qué te ha parecido la sesión?</p>
   <div class="rate-stars" id="rateStars"><button data-v="1" aria-pressed="false" aria-label="1 de 5">1</button><button data-v="2" aria-pressed="false" aria-label="2 de 5">2</button><button data-v="3" aria-pressed="false" aria-label="3 de 5">3</button><button data-v="4" aria-pressed="false" aria-label="4 de 5">4</button><button data-v="5" aria-pressed="false" aria-label="5 de 5">5</button></div>
   <div class="rate-ends"><span>Nada bien</span><span>Muy bien</span></div>
-  <input type="text" id="rateNote" maxlength="140" placeholder="¿Qué cambiarías? (opcional)" aria-label="Comentario opcional">
-  <div class="row" style="justify-content:space-between">
-    <button class="ghost" id="rateSkip">Ahora no</button>
+  <input class="field" type="text" id="rateNote" maxlength="140" placeholder="¿Qué cambiarías? (opcional)" aria-label="Comentario opcional" style="font-size:16px;padding:11px 12px">
+  <div class="row between">
+    <button class="text small" id="rateSkip">Ahora no</button>
     <button class="pill" id="rateSend" aria-pressed="true">Enviar valoración</button>
   </div>
 </div>
@@ -291,7 +360,7 @@ const rand = (a, b) => a + Math.random() * (b - a);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const REC_MAX = 30, MAKEUP = 2;
+const REC_MAX = 30, MAKEUP = 2, PAD_RMS = .1;
 
 /* ───────────── FFT ───────────── */
 const fftCache = {};
@@ -585,7 +654,7 @@ const DEMOS = {
 const DEMO_NAMES = { madera: 'Toque en madera', agua: 'Gotas de agua', voz: 'Voz sostenida', pajaro: 'Canto de pájaro' };
 
 /* ───────────── Audio engine ───────────── */
-const S = { ctx: null, sound: null, pads: {}, mode: 'calma', playing: false, dur: 10, remain: 600, breath: '6',
+const S = { ctx: null, sound: null, pads: {}, mode: 'calma', playing: false, dur: 5, remain: 300, breath: '6', preview: false, pvT: { o: 0, l: 0 }, padRms: 0,
   pres: .45, vol: .8, listened: 0, elapsed: 0, hum: false, view: 'home', micLevel: 0, recStart: 0, progress: 0, group: null, ending: false, busy: false };
 let E = null;   // engine nodes
 
@@ -633,6 +702,7 @@ function buildEngine() {
   e.grainF.connect(e.delay); e.delay.connect(e.fb); e.fb.connect(e.delay); e.delay.connect(e.rev); e.grainF.connect(e.rev);
   e.guide = c.createGain(); e.guide.gain.value = 0; e.guide.connect(e.master); e.guide.connect(e.rev);   // breath / humming guide note
   e.bell = c.createGain(); e.bell.gain.value = 1; e.bell.connect(e.rev); e.bellDry = c.createGain(); e.bellDry.gain.value = .5; e.bell.connect(e.bellDry); e.bellDry.connect(e.master);
+  e.orig = c.createGain(); e.orig.connect(e.comp); e.orig.connect(e.an);   // the untouched recording, for comparing
   e.freq = new Uint8Array(e.an.frequencyBinCount);
   e.oscs = [];
 }
@@ -710,12 +780,12 @@ function breathAt(t) {
 }
 
 let nextGrain = 0, nextBell = 0, lastTick = 0, curBreath = { v: .5, cue: '' };
-let phaseShown = null;
 function tick() {
   const c = S.ctx; if (!c || !E) return;
   if (!S.playing || c.state !== 'running') { lastTick = 0; return; }
   const t = c.currentTime, cfg = MODES[S.mode], dt = lastTick ? t - lastTick : 0;
-  S.listened += dt; S.elapsed += dt;
+  if (!S.preview) S.listened += dt; S.elapsed += dt;
+  if (S.elapsed > 5 && !origPlaying) { const r = masterRms(); S.padRms = S.padRms ? S.padRms + (r - S.padRms) * .012 : r; }
   // Session arc: arrival -> depth (darker, slower, fewer echoes) -> return. In "Sueño" it never returns: it keeps sinking.
   const p = S.dur > 0 ? clamp(1 - S.remain / (S.dur * 60), 0, 1) : -1, sleep = S.mode === 'sueno';
   let d, phase;
@@ -724,7 +794,6 @@ function tick() {
   else if (p < .85) { d = 1; phase = 'Profundidad'; }
   else if (sleep) { d = 1 + (p - .85) / .15 * .4; phase = 'Descanso'; }
   else { d = 1 - (p - .85) / .15 * .8; phase = 'Regreso'; }
-  if (phase !== phaseShown) { phaseShown = phase; $('sPhase').textContent = phase; }
   const hi = cfg.hi * (1 - .38 * d), lo = cfg.lo * (1 - .25 * d), d1 = Math.min(d, 1);
   curBreath = breathAt(t);
   const depth = cfg.depth, v = curBreath.v;
@@ -736,7 +805,7 @@ function tick() {
     if (t >= nextGrain) { if (S.pres > .02 && !(sleep && p > .6)) playGrain(); nextGrain = t + rand(cfg.grain[0], cfg.grain[1]) * (1.5 - S.pres) * (1 + .8 * d1); }
     if (cfg.bellGain && t >= nextBell) { if (!(sleep && p > .5)) playBell(cfg.bellGain); nextBell = t + rand(cfg.bell[0], cfg.bell[1]) * (1 + .5 * d1); }
   }
-  if (lastTick && S.dur > 0 && !S.ending) {
+  if (lastTick && S.dur > 0 && !S.ending && !S.preview) {
     S.remain -= dt;
     if (S.remain <= 0) { S.remain = 0; endSession(); }
     showTime();
@@ -764,14 +833,13 @@ function pause(silent) {
   const c = S.ctx; if (!c) return;
   S.playing = false; uiPlay(); lockScreen(false);
   const t = c.currentTime; E.master.gain.cancelScheduledValues(t); E.master.gain.setTargetAtTime(0, t, .12);
-  setTimeout(() => { if (!S.playing && !origPlaying && c.state === 'running') c.suspend().catch(() => {}); }, 700);
+  setTimeout(idleSuspend, 700);
 }
 function endSession() {
   const c = S.ctx, sleep = S.mode === 'sueno'; S.ending = true;
   if (!sleep) playBell(.09, 4);                                   // no bell when the goal is to fall asleep
   const t = c.currentTime; E.master.gain.cancelScheduledValues(t); E.master.gain.setTargetAtTime(0, t + 2, sleep ? 9 : 4);
-  setTimeout(() => { if (S.ending) { pause(); S.ending = false; S.remain = S.dur * 60; showTime();
-    if (!sleep) toast('Sesión completa. Quédate un momento en silencio.', 6000); setTimeout(() => maybeRate(), sleep ? 500 : 6500); } }, sleep ? 34000 : 16000);
+  setTimeout(() => { if (S.ending) { pause(); S.ending = false; S.remain = S.dur * 60; showTime(); goEnd(); } }, sleep ? 34000 : 16000);
 }
 function teardown() {
   if (!S.ctx) return;
@@ -781,75 +849,181 @@ function teardown() {
   const old = E.oscs; E.oscs = []; setTimeout(() => old.forEach(o => { try { o.stop(); } catch (e) {} try { o.disconnect(); } catch (e) {} }), 500);
 }
 
+/* ───────────── Original against landscape (the compare screen) ───────────── */
 let origPlaying = false;
-function playOriginal() {
-  const c = ensureCtx(); if (!c || !S.sound || origPlaying) return;
-  const s = c.createBufferSource(); s.buffer = srcBuffer(); const g = c.createGain(); g.gain.value = .9 * S.vol; s.connect(g); g.connect(c.destination);
-  const t = c.currentTime; origPlaying = true;
-  if (S.playing) { E.out.gain.setTargetAtTime(S.vol * MAKEUP * .12, t, .1); }
-  s.onended = () => { origPlaying = false; g.disconnect(); E.out.gain.setTargetAtTime(S.vol * MAKEUP, c.currentTime, .4); $('btnOrig').textContent = 'Oír original';
-    if (!S.playing) c.suspend().catch(() => {}); };
-  $('btnOrig').textContent = 'Sonando…';
-  c.resume().then(() => s.start()).catch(() => { origPlaying = false; });
+const PV = { which: 'land', on: false, src: null, g: null, auto: 0 };
+function idleSuspend() { const c = S.ctx; if (c && !S.playing && !origPlaying && !T.src && c.state === 'running') c.suspend().catch(() => {}); }
+function masterRms() {
+  const an = E.an; if (!E.td) E.td = new Float32Array(an.fftSize);
+  if (an.getFloatTimeDomainData) an.getFloatTimeDomainData(E.td);
+  else { if (!E.tb) E.tb = new Uint8Array(an.fftSize); an.getByteTimeDomainData(E.tb); for (let i = 0; i < E.tb.length; i++) E.td[i] = (E.tb[i] - 128) / 128; }
+  let s = 0; for (let i = 0; i < E.td.length; i++) s += E.td[i] * E.td[i]; return Math.sqrt(s / E.td.length);
 }
+// The original plays at the level the landscape reaches, so switching compares the sound, not the volume.
+function origGain() { return clamp((S.padRms || PAD_RMS) / .18, .3, 2.2); }
+function origBuf() {
+  const s = S.sound; if (s.obuf) return s.obuf;
+  const gap = s.x.length < s.sr * 4 ? Math.floor(s.sr * .7) : 0, b = S.ctx.createBuffer(1, s.x.length + gap, s.sr); b.getChannelData(0).set(s.x);
+  return s.obuf = b;
+}
+function origStop(fade) {
+  if (!PV.src) return; const s = PV.src, g = PV.g, c = S.ctx, f = fade || .3; PV.src = PV.g = null; origPlaying = false;
+  g.gain.setTargetAtTime(0, c.currentTime, f / 3);
+  setTimeout(() => { try { s.stop(); } catch (e) {} try { g.disconnect(); } catch (e) {} }, f * 1000 + 300);
+}
+function origStart() {
+  const c = S.ctx; origStop(.1);
+  const s = c.createBufferSource(), g = c.createGain(); s.buffer = origBuf(); s.loop = true;
+  g.gain.value = 0; g.gain.setTargetAtTime(origGain(), c.currentTime, .12); s.connect(g); g.connect(E.orig); s.start();
+  PV.src = s; PV.g = g; origPlaying = true;
+}
+function pvUi() {
+  pressSeg('segSrc', PV.which);
+  $('pvPlay').innerHTML = PV.on ? ICON.pause : ICON.play; $('pvPlay').setAttribute('aria-label', PV.on ? 'Pausar' : 'Reproducir');
+}
+function pvApply() {
+  const c = ensureCtx(); if (!c || !S.sound) return;
+  if (!PV.on) { origStop(.3); if (S.playing) pause(); else setTimeout(idleSuspend, 700); }
+  else if (PV.which === 'land') { origStop(1.2); S.preview = true; play(); }
+  else {
+    if (S.playing) { S.playing = false; const t = c.currentTime; E.master.gain.cancelScheduledValues(t); E.master.gain.setTargetAtTime(0, t, .3); }
+    origStart(); lockScreen(true); c.resume().catch(() => {});
+  }
+  pvUi();
+}
+function pvTouch() { clearTimeout(PV.auto); PV.auto = 0; $('pvHint').textContent = ''; }
+function pvStop() { pvTouch(); PV.on = false; origStop(.2); if (S.playing) pause(); pvUi(); }
+function enterLand(auto) {
+  S.preview = true; pvTouch(); syncOpts(); setView('land');
+  if (!auto) { PV.on = false; PV.which = 'land'; pvUi(); return; }
+  // Make the transformation audible before asking anything: the sound as it is, then what it became.
+  PV.which = 'orig'; PV.on = true; pvApply(); $('pvHint').textContent = 'Primero, tu sonido tal cual…';
+  PV.auto = setTimeout(() => {
+    PV.auto = 0; if (S.view !== 'land' || !PV.on) return;
+    PV.which = 'land'; pvApply(); $('pvHint').textContent = '…y ahora, su paisaje.';
+    PV.auto = setTimeout(() => { $('pvHint').textContent = ''; }, 6000);
+  }, clamp(S.sound.an.dur + .5, 2.5, 6) * 1000);
+}
+setInterval(() => { if (S.view !== 'land') return; if (origPlaying) S.pvT.o += .5; else if (S.playing) S.pvT.l += .5; }, 500);
 
 /* ───────────── Flow ───────────── */
+const MODE_NAMES = { calma: 'Calma', foco: 'Foco', sueno: 'Sueño' };
+const ICON = {
+  play: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
+  pause: '<svg viewBox="0 0 24 24"><path d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
+  down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></svg>'
+};
+const VIEWS = ['Home', 'Rec', 'Proc', 'Land', 'Trim', 'Session', 'End', 'Stats', 'Guide'];
 function setView(v) {
   S.view = v;
-  for (const id of ['Home', 'Rec', 'Proc', 'Session', 'Lib', 'Stats', 'Guide']) $('v' + id).hidden = id.toLowerCase() !== v;
-  const sub = v === 'lib' || v === 'stats' || v === 'guide';
-  $('btnBack').hidden = v !== 'session' && !sub; $('btnBack').textContent = sub ? '← Inicio' : '← Otro sonido';
+  for (const id of VIEWS) $('v' + id).hidden = id.toLowerCase() !== v;
+  const dark = v === 'session'; document.documentElement.classList.toggle('dark', dark);
+  const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = dark ? '#0e1b18' : '#f3efe6';
+  const back = v === 'rec' || v === 'land' || v === 'trim' || v === 'session' || v === 'stats' || v === 'guide', bb = $('btnBack');
+  bb.style.visibility = back ? 'visible' : 'hidden'; bb.innerHTML = dark ? ICON.down : ICON.back; bb.setAttribute('aria-label', dark ? 'Volver a tu paisaje' : 'Atrás');
+  $('btnOpts').style.visibility = dark ? 'visible' : 'hidden';
+  const mid = $('topMid'), title = v === 'rec' ? 'Grabación' : (v === 'land' || v === 'trim' || dark) ? '' : 'arrullo';
+  mid.textContent = title; mid.classList.toggle('brand', title === 'arrullo');
+  $('top').classList.toggle('left', v === 'home' && !!S.hasLib);
+  if (!dark && v !== 'land') $('opts').hidden = true;
+  if (v !== 'home') $('edit').hidden = true;
   if (v === 'home' && typeof applyUpdate === 'function') setTimeout(applyUpdate, 50);
 }
 let toastT = 0;
 function toast(msg, ms) { const el = $('toast'); el.textContent = msg; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { el.hidden = true; }, ms || 4200); }
-function setHue(h) { document.documentElement.style.setProperty('--hue', h); S.hue = h; }
-function fmtHz(f) { return f >= 1000 ? (f / 1000).toFixed(2).replace('.', ',') + ' kHz' : Math.round(f) + ' Hz'; }
-function showTime() { const el = $('sTime'); if (S.dur <= 0) { el.textContent = 'Sin límite'; return; } const s = Math.ceil(S.remain); el.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
-function uiPlay() {
-  $('icoPlay').innerHTML = S.playing ? '<path d="M6.5 4.5h4v15h-4zM13.5 4.5h4v15h-4z"/>' : '<path d="M7 4.5v15l13-7.5z"/>';
-  $('btnPlay').setAttribute('aria-label', S.playing ? 'Pausar' : 'Reproducir');
+const clock = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+const num = (v, d) => v.toFixed(d).replace('.', ',');
+function showTime() { const inf = S.dur <= 0; $('sTime').textContent = inf ? '∞' : clock(Math.ceil(S.remain)); $('sRest').textContent = inf ? 'sin límite' : 'restantes'; }
+function uiPlay() { $('btnPlay').innerHTML = S.playing ? ICON.pause : ICON.play; $('btnPlay').setAttribute('aria-label', S.playing ? 'Pausar' : 'Reproducir'); }
+function pressSeg(id, v) { $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === String(v)))); }
+function setLabel(s) { s = s || {}; const d = s.dur == null ? 5 : +s.dur; return (MODE_NAMES[s.mode] || 'Calma') + ' · ' + (d > 0 ? d + ' min' : 'sin límite'); }
+function curSet() { return { mode: S.mode, dur: S.dur, pres: S.pres, breath: S.breath, hum: S.hum ? 1 : 0 }; }
+function fillRange(el) { el.style.setProperty('--p', el.value + '%'); }
+function syncOpts() {
+  pressSeg('segMode', S.mode); pressSeg('segDur', S.dur); pressSeg('segBreath', S.breath); pressSeg('segHum', S.hum ? 1 : 0);
+  for (const id of ['rngPres', 'rngPres2']) { $(id).value = Math.round(S.pres * 100); fillRange($(id)); }
+  if (E) E.grain.gain.setTargetAtTime(S.pres, S.ctx.currentTime, .1);
+  $('sumTxt').textContent = setLabel(curSet());
+  if (S.sound) $('sSub').textContent = MODE_NAMES[S.mode] + ' · afinado a ' + S.sound.an.note;
 }
-function showFacts(extra) {
-  const a = S.sound.an, f = $('sFacts'); f.textContent = '';
-  const b = document.createElement('b'); b.textContent = a.note; f.append('Afinado a ', b, ' · ' + fmtHz(a.domHz) + ' · ' + a.kind + ' · brillo ' + Math.round(a.bright * 100) + ' %' + (S.sound.boost >= 6 ? ' · realzado +' + Math.round(S.sound.boost) + ' dB' : '') + (extra ? ' · ' + extra : ''));
+function applySet(s) {
+  if (!s) return;
+  if (MODES[s.mode]) S.mode = s.mode; if (s.dur != null) S.dur = +s.dur; if (s.pres != null) S.pres = +s.pres;
+  if (s.breath) S.breath = String(s.breath); S.hum = !!s.hum && !!BREATH[S.breath];
+}
+function toPCM(x) {   // 16-bit copy of the whole recording, scaled to its peak so quiet sounds keep their detail
+  let pk = 1e-9; for (let i = 0; i < x.length; i++) { const a = Math.abs(x[i]); if (a > pk) pk = a; }
+  const k = Math.min(300, .98 / pk), q = new Int16Array(x.length); for (let i = 0; i < x.length; i++) q[i] = Math.round(clamp(x[i] * k, -1, 1) * 32767); return q;
 }
 
-async function loadSound(samples, sr, name, save, src) {
+// raw = the whole recording; o.sel = [from, to] in samples when the person kept only a fragment of it
+async function loadSound(raw, sr, name, o) {
+  o = o || {};
   if (S.busy || !ensureCtx()) return; S.busy = true;
+  const prev = S.sound; let next = null;
   try {
-    teardown();
-    setView('proc'); S.progress = 0; $('procTitle').textContent = 'Leyendo la huella…'; $('procSub').textContent = name;
+    pvStop(); teardown();
+    setView('proc'); S.progress = 0; S.procOk = false; $('procTitle').textContent = 'Escuchando tu sonido…'; $('procSub').textContent = name;
     await sleep(60);
-    const pr = prepare(samples, sr), x = pr && pr.x;
-    if (!x) { toast('No he oído nada claro. Prueba más cerca del sonido o con más volumen.'); setView('home'); return; }
+    const sel = o.sel && o.sel[1] > o.sel[0] ? o.sel : null;
+    const pr = prepare(sel ? raw.subarray(sel[0], sel[1]) : raw, sr), x = pr && pr.x;
+    if (!x) {
+      toast(o.resel ? 'En ese fragmento no se oye nada claro. Prueba con otro.' : 'No he oído nada claro. Prueba más cerca del sonido o con más volumen.');
+      if (o.resel && prev) { next = () => { setView('trim'); requestAnimationFrame(trimDraw); }; } else setView('home');
+      return;
+    }
     const an = analyze(x, sr);
-    S.sound = { x, sr, name, an, src: src || '', boost: pr.boost, cleaned: pr.cleaned }; S.listened = 0; S.pads = {}; setHue(an.hue);
-    $('procTitle').textContent = 'Afinando a ' + an.note + '…'; $('procSub').textContent = 'Estirando ' + an.dur.toFixed(1).replace('.', ',') + ' s en un paisaje sin final';
+    applySet(o.set);
+    S.sound = { x, sr, name, an, src: o.src || '', boost: pr.boost, cleaned: pr.cleaned, id: o.id || 0, isNew: o.id ? !!o.isNew : true, logged: !!(o.resel && prev && prev.logged), before: 0 };
+    S.raw = { x: raw, sr }; S.sel = sel; S.pads = {}; S.hue = an.hue; S.padRms = 0; S.procOk = true;
+    if (!o.resel) { S.listened = 0; S.pvT = { o: 0, l: 0 }; }
+    $('procTitle').textContent = 'Creando tu paisaje…'; $('procSub').textContent = 'Afinado a ' + an.note + ', la nota de tu sonido';
     await sleep(30);
     S.pads[S.mode] = toBuf(await renderPad(x, sr, an.rootHz, MODES[S.mode], p => { S.progress = p; }));
     S.progress = 1;
-    $('sName').textContent = name; showFacts();
-    S.remain = S.dur * 60; showTime();
-    setView('session');
-    if (save === true) { S.sound.id = Date.now(); const q = new Int16Array(x.length); for (let i = 0; i < x.length; i++) q[i] = Math.round(clamp(x[i], -1, 1) * 32767); saveSound({ id: S.sound.id, name, sr, data: q, note: an.note }); }
-    else if (save) S.sound.id = save;
+    const meta = { sel, note: an.note, hue: an.hue, sig: Array.from(an.sig, v => Math.round(v * 100) / 100), sym: an.sym };
+    // Saved at once so a recording is never lost by accident; the person decides at the end whether to keep it.
+    if (!o.id) { S.sound.id = Date.now(); await saveSound(Object.assign({ id: S.sound.id, name, sr, data: toPCM(raw), set: curSet(), src: o.src || '' }, meta)); }
+    else if (o.resel || !o.hasSig) updateSound(o.id, meta);
     if (pr.boost >= 12) toast('Sonido suave: lo he amplificado +' + Math.round(pr.boost) + ' dB' + (pr.cleaned ? ' y he reducido el ruido de fondo.' : '.'), 5500);
-    else if (!S.tipped) { S.tipped = true; toast('Mejor con auriculares y a volumen moderado.', 3500); }
-    askBefore();
+    next = o.direct ? startSession : () => enterLand(true);
   } catch (err) {
     console.error(err); toast('No he podido transformar ese sonido. Prueba con otro.'); setView('home');
   } finally { S.busy = false; }
+  if (next) next();
 }
 
 async function switchMode(m) {
   if (m === S.mode || S.busy || !S.sound) return;
-  S.busy = true; S.mode = m; pressSeg('segMode', m);
+  S.busy = true; S.mode = m; syncOpts();
   try {
-    if (!S.pads[m]) { showFacts('reafinando…'); await sleep(30); S.pads[m] = toBuf(await renderPad(S.sound.x, S.sound.sr, S.sound.an.rootHz, MODES[m])); showFacts(); }
+    if (!S.pads[m]) { toast('Reafinando el paisaje…', 2500); await sleep(30); S.pads[m] = toBuf(await renderPad(S.sound.x, S.sound.sr, S.sound.an.rootHz, MODES[m])); }
     if (S.group) { startVoices(S.pads[m], 5); nextGrain = S.ctx.currentTime + 3; }
   } catch (e) { console.error(e); toast('No se pudo cambiar de intención.'); }
   S.busy = false;
+}
+
+function startSession() {
+  if (!S.sound) return;
+  pvStop(); teardown();
+  S.preview = false; S.ending = false; S.elapsed = 0; S.remain = S.dur * 60; showTime(); uiPlay();
+  $('sName').textContent = S.sound.name; syncOpts();
+  if (S.sound.id) updateSound(S.sound.id, { set: curSet(), t: Date.now() });
+  setView('session'); askBefore();
+}
+function home() { $('rate').hidden = true; rateCtx = null; setView('home'); renderLib(); }
+// Every way out of a new sound passes through here: keeping it or not is the answer we want to learn.
+function goEnd() {
+  if (!S.sound) return home();
+  hidePre(); pvStop(); const heard = S.listened; teardown(); setTimeout(idleSuspend, 900);
+  const en = logSession(), isNew = S.sound.isNew;
+  if (!isNew && heard < 20) return home();
+  $('endKick').textContent = heard >= 20 ? 'Sesión terminada' : 'Antes de salir';
+  $('endQ').textContent = isNew ? '¿Volverías a este sonido?' : 'Tu paisaje te espera aquí';
+  $('endName').value = S.sound.name; $('endSave').textContent = isNew ? 'Guardar mi paisaje' : 'Guardar y volver'; $('endDrop').hidden = !isNew;
+  setView('end');
+  if (en && heard >= 60) openRate(en);
 }
 
 /* recording */
@@ -857,7 +1031,7 @@ let rec = null;
 async function startRec() {
   const c = ensureCtx(); if (!c) return;
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !c.createScriptProcessor) return micUnavailable();
-  teardown();
+  pvStop(); teardown();
   try {
     setSession('play-and-record');
     const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
@@ -870,23 +1044,24 @@ async function startRec() {
       if (rec.len >= REC_MAX * rec.sr) stopRec();
     };
     src.connect(proc); proc.connect(mute); mute.connect(c.destination);
-    S.recStart = performance.now(); S.micRaw = 0; setView('rec');
+    S.recStart = performance.now(); S.micRaw = 0; wave.fill(0); $('micNote').hidden = true; setView('rec');
   } catch (err) { setSession('playback'); micUnavailable(err); }
 }
-function stopRec() {
+function stopRec(discard) {
   if (!rec) return; const r = rec; rec = null;
   try { r.proc.onaudioprocess = null; r.src.disconnect(); r.proc.disconnect(); r.mute.disconnect(); } catch (e) {}
   r.stream.getTracks().forEach(t => t.stop()); setSession('playback'); S.micLevel = 0;
+  if (discard === true) { setView('home'); return; }
   if (r.len < r.sr * .35) { toast('Demasiado corto. Mantén la grabación al menos medio segundo.'); setView('home'); return; }
   const x = new Float32Array(r.len); let o = 0; for (const ch of r.chunks) { x.set(ch, o); o += ch.length; }
-  const d = new Date(); loadSound(x, r.sr, 'Grabación ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'), true, 'grabación');
+  const d = new Date(); loadSound(x, r.sr, 'Grabación ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'), { src: 'grabación' });
 }
 function micUnavailable(err) {
   const n = $('micNote'); n.hidden = false;
   const denied = err && (err.name === 'NotAllowedError' || err.name === 'SecurityError');
   n.textContent = denied
-    ? 'No hay acceso al micrófono aquí. Usa «Subir audio o vídeo»: en iPhone puedes grabar un vídeo corto en el momento y Resona usará su sonido. Si abriste la app en Safari, revisa el permiso de micrófono en «aA → Ajustes del sitio web».'
-    : 'Este navegador no permite grabar desde la página. Usa «Subir audio o vídeo» o uno de los ejemplos.';
+    ? 'No hay acceso al micrófono aquí. Usa «Importar audio o vídeo»: en iPhone puedes grabar un vídeo corto en el momento y la app usará su sonido. Si la abriste en Safari, revisa el permiso de micrófono en «aA → Ajustes del sitio web».'
+    : 'Este navegador no permite grabar desde la página. Usa «Importar audio o vídeo» o uno de los ejemplos.';
   setView('home');
 }
 
@@ -895,94 +1070,182 @@ function decode(c, ab) { return new Promise((res, rej) => { const p = c.decodeAu
 async function onFile(file) {
   const c = ensureCtx(); if (!c || !file) return;
   try {
-    setView('proc'); $('procTitle').textContent = 'Abriendo el audio…'; $('procSub').textContent = file.name; S.progress = 0;
+    pvStop(); setView('proc'); S.procOk = false; $('procTitle').textContent = 'Abriendo el audio…'; $('procSub').textContent = file.name; S.progress = 0;
     const buf = await decode(c, await file.arrayBuffer());
     const n = Math.min(buf.length, Math.floor(buf.sampleRate * 90)), x = new Float32Array(n);
     for (let ch = 0; ch < buf.numberOfChannels; ch++) { const d = buf.getChannelData(ch); for (let i = 0; i < n; i++) x[i] += d[i] / buf.numberOfChannels; }
-    // keep the loudest 30 s window of long files
-    let start = 0; const win = Math.floor(buf.sampleRate * REC_MAX);
-    if (n > win) { const st = Math.floor(buf.sampleRate * .25); let best = -1; for (let s = 0; s + win <= n; s += st) { let e = 0; for (let i = s; i < s + win; i += 16) e += x[i] * x[i]; if (e > best) { best = e; start = s; } } }
-    await loadSound(n > win ? x.subarray(start, start + win) : x, buf.sampleRate, file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'Audio', true, 'archivo');
+    // long files: keep the first 90 s and start on their loudest 30 s; the person can move the fragment afterwards
+    let sel = null; const win = Math.floor(buf.sampleRate * REC_MAX);
+    if (n > win) { const st = Math.floor(buf.sampleRate * .25); let best = -1, start = 0; for (let s = 0; s + win <= n; s += st) { let e = 0; for (let i = s; i < s + win; i += 16) e += x[i] * x[i]; if (e > best) { best = e; start = s; } } sel = [start, start + win]; }
+    await loadSound(x, buf.sampleRate, file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'Audio', { src: 'archivo', sel });
   } catch (e) { console.error(e); toast('No he podido leer ese archivo. Prueba con m4a, mp3, wav o un vídeo corto.'); setView('home'); }
 }
 
-/* library (this device only) */
-function idb() { return new Promise((res, rej) => { try { const r = indexedDB.open('resona', 1); r.onupgradeneeded = () => r.result.createObjectStore('sounds', { keyPath: 'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } }); }
-async function dbAll() { try { const db = await idb(); return await new Promise((res, rej) => { const q = db.transaction('sounds').objectStore('sounds').getAll(); q.onsuccess = () => res(q.result || []); q.onerror = () => rej(q.error); }); } catch (e) { return []; } }
-async function saveSound(item) {
-  try { const db = await idb(); const all = await dbAll(); const tx = db.transaction('sounds', 'readwrite'), st = tx.objectStore('sounds');
-    all.sort((a, b) => b.id - a.id).slice(7).forEach(o => st.delete(o.id)); st.put(item); tx.oncomplete = renderLib; } catch (e) {}
+/* ───────────── Fragment: keep the part worth returning to ───────────── */
+const T = { a: 0, b: 1, env: null, drag: null, src: null };
+function openTrim() {
+  if (!S.raw || S.busy) return; pvStop();
+  const n = S.raw.x.length; T.a = S.sel ? S.sel[0] / n : 0; T.b = S.sel ? S.sel[1] / n : 1; T.env = null;
+  setView('trim'); requestAnimationFrame(trimDraw);
 }
-async function renameSound(id, name) { try { const db = await idb(); const st = db.transaction('sounds', 'readwrite').objectStore('sounds'); const q = st.get(id); q.onsuccess = () => { if (q.result) { q.result.name = name; st.put(q.result); } }; } catch (e) {} }
-async function delSound(id) { try { const db = await idb(); const tx = db.transaction('sounds', 'readwrite'); tx.objectStore('sounds').delete(id); tx.oncomplete = renderLib; } catch (e) {} }
+function trimDraw() {
+  const box = $('trim'), cvs = $('trimCv'), w = box.clientWidth, h = box.clientHeight, d = Math.min(2, window.devicePixelRatio || 1);
+  if (!w || !S.raw) return;
+  if (cvs.width !== Math.round(w * d) || cvs.height !== Math.round(h * d)) { cvs.width = Math.round(w * d); cvs.height = Math.round(h * d); }
+  const x = S.raw.x, n = x.length, cols = Math.floor(w / 3);
+  if (!T.env || T.env.length !== cols) {
+    const env = new Float32Array(cols); let mx = 1e-9;
+    for (let c = 0; c < cols; c++) { const i0 = Math.floor(c / cols * n), i1 = Math.floor((c + 1) / cols * n), st = Math.max(1, Math.floor((i1 - i0) / 160)); let m = 0;
+      for (let i = i0; i < i1; i += st) { const a = Math.abs(x[i]); if (a > m) m = a; } env[c] = m; if (m > mx) mx = m; }
+    for (let c = 0; c < cols; c++) env[c] = Math.pow(env[c] / mx, .55); T.env = env;
+  }
+  const k = cvs.getContext('2d'); k.setTransform(d, 0, 0, d, 0, 0); k.clearRect(0, 0, w, h); k.lineWidth = 1.3; k.lineCap = 'round';
+  for (let c = 0; c < cols; c++) { const u = (c + .5) / cols, hh = Math.max(1.5, T.env[c] * h * .44), px = c * 3 + 1.5;
+    k.strokeStyle = u >= T.a && u <= T.b ? '#2f4526' : 'rgba(28,27,23,.26)'; k.beginPath(); k.moveTo(px, h / 2 - hh); k.lineTo(px, h / 2 + hh); k.stroke(); }
+  const sel = $('trimSel'); sel.style.left = T.a * 100 + '%'; sel.style.width = (T.b - T.a) * 100 + '%';
+  const dur = n / S.raw.sr; $('trimInfo').textContent = 'De ' + num(T.a * dur, 1) + ' a ' + num(T.b * dur, 1) + ' s · ' + num((T.b - T.a) * dur, 1) + ' s de ' + num(dur, 1);
+}
+function trimStop() { if (T.src) { const s = T.src; T.src = null; try { s.stop(); } catch (e) {} } $('trimPlay').textContent = 'Escuchar el fragmento'; }
+(() => {
+  const tb = $('trim'), at = e => { const r = tb.getBoundingClientRect(); return { u: clamp((e.clientX - r.left) / r.width, 0, 1), edge: 26 / r.width }; };
+  const move = u => { const d = T.drag; if (!d || !S.raw) return; const min = Math.min(1, Math.max(.5 / (S.raw.x.length / S.raw.sr), .02));
+    if (d.mode === 'a') T.a = clamp(u, 0, T.b - min); else if (d.mode === 'b') T.b = clamp(u, T.a + min, 1);
+    else { const w = d.b0 - d.a0, a = clamp(d.a0 + u - d.u0, 0, 1 - w); T.a = a; T.b = a + w; }
+    trimDraw(); };
+  tb.addEventListener('pointerdown', e => {
+    const { u, edge } = at(e), da = Math.abs(u - T.a), db = Math.abs(u - T.b);
+    const mode = da < edge && da <= db ? 'a' : db < edge ? 'b' : (u > T.a && u < T.b) ? 'm' : u <= T.a ? 'a' : 'b';
+    T.drag = { mode, u0: u, a0: T.a, b0: T.b }; try { tb.setPointerCapture(e.pointerId); } catch (x) {}
+    trimStop(); if (mode !== 'm') move(u); e.preventDefault();
+  });
+  tb.addEventListener('pointermove', e => { if (T.drag) move(at(e).u); });
+  for (const ev of ['pointerup', 'pointercancel']) tb.addEventListener(ev, () => { T.drag = null; });
+  window.addEventListener('resize', () => { if (S.view === 'trim') { T.env = null; trimDraw(); } });
+})();
+$('trimPlay').onclick = () => {
+  const c = ensureCtx(); if (!c || !S.raw) return; if (T.src) return trimStop();
+  const x = S.raw.x, n = x.length, i0 = Math.floor(T.a * n), i1 = Math.floor(T.b * n), sr = S.raw.sr;
+  if (!S.raw.buf) { const b = c.createBuffer(1, n, sr); b.getChannelData(0).set(x); S.raw.buf = b; }
+  let pk = 1e-6; for (let i = i0; i < i1; i += 5) { const a = Math.abs(x[i]); if (a > pk) pk = a; }
+  const s = c.createBufferSource(), g = c.createGain(); s.buffer = S.raw.buf; g.gain.value = Math.min(80, .4 / pk); s.connect(g); g.connect(E.orig);
+  s.onended = () => { g.disconnect(); if (T.src === s) { trimStop(); setTimeout(idleSuspend, 700); } };
+  T.src = s; $('trimPlay').textContent = 'Parar'; c.resume().then(() => s.start(0, i0 / sr, (i1 - i0) / sr)).catch(() => trimStop());
+};
+$('trimUse').onclick = () => {
+  if (!S.raw || !S.sound) return; trimStop();
+  const n = S.raw.x.length, a = Math.floor(T.a * n), b = Math.floor(T.b * n), s = S.sound;
+  loadSound(S.raw.x, S.raw.sr, s.name, { id: s.id, isNew: s.isNew, sel: a <= 0 && b >= n ? null : [a, b], src: s.src, resel: true });
+};
+
+/* ───────────── Library (this device only) ───────────── */
+function idb() { return new Promise((res, rej) => { try { const r = indexedDB.open('resona', 1); r.onupgradeneeded = () => r.result.createObjectStore('sounds', { keyPath: 'id' }); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); } }); }
+async function store(mode, fn) {
+  try { const db = await idb(); return await new Promise((res, rej) => { const t = db.transaction('sounds', mode), q = fn(t.objectStore('sounds')); t.oncomplete = () => res(q && q.result); t.onerror = t.onabort = () => rej(t.error); }); }
+  catch (e) { return undefined; }
+}
+const dbAll = () => store('readonly', st => st.getAll()).then(r => r || []);
+const saveSound = item => store('readwrite', st => { st.put(item); });
+const updateSound = (id, patch) => store('readwrite', st => { const q = st.get(id); q.onsuccess = () => { if (q.result) st.put(Object.assign(q.result, patch)); }; });
+const delSound = id => store('readwrite', st => { st.delete(id); });
 function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
 function openSound(it) {
-  if (!ensureCtx()) return; let d = it.data;
-  if (d instanceof Int16Array) { const f = new Float32Array(d.length); for (let i = 0; i < d.length; i++) f[i] = d[i] / 32767; d = f; } else d = new Float32Array(d);
-  loadSound(d, it.sr, it.name, it.id, 'biblioteca');
+  if (!ensureCtx()) return; const d = it.data, f = new Float32Array(d.length);
+  if (d instanceof Int16Array) for (let i = 0; i < d.length; i++) f[i] = d[i] / 32767; else f.set(d);
+  loadSound(f, it.sr, it.name, { id: it.id, sel: it.sel, src: it.src || 'biblioteca', set: it.set, direct: true, hasSig: !!it.sig });
+}
+function sigOf(it) {                 // older sounds were saved without their drawing: give them a stable one
+  if (it.sig) return { sig: Float32Array.from(it.sig), sym: it.sym || 5, hue: it.hue == null ? 100 : it.hue };
+  const s = new Float32Array(64); let r = it.id % 9973;
+  for (let i = 0; i < 64; i++) { r = (r * 73 + 17) % 9973; s[i] = r / 9973; }
+  return { sig: s, sym: 3 + it.id % 4, hue: 80 + it.id % 180 };
+}
+function thumb(it) {
+  const c = el('canvas'), d = Math.min(2, window.devicePixelRatio || 1); c.width = 74 * d; c.height = 52 * d; c.setAttribute('aria-hidden', 'true');
+  const k = c.getContext('2d'), s = sigOf(it); k.setTransform(d, 0, 0, d, 0, 0);
+  drawOrb(k, 37, 26, 18, harmonics(s.sig, s.sym), { n: 10, pts: 56, lw: .8, col: f => `hsla(${s.hue},30%,36%,${.5 + .4 * f})` });
+  return c;
 }
 async function renderLib() {
-  const all = (await dbAll()).sort((a, b) => b.id - a.id), wrap = $('libWrap'), lib = $('lib'), full = $('libFull');
-  wrap.hidden = !all.length; lib.textContent = ''; full.textContent = '';
-  for (const it of all.slice(0, 3)) {                                  // home: quick access only
-    const row = el('div', 'lib-item'), open = el('button', 'open', it.name); open.onclick = () => openSound(it);
-    row.append(open, el('span', '', it.note || '')); row.style.paddingRight = '12px'; lib.append(row);
-  }
-  if (!all.length) { full.append(el('p', 'sub', 'Todavía no has guardado ningún sonido. Cada grabación o archivo que transformes aparecerá aquí.')); return; }
-  for (const it of all) {                                              // section: rename, delete, details
-    const card = el('div', 'card'), name = el('div', 'cname', it.name);
-    const secs = Math.round((it.data ? it.data.length : 0) / it.sr), date = new Date(it.id).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-    const meta = el('div', 'cmeta', [it.note, secs + ' s', date].filter(Boolean).join(' · '));
-    const row = el('div', 'row'), go = el('button', 'pill', 'Meditar'), ren = el('button', 'pill', 'Cambiar nombre'), del = el('button', 'ghost', 'Borrar');
-    go.setAttribute('aria-pressed', 'true'); go.onclick = () => openSound(it);
-    ren.onclick = () => {
-      if (name.querySelector('input')) return;
-      const inp = el('input'); inp.type = 'text'; inp.maxLength = 40; inp.value = it.name; inp.id = 'ren' + it.id; inp.setAttribute('aria-label', 'Nombre del sonido');
-      name.textContent = ''; name.append(inp); inp.focus(); inp.select();
-      const done = () => { const v = inp.value.trim() || it.name; it.name = v; name.textContent = v; renameSound(it.id, v); if (S.sound && S.sound.id === it.id) { S.sound.name = v; $('sName').textContent = v; } };
-      inp.onblur = done; inp.onkeydown = e => { if (e.key === 'Enter') inp.blur(); };
-    };
-    let armed = false; del.onclick = () => { if (armed) return delSound(it.id); armed = true; del.textContent = '¿Seguro? Toca otra vez'; setTimeout(() => { armed = false; del.textContent = 'Borrar'; }, 3000); };
-    row.append(go, ren, del); card.append(name, meta, row); full.append(card);
+  const all = (await dbAll()).sort((a, b) => (b.t || b.id) - (a.t || a.id)), lib = $('lib');
+  S.hasLib = all.length > 0; $('homeFirst').hidden = S.hasLib; $('homeBack').hidden = !S.hasLib;
+  $('btnRecTxt').textContent = S.hasLib ? 'Grabar otro sonido' : 'Grabar un sonido'; $('homeFine').hidden = S.hasLib; $('demoLinks').hidden = S.hasLib;
+  $('top').classList.toggle('left', S.view === 'home' && S.hasLib);
+  lib.textContent = ''; S.hero = null; if (!S.hasLib) return;
+  const h = all[0], hs = sigOf(h); S.hero = { H: harmonics(hs.sig, hs.sym), hue: hs.hue, it: h };   // the last landscape, one touch away
+  $('heroName').textContent = h.name; $('heroMeta').textContent = setLabel(h.set);
+  for (const it of all.slice(1)) {
+    const row = el('div', 'li'), open = el('button', 'open', it.name), dots = el('button', 'dots', '···'), tri = el('button', 'tri');
+    tri.innerHTML = ICON.play; tri.setAttribute('aria-label', 'Reproducir ' + it.name); dots.setAttribute('aria-label', 'Cambiar nombre o borrar ' + it.name);
+    open.onclick = tri.onclick = () => openSound(it); dots.onclick = () => openEdit(it);
+    row.append(thumb(it), open, dots, tri); lib.append(row);
   }
 }
+let editIt = null, delArmed = 0;
+function openEdit(it) {
+  editIt = it; $('editName').value = it.name; clearTimeout(delArmed); delArmed = 0; $('editDel').textContent = 'Borrar';
+  const secs = Math.round((it.sel ? it.sel[1] - it.sel[0] : it.data.length) / it.sr), date = new Date(it.id).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+  $('editMeta').textContent = [it.note && 'Afinado a ' + it.note, secs + ' s', date].filter(Boolean).join(' · ');
+  $('edit').hidden = false;
+}
+$('heroEdit').onclick = () => { if (S.hero) openEdit(S.hero.it); };
+$('heroPlay').onclick = () => { if (S.hero) openSound(S.hero.it); };
+$('heroName').onclick = () => { if (S.hero) openSound(S.hero.it); };
+$('editCancel').onclick = () => { $('edit').hidden = true; };
+$('editSave').onclick = async () => { const it = editIt; $('edit').hidden = true; if (!it) return; const v = $('editName').value.trim(); if (v && v !== it.name) { await updateSound(it.id, { name: v }); if (S.sound && S.sound.id === it.id) S.sound.name = v; renderLib(); } };
+$('editName').onkeydown = e => { if (e.key === 'Enter') $('editSave').click(); };
+$('editDel').onclick = async () => {
+  if (!delArmed) { $('editDel').textContent = '¿Seguro? Toca otra vez'; delArmed = setTimeout(() => { delArmed = 0; $('editDel').textContent = 'Borrar'; }, 3000); return; }
+  clearTimeout(delArmed); delArmed = 0; $('edit').hidden = true; if (!editIt) return;
+  if (S.sound && S.sound.id === editIt.id) { S.sound = null; S.raw = null; }
+  await delSound(editIt.id); renderLib();
+};
 
 /* ───────────── Session log + rating (kept on this device; sent only if the person shares it) ───────────── */
-const LOGKEY = 'resona.log', MODE_NAMES = { calma: 'Calma', foco: 'Foco', sueno: 'Sueño' };
+const LOGKEY = 'resona.log';
 function getLog() { try { return JSON.parse(localStorage.getItem(LOGKEY) || '[]'); } catch (e) { return []; } }
 function putLog(l) { try { localStorage.setItem(LOGKEY, JSON.stringify(l.slice(-200))); } catch (e) {} }
+function patchEntry(t, patch) { const log = getLog(), e = log.find(x => x.t === t); if (e) { Object.assign(e, patch); putLog(log); } return e; }
+function logSession() {
+  const s = S.sound, fresh = s.isNew && !s.logged; if (S.listened < 60 && !fresh) return null;
+  const a = s.an, en = { t: Date.now(), b: s.before || 0, a: 0, br: S.breath, h: S.hum ? 1 : 0, d: new Date().toISOString().slice(0, 16), m: S.mode, k: a.kind, n: a.note, s: s.src, len: Math.round(a.dur),
+    min: Math.round(S.listened / 6) / 10, r: 0, c: '', pr: Math.round(S.pres * 100), po: Math.round(S.pvT.o), pl: Math.round(S.pvT.l), nw: s.isNew ? 1 : 0, fr: S.sel ? 1 : 0 };
+  s.logged = true; s.entry = en.t; s.before = 0; S.listened = 0; S.pvT = { o: 0, l: 0 };
+  const log = getLog(); log.push(en); putLog(log); return en;
+}
 function shareText(text, okMsg) {
   const copy = () => { try { navigator.clipboard.writeText(text).then(() => toast('Copiado. Pégalo en un mensaje a quien te invitó.', 6000)).catch(() => toast('No se pudo compartir desde aquí.')); } catch (e) { toast('No se pudo compartir desde aquí.'); } };
   if (navigator.share) navigator.share({ text }).then(() => toast(okMsg || 'Gracias.', 2500)).catch(e => { if (!e || e.name !== 'AbortError') copy(); }); else copy();
 }
 function practice() {
-  const log = getLog(), days = [...new Set(log.map(x => x.d.slice(0, 10)))].sort(), mins = log.reduce((q, x) => q + (x.min || 0), 0);
+  const all = getLog(), log = all.filter(x => x.min >= 1), days = [...new Set(log.map(x => x.d.slice(0, 10)))].sort(), mins = log.reduce((q, x) => q + (x.min || 0), 0);
   let streak = 0; const day = 864e5, has = new Set(days), today = new Date().toISOString().slice(0, 10);
   let cur = has.has(today) ? Date.parse(today) : Date.parse(today) - day;
   while (has.has(new Date(cur).toISOString().slice(0, 10))) { streak++; cur -= day; }
-  const both = log.filter(x => x.a && x.b), rated = log.filter(x => x.r);
-  return { log, days: days.length, mins, streak, n: log.length,
+  const both = log.filter(x => x.a && x.b), rated = log.filter(x => x.r), dec = all.filter(x => x.kp != null);
+  return { log, days: days.length, mins, streak, n: log.length, total: all.length,
     calm: both.length ? both.reduce((q, x) => q + (x.a - x.b), 0) / both.length : null, calmN: both.length,
-    avg: rated.length ? rated.reduce((q, x) => q + x.r, 0) / rated.length : null };
+    avg: rated.length ? rated.reduce((q, x) => q + x.r, 0) / rated.length : null,
+    kept: dec.filter(x => x.kp).length, decided: dec.length, po: all.reduce((q, x) => q + (x.po || 0), 0), pl: all.reduce((q, x) => q + (x.pl || 0), 0) };
 }
-const num = (v, d) => v.toFixed(d).replace('.', ',');
 function renderStats() {
   const body = $('statsBody'), st = practice(); body.textContent = '';
-  if (!st.n) { body.append(el('p', 'sub', 'Aún no hay sesiones. Cuando medites más de un minuto, aparecerá aquí.')); return; }
+  if (!st.total) { body.append(el('p', 'sub', 'Aún no hay sesiones. Cuando escuches un paisaje, aparecerá aquí.')); return; }
   const tiles = el('div', 'tiles');
   const tile = (v, label) => { const t = el('div', 'tile'); t.append(el('b', '', v), el('span', '', label)); tiles.append(t); };
   tile(String(st.n), st.n === 1 ? 'sesión' : 'sesiones'); tile(num(st.mins, 0), 'minutos escuchados');
   tile(String(st.days), st.days === 1 ? 'día de práctica' : 'días de práctica'); tile(String(st.streak), st.streak === 1 ? 'día seguido' : 'días seguidos');
   tile(st.calm == null ? '–' : (st.calm >= 0 ? '+' : '') + num(st.calm, 1), 'cambio medio de calma' + (st.calmN ? ' (' + st.calmN + ')' : ''));
-  tile(st.avg == null ? '–' : num(st.avg, 1), 'valoración media de 5');
-  body.append(tiles, el('p', 'label', 'Últimas sesiones'));
+  tile(st.decided ? st.kept + ' de ' + st.decided : '–', 'sonidos nuevos guardados');
+  body.append(tiles);
+  if (st.log.length) body.append(el('p', 'lbl', 'Últimas sesiones'));
   for (const x of st.log.slice(-8).reverse()) {
     const d = new Date(x.d + 'Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
     body.append(el('div', 'hist', d + ' · ' + MODE_NAMES[x.m] + ' · ' + num(x.min || 0, 1) + ' min' + (x.a && x.b ? ' · calma ' + x.b + ' → ' + x.a : '') + (x.r ? ' · ' + x.r + '/5' : '')));
   }
   const send = el('button', 'pill', 'Enviar resumen'); send.setAttribute('aria-pressed', 'true'); send.style.alignSelf = 'flex-start';
-  send.onclick = () => shareText('Resona · mi práctica\n' + st.n + (st.n === 1 ? ' sesión' : ' sesiones') + ' · ' + num(st.mins, 0) + ' min · ' + st.days + (st.days === 1 ? ' día' : ' días') + ' · racha ' + st.streak +
-    (st.calm == null ? '' : '\nCambio medio de calma: ' + (st.calm >= 0 ? '+' : '') + num(st.calm, 1) + ' (en ' + st.calmN + ')') + (st.avg == null ? '' : '\nValoración media: ' + num(st.avg, 1) + '/5'), 'Enviado.');
+  send.onclick = () => shareText('Arrullo · mi práctica\n' + st.n + (st.n === 1 ? ' sesión' : ' sesiones') + ' · ' + num(st.mins, 0) + ' min · ' + st.days + (st.days === 1 ? ' día' : ' días') + ' · racha ' + st.streak +
+    (st.calm == null ? '' : '\nCambio medio de calma: ' + (st.calm >= 0 ? '+' : '') + num(st.calm, 1) + ' (en ' + st.calmN + ')') + (st.avg == null ? '' : '\nValoración media: ' + num(st.avg, 1) + '/5') +
+    (st.decided ? '\nSonidos nuevos guardados: ' + st.kept + ' de ' + st.decided : '') + '\nEn la comparación: original ' + st.po + ' s · paisaje ' + st.pl + ' s', 'Enviado.');
   body.append(send);
 }
 let rateCtx = null, preTimer = 0;
@@ -995,49 +1258,61 @@ function askBefore() {
 $('preStars').onclick = e => { const b = e.target.closest('button'); if (!b || !S.sound) return; S.sound.before = +b.dataset.v;
   $('preStars').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.v <= S.sound.before))); clearTimeout(preTimer); preTimer = setTimeout(hidePre, 450); play(); };
 $('preSkip').onclick = () => { hidePre(); play(); };
-function maybeRate(after) {
-  if (rateCtx) return;
-  if (!S.sound || S.listened < 60) { after && after(); return; }
-  const a = S.sound.an;
-  hidePre();
-  rateCtx = { after, rating: 0, calm: 0, entry: { b: S.sound.before || 0, a: 0, br: S.breath, h: S.hum ? 1 : 0, d: new Date().toISOString().slice(0, 16), m: S.mode, k: a.kind, n: a.note, s: S.sound.src, len: Math.round(a.dur), min: Math.round(S.listened / 6) / 10, r: 0, c: '' } };
-  S.listened = 0; S.sound.before = 0;
-  const log = getLog(); log.push(rateCtx.entry); putLog(log);
+function openRate(en) {
+  rateCtx = { t: en.t, rating: 0, calm: 0 };
   $('rateNote').value = ''; $('rate').querySelectorAll('.rate-stars button').forEach(b => b.setAttribute('aria-pressed', 'false'));
   $('rate').hidden = false;
 }
-function closeRate() { $('rate').hidden = true; const a = rateCtx && rateCtx.after; rateCtx = null; a && a(); }
+function closeRate() { $('rate').hidden = true; rateCtx = null; }
 $('rateStars').onclick = e => { const b = e.target.closest('button'); if (!b || !rateCtx) return; rateCtx.rating = +b.dataset.v; $('rateStars').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.v <= rateCtx.rating))); };
 $('calmStars').onclick = e => { const b = e.target.closest('button'); if (!b || !rateCtx) return; rateCtx.calm = +b.dataset.v; $('calmStars').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(+x.dataset.v <= rateCtx.calm))); };
 $('rateSkip').onclick = closeRate;
 $('rateSend').onclick = () => {
   if (!rateCtx) return;
   if (!rateCtx.rating) { toast('Valora la sesión de 1 a 5.', 2500); return; }
-  const en = rateCtx.entry; en.r = rateCtx.rating; en.a = rateCtx.calm; en.c = $('rateNote').value.trim().slice(0, 140);
-  const log = getLog(); if (log.length) log[log.length - 1] = en; else log.push(en); putLog(log);
-  const days = new Set(log.map(x => x.d.slice(0, 10))).size, rated = log.filter(x => x.r), avg = (rated.reduce((q, x) => q + x.r, 0) / rated.length).toFixed(1).replace('.', ',');
-  const text = 'Resona · valoración\n' + '★'.repeat(en.r) + '☆'.repeat(5 - en.r) + ' (' + en.r + '/5)' + (en.c ? '\n«' + en.c + '»' : '') +
+  const en = patchEntry(rateCtx.t, { r: rateCtx.rating, a: rateCtx.calm, c: $('rateNote').value.trim().slice(0, 140) });
+  closeRate(); if (!en) return;
+  const st = practice();
+  const text = 'Arrullo · valoración\n' + '★'.repeat(en.r) + '☆'.repeat(5 - en.r) + ' (' + en.r + '/5)' + (en.c ? '\n«' + en.c + '»' : '') +
     (en.a ? '\nCalma: ' + (en.b ? 'antes ' + en.b + '/5 → después ' + en.a + '/5 (' + (en.a - en.b >= 0 ? '+' : '') + (en.a - en.b) + ')' : 'al terminar ' + en.a + '/5') : '') +
-    '\nSonido: ' + en.k + ', ' + en.n + ', ' + en.len + ' s' + (en.s ? ' (' + en.s + ')' : '') + ' · Intención: ' + MODE_NAMES[en.m] + ' · Escuchado: ' + String(en.min).replace('.', ',') + ' min' +
+    '\nSonido: ' + en.k + ', ' + en.n + ', ' + en.len + ' s' + (en.s ? ' (' + en.s + ')' : '') + (en.fr ? ', fragmento elegido' : '') + ' · Intención: ' + MODE_NAMES[en.m] + ' · Escuchado: ' + String(en.min).replace('.', ',') + ' min' +
+    '\nPresencia del original: ' + en.pr + ' % · En la comparación: original ' + en.po + ' s, paisaje ' + en.pl + ' s' +
     '\nRespiración: ' + (BREATH[en.br] ? String(en.br).replace('.', ',') + '/min' : 'libre') + ' · Tarareo: ' + (en.h ? 'sí' : 'no') +
-    '\nUso: ' + log.length + (log.length === 1 ? ' sesión' : ' sesiones') + ' en ' + days + (days === 1 ? ' día' : ' días') + ' · media ' + avg + '/5';
+    '\nUso: ' + st.n + (st.n === 1 ? ' sesión' : ' sesiones') + ' en ' + st.days + (st.days === 1 ? ' día' : ' días') + (st.avg == null ? '' : ' · media ' + num(st.avg, 1) + '/5');
   shareText(text);
-  closeRate();
 };
+$('endSave').onclick = async () => {
+  const s = S.sound; if (!s) return home();
+  const v = $('endName').value.trim() || s.name; s.name = v;
+  await updateSound(s.id, { name: v, set: curSet(), t: Date.now() });
+  if (s.isNew && s.entry) patchEntry(s.entry, { kp: 1 }); s.isNew = false;
+  toast('Guardado en tus sonidos.', 2200); home();
+};
+$('endDrop').onclick = async () => {
+  const s = S.sound; if (!s) return home();
+  if (s.isNew && s.entry) patchEntry(s.entry, { kp: 0 });
+  await delSound(s.id); S.sound = null; S.raw = null; home();
+};
+$('endName').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
 
 /* ───────────── Keep the screen still: block pinch, double-tap zoom and page drag ───────────── */
 for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, e => e.preventDefault(), { passive: false });
 document.addEventListener('touchmove', e => {
   if (e.touches.length > 1) { e.preventDefault(); return; }                       // pinch
-  if (e.target.closest && e.target.closest('.panel, .lib, .scroll, input[type=range]')) return;   // the only things that may move
+  if (e.target.closest && e.target.closest('.sheet, .list, .scroll, input[type=range]')) return;   // the only things that may move
   e.preventDefault();
 }, { passive: false });
 window.addEventListener('scroll', () => { if (window.scrollX || window.scrollY) window.scrollTo(0, 0); });
+// When the keyboard opens, shrink the screen to what stays visible so the field being typed in is never covered.
+if (window.visualViewport) {
+  const vv = window.visualViewport, kb = () => { const k = window.innerHeight - vv.height - vv.offsetTop; document.documentElement.style.setProperty('--kb', (k > 80 ? Math.round(k) : 0) + 'px'); };
+  vv.addEventListener('resize', kb); vv.addEventListener('scroll', kb);
+}
 
 /* ───────────── Self-update: load the newest version without the person reloading ───────────── */
-const BUILD = '20261124213804'; let pendingBuild = '';
+const BUILD = '20261124231604'; let pendingBuild = '';
 function applyUpdate() {
-  if (!pendingBuild || S.view !== 'home' || S.busy || rec || rateCtx) return;      // never interrupt a session
+  if (!pendingBuild || S.view !== 'home' || S.busy || rec || rateCtx || !$('edit').hidden) return;      // never interrupt a session
   try { if (sessionStorage.getItem('resona.tried') === pendingBuild) return; sessionStorage.setItem('resona.tried', pendingBuild); } catch (e) {}
   location.replace(location.pathname + '?v=' + pendingBuild);
 }
@@ -1049,104 +1324,129 @@ document.addEventListener('visibilitychange', () => { if (!document.hidden) chec
 window.addEventListener('pageshow', checkUpdate);
 setInterval(checkUpdate, 5 * 60 * 1000);
 
-document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { const v = b.dataset.go; if (v === 'lib') renderLib(); if (v === 'stats') renderStats(); setView(v); });
-
 /* ───────────── UI wiring ───────────── */
-function pressSeg(id, v) { $(id).querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === String(v)))); }
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { const v = b.dataset.go; if (v === 'stats') renderStats(); setView(v); });
 $('btnRec').onclick = startRec;
-$('btnStop').onclick = stopRec;
+$('btnStop').onclick = () => stopRec();
 $('lblFile').addEventListener('click', () => ensureCtx());
 $('file').onchange = e => { const f = e.target.files[0]; e.target.value = ''; onFile(f); };
-document.querySelectorAll('[data-demo]').forEach(b => b.onclick = () => { const c = ensureCtx(); if (!c) return; const k = b.dataset.demo; loadSound(DEMOS[k](c.sampleRate), c.sampleRate, DEMO_NAMES[k], false, 'ejemplo'); });
-$('sName').onclick = () => {
-  const el = $('sName'); if (!S.sound || el.querySelector('input')) return;
-  const inp = document.createElement('input'); inp.type = 'text'; inp.id = 'inpName'; inp.maxLength = 40; inp.value = S.sound.name; inp.setAttribute('aria-label', 'Nombre del sonido');
-  el.textContent = ''; el.append(inp); inp.focus(); inp.select();
-  const done = () => { const v = inp.value.trim() || S.sound.name; S.sound.name = v; el.textContent = v; if (S.sound.id) renameSound(S.sound.id, v); };
-  inp.onblur = done; inp.onkeydown = e => { if (e.key === 'Enter') inp.blur(); };
+document.querySelectorAll('[data-demo]').forEach(b => b.onclick = () => { const c = ensureCtx(); if (!c) return; const k = b.dataset.demo; loadSound(DEMOS[k](c.sampleRate), c.sampleRate, DEMO_NAMES[k], { src: 'ejemplo' }); });
+$('btnBack').onclick = () => {
+  const v = S.view;
+  if (v === 'rec') return stopRec(true);
+  if (v === 'trim') { trimStop(); return enterLand(false); }
+  if (v === 'session') { hidePre(); if (S.playing) pause(); return enterLand(false); }
+  if (v === 'land') return S.sound && S.sound.isNew ? goEnd() : (pvStop(), teardown(), setTimeout(idleSuspend, 900), logSession(), home());
+  home();
 };
+$('segSrc').onclick = e => { const b = e.target.closest('button'); if (!b) return; pvTouch(); PV.which = b.dataset.v; PV.on = true; pvApply(); };
+$('pvPlay').onclick = () => { pvTouch(); PV.on = !PV.on; pvApply(); };
+$('btnStart').onclick = () => { if (!S.busy) startSession(); };
+$('btnSummary').onclick = $('btnOpts').onclick = () => { $('opts').hidden = !$('opts').hidden; };
+$('optsDone').onclick = () => { $('opts').hidden = true; };
+$('btnTrim').onclick = openTrim;
 $('btnPlay').onclick = () => { hidePre(); S.playing ? pause() : play(); };
-$('btnOrig').onclick = playOriginal;
-$('btnBack').onclick = () => { if (S.view !== 'session') { setView('home'); renderLib(); return; }
-  hidePre(); teardown(); setTimeout(() => { if (!S.playing && S.ctx) S.ctx.suspend().catch(() => {}); }, 900); maybeRate(() => { setView('home'); renderLib(); }); };
+$('btnEnd').onclick = goEnd;
 $('segMode').onclick = e => { const b = e.target.closest('button'); if (b) switchMode(b.dataset.v); };
-$('segDur').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.dur = +b.dataset.v; S.remain = S.dur * 60; S.ending = false; pressSeg('segDur', b.dataset.v); showTime(); };
-$('segBreath').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.breath = b.dataset.v; if (S.ctx) S.breathT0 = S.ctx.currentTime; pressSeg('segBreath', b.dataset.v);
-  if (!BREATH[S.breath] && S.hum) { S.hum = false; pressSeg('segHum', '0'); } };
-$('segHum').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.hum = b.dataset.v === '1'; pressSeg('segHum', b.dataset.v);
-  if (S.hum) { if (!BREATH[S.breath]) { S.breath = '6'; pressSeg('segBreath', '6'); if (S.ctx) S.breathT0 = S.ctx.currentTime; }
-    toast('Al exhalar, tararea «mmm» con la boca cerrada en la nota que oyes' + (S.sound ? ' (' + S.sound.an.note + ')' : '') + '. Suave, sin forzar.', 6500); } };
-$('rngPres').oninput = e => { S.pres = e.target.value / 100; if (E) E.grain.gain.setTargetAtTime(S.pres, S.ctx.currentTime, .1); };
-$('rngVol').oninput = e => { S.vol = e.target.value / 100; if (E) E.out.gain.setTargetAtTime(S.vol * MAKEUP, S.ctx.currentTime, .05); };
+$('segDur').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.dur = +b.dataset.v; S.remain = S.dur * 60; S.ending = false; syncOpts(); showTime(); };
+$('segBreath').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.breath = b.dataset.v; if (S.ctx) S.breathT0 = S.ctx.currentTime;
+  if (!BREATH[S.breath]) S.hum = false; syncOpts(); };
+$('segHum').onclick = e => { const b = e.target.closest('button'); if (!b) return; S.hum = b.dataset.v === '1';
+  if (S.hum) { if (!BREATH[S.breath]) { S.breath = '6'; if (S.ctx) S.breathT0 = S.ctx.currentTime; }
+    toast('Al exhalar, tararea «mmm» con la boca cerrada en la nota que oyes' + (S.sound ? ' (' + S.sound.an.note + ')' : '') + '. Suave, sin forzar.', 6500); }
+  syncOpts(); };
+for (const id of ['rngPres', 'rngPres2']) {
+  $(id).oninput = e => { S.pres = e.target.value / 100; for (const o of ['rngPres', 'rngPres2']) { $(o).value = e.target.value; fillRange($(o)); } if (E) E.grain.gain.setTargetAtTime(S.pres, S.ctx.currentTime, .1); };
+  // on release, let the original come through at once so the change can be heard, not waited for
+  $(id).onchange = () => { if (S.playing && S.ctx && S.pres > .02) nextGrain = S.ctx.currentTime + .2; };
+}
+$('rngVol').oninput = e => { S.vol = e.target.value / 100; fillRange(e.target); if (E) E.out.gain.setTargetAtTime(S.vol * MAKEUP, S.ctx.currentTime, .05); };
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { if (rec) stopRec(); return; }
   if (S.playing && S.ctx && S.ctx.state !== 'running') S.ctx.resume().then(() => lockScreen(true)).catch(() => { S.playing = false; uiPlay(); });
   else if (S.playing) lockScreen(true);
 });
 
-/* ───────────── Visual: the orb is drawn from the sound's spectrum ───────────── */
+/* ───────────── Visual: each sound's rings are drawn from its own spectrum ───────────── */
 const cv = $('cv'), g = cv.getContext('2d');
 let W = 0, H = 0, dpr = 1;
-const idleSig = new Float32Array(64); for (let i = 0; i < 64; i++) idleSig[i] = .45 + .35 * Math.sin(i / 64 * Math.PI * 3) ** 2;
-const live = new Float32Array(64), liveRaw = new Float32Array(64); let energy = 0, cueShown = '', recHintShown = '';
 function resize() { dpr = Math.min(2, window.devicePixelRatio || 1); W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
 window.addEventListener('resize', resize); resize();
-function samp(arr, u) { const p = u * 63, i = Math.floor(p), f = p - i; return arr[i] * (1 - f) + arr[Math.min(63, i + 1)] * f; }
+function samp(arr, u) { const p = clamp(u, 0, 1) * 63, i = Math.floor(p), f = p - i; return arr[i] * (1 - f) + arr[Math.min(63, i + 1)] * f; }
+// A sound's 64-band signature becomes a handful of ripples: which ones are strong, where they sit and how they twist from the centre out.
+function harmonics(sig, sym) {
+  const out = []; let tot = 0;
+  for (let q = 0; q < 7; q++) {
+    const k = q + 2, a = (.2 + samp(sig, (q + .5) / 7)) / Math.pow(k, .85) * (k === sym ? 1.7 : 1), b = samp(sig, ((q * 3 + 2) % 7 + .5) / 7);
+    out.push({ k, a, p: b * 19 + q * 2.1, w: (q % 2 ? -1 : 1) * (.5 + 1.6 * b), s: (q % 2 ? 1 : -1) * (.035 + .05 * b) }); tot += a;
+  }
+  for (const h of out) h.a /= tot;
+  const d = samp(sig, .31) * TAU * 2; out.cx = Math.cos(d); out.cy = Math.sin(d);
+  return out;
+}
+function drawOrb(k, cx, cy, R, hs, o) {
+  const N = o.n || 26, PTS = o.pts || 96, t = o.t || 0, e = o.e || 0, br = o.br || 0, prog = o.prog == null ? 1 : o.prog;
+  k.lineWidth = o.lw || .9; k.lineJoin = 'round';
+  for (let j = 0; j < N; j++) {
+    const f = (j + 1) / N; if (f > prog + 1e-6) break;
+    const dev = (.03 + .3 * Math.pow(f, 1.5)) * (1 + .35 * e), rr = R * f * (1 + .05 * br), ox = cx + R * .13 * (1 - f) * hs.cx, oy = cy + R * .13 * (1 - f) * hs.cy;
+    k.beginPath();
+    for (let i = 0; i <= PTS; i++) {
+      const th = i / PTS * TAU; let s = 0;
+      for (let q = 0; q < hs.length; q++) { const h = hs[q]; s += h.a * Math.cos(h.k * th + h.p + f * h.w + t * h.s); }
+      const r = rr * (1 + dev * s * 1.25), x = ox + r * Math.cos(th), y = oy + r * Math.sin(th);
+      i ? k.lineTo(x, y) : k.moveTo(x, y);
+    }
+    k.closePath(); k.strokeStyle = o.col(f); k.stroke();
+  }
+}
+const idleSig = new Float32Array(64); for (let i = 0; i < 64; i++) idleSig[i] = .45 + .35 * Math.sin(i / 64 * Math.PI * 3) ** 2;
+const idleH = harmonics(idleSig, 5), wave = new Float32Array(84);
+let energy = 0, cueShown = '', recHintShown = '', recShown = '', wavePush = 0;
 
 function draw(ts) {
   requestAnimationFrame(draw);
   if (cv.clientWidth !== W || cv.clientHeight !== H) resize();
-  const t = ts / 1000, hue = S.hue || 232;
-  const st = document.querySelector('.view:not([hidden]) [data-stage]');
-  if (!st) { g.setTransform(dpr, 0, 0, dpr, 0, 0); g.globalCompositeOperation = 'source-over'; g.fillStyle = '#07080e'; g.fillRect(0, 0, W, H); return; }
-  const rc = st.getBoundingClientRect(), cx = rc.left + rc.width / 2, cy = rc.top + rc.height / 2, Rr = Math.min(rc.width, rc.height) * .4;
-  let sig = idleSig, sym = 5, br = .5 + .5 * Math.sin(t * .5), e = 0, speed = REDUCED ? .2 : 1;
-  if (S.view === 'rec') { e = clamp(S.micLevel, 0, 1); br = e; }
-  else if (S.view === 'proc') { speed = REDUCED ? .2 : 3; if (S.sound) { sig = S.sound.an.sig; sym = S.sound.an.sym; } }
-  else if (S.view === 'session' && S.sound) {
-    sig = S.sound.an.sig; sym = S.sound.an.sym;
-    if (S.playing && E) {
-      E.an.getByteFrequencyData(E.freq); let sum = 0; const nyq = S.ctx.sampleRate / 2, nb = E.freq.length;
-      for (let b = 0; b < 64; b++) { const k = clamp(Math.round(80 * Math.pow(100, b / 64) / nyq * nb), 1, nb - 1), v = E.freq[k] / 255; liveRaw[b] += (v - liveRaw[b]) * .12; sum += liveRaw[b]; }
-      for (let b = 0; b < 64; b++) live[b] = (liveRaw[Math.max(0, b - 2)] + 2 * liveRaw[Math.max(0, b - 1)] + 3 * liveRaw[b] + 2 * liveRaw[Math.min(63, b + 1)] + liveRaw[Math.min(63, b + 2)]) / 9;
-      e = clamp(sum / 64 * 2.2, 0, 1); br = curBreath.v;
-      if (curBreath.cue !== cueShown) { cueShown = curBreath.cue; $('cue').textContent = cueShown; }
-    } else { for (let b = 0; b < 64; b++) { live[b] *= .92; liveRaw[b] *= .92; } if (cueShown) { cueShown = ''; $('cue').textContent = ''; } }
-  }
-  energy += (e - energy) * .1;
-  g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  g.globalCompositeOperation = 'source-over';
-  g.fillStyle = '#07080e'; g.fillRect(0, 0, W, H);
-  const halo = g.createRadialGradient(cx, cy, 0, cx, cy, Rr * 2.6);
-  halo.addColorStop(0, `hsla(${hue},70%,55%,${.13 + .12 * energy + .05 * br})`); halo.addColorStop(.5, `hsla(${hue + 30},60%,35%,.05)`); halo.addColorStop(1, 'hsla(0,0%,0%,0)');
-  g.fillStyle = halo; g.fillRect(0, 0, W, H);
-  g.globalCompositeOperation = 'lighter';
-  const core = g.createRadialGradient(cx, cy, 0, cx, cy, Rr * .62 * (1 + .14 * br));
-  core.addColorStop(0, `hsla(${hue},85%,80%,${.2 + .14 * br})`); core.addColorStop(1, `hsla(${hue},85%,60%,0)`);
-  g.fillStyle = core; g.beginPath(); g.arc(cx, cy, Rr * .7, 0, TAU); g.fill();
-  const PTS = 150;
-  for (let j = 0; j < 6; j++) {
-    const base = Rr * (.5 + .085 * j) * (1 + .11 * br), rot = t * .012 * speed * (j % 2 ? 1 : -1) * (1 + j * .35) + j * .11;
-    const sway = .55 + .45 * Math.sin(t * .23 * speed + j * 1.3);
-    g.beginPath();
-    for (let i = 0; i <= PTS; i++) {
-      const th = i / PTS * TAU, u0 = ((th / TAU * sym + rot) % 1 + 1) % 1, u = Math.abs(u0 * 2 - 1);
-      const r = base + Rr * (.2 * samp(sig, u) * sway + .13 * samp(live, u) + .05 * energy * Math.sin(th * sym + t * .8 + j));
-      const x = cx + r * Math.cos(th - Math.PI / 2), y = cy + r * Math.sin(th - Math.PI / 2);
-      i ? g.lineTo(x, y) : g.moveTo(x, y);
+  const t = ts / 1000, v = S.view;
+  g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  let st = null; for (const n of document.querySelectorAll('.view:not([hidden]) [data-stage]')) if (n.offsetWidth) { st = n; break; }
+  if (!st) return;
+  const rc = st.getBoundingClientRect(), cx = rc.left + rc.width / 2, cy = rc.top + rc.height / 2;
+  if (v === 'rec') {       // a bundle of lines that swells with what the microphone hears
+    const el = (performance.now() - S.recStart) / 1000, txt = clock(Math.min(REC_MAX, el));
+    if (txt !== recShown) { recShown = txt; $('recCount').textContent = txt; }
+    const hint = (el > 1.5 && S.micRaw < .012) ? 'Suena suave. Sigue: lo amplificaré después.' : el < 4 ? 'Termina en cuanto tengas lo que querías.' : ''; if (hint !== recHintShown) { recHintShown = hint; $('recHint').textContent = hint; }
+    if (ts - wavePush > 55) { wavePush = ts; wave.copyWithin(0, 1); const last = wave[wave.length - 2]; wave[wave.length - 1] = last + (clamp(S.micLevel, 0, 1) - last) * .45; }
+    const n = wave.length, K = 8, amp = Math.min(rc.height * .46, 120); g.lineWidth = .9;
+    for (let q = -K; q <= K; q++) {
+      g.beginPath();
+      for (let i = 0; i < n; i++) { const u = i / (n - 1), win = Math.pow(Math.sin(Math.PI * u), 1.3), a = (.035 + wave[i]) * amp * win;
+        const y = cy + q / K * a * Math.sin(u * 21 - (REDUCED ? 0 : t * 2.2) + .35 * q / K), x = rc.left + u * rc.width; i ? g.lineTo(x, y) : g.moveTo(x, y); }
+      g.strokeStyle = `rgba(74,104,58,${.85 - .5 * Math.abs(q) / K})`; g.stroke();
     }
-    g.closePath(); g.strokeStyle = `hsla(${hue + j * 9},78%,${74 - j * 3}%,${.5 - j * .06})`; g.lineWidth = 1.2; g.stroke();
+    return;
   }
-  let p = -1;
-  if (S.view === 'rec') { p = clamp((performance.now() - S.recStart) / (REC_MAX * 1000), 0, 1); $('recCount').textContent = (p * REC_MAX).toFixed(1).replace('.', ',') + ' / ' + REC_MAX + ' s';
-    const hint = (performance.now() - S.recStart > 1500 && S.micRaw < .012) ? 'Suena suave. Sigue: Resona lo amplificará.' : ''; if (hint !== recHintShown) { recHintShown = hint; $('recHint').textContent = hint; } }
-  else if (S.view === 'proc') p = S.progress;
-  if (p >= 0) { g.beginPath(); g.arc(cx, cy, Rr * 1.22, -Math.PI / 2, -Math.PI / 2 + TAU * Math.max(.002, p)); g.strokeStyle = `hsla(${hue},80%,78%,.85)`; g.lineWidth = 2; g.lineCap = 'round'; g.stroke(); }
+  const dark = v === 'session', R = Math.min(rc.width, rc.height) * .34;
+  let hs = idleH, hue = 100, e = 0, br = REDUCED ? .5 : .5 + .5 * Math.sin(t * .5), prog = 1, speed = 1;
+  if (v === 'home') { if (S.hero) { hs = S.hero.H; hue = S.hero.hue; } }
+  else if (v === 'proc') { speed = 4; prog = .12; if (S.sound && S.procOk) { hs = S.sound.H || (S.sound.H = harmonics(S.sound.an.sig, S.sound.an.sym)); hue = S.hue; prog = .12 + .88 * S.progress; } }
+  else if (S.sound) {
+    hs = S.sound.H || (S.sound.H = harmonics(S.sound.an.sig, S.sound.an.sym)); hue = S.hue;
+    if ((S.playing || origPlaying) && E && (dark || v === 'land')) {
+      E.an.getByteFrequencyData(E.freq); let sum = 0; const nyq = S.ctx.sampleRate / 2, nb = E.freq.length;
+      for (let b = 0; b < 64; b += 2) sum += E.freq[clamp(Math.round(80 * Math.pow(100, b / 64) / nyq * nb), 1, nb - 1)] / 255;
+      e = clamp(sum / 32 * 2.2, 0, 1); if (S.playing) br = curBreath.v;
+    }
+  }
+  const cue = dark && S.playing ? curBreath.cue : ''; if (cue !== cueShown) { cueShown = cue; $('cue').textContent = cue; }
+  energy += (e - energy) * .08;
+  const sat = dark ? 55 : 30, lum = dark ? 72 : 36;
+  drawOrb(g, cx, cy, R, hs, { t: REDUCED ? 0 : t * speed, e: energy, br, prog, lw: dark ? 1 : .9, col: f => `hsla(${hue},${sat}%,${lum}%,${.4 + .5 * f})` });
 }
 requestAnimationFrame(draw);
 
-setHue(232); renderLib(); showTime();
-window.__resona = { S, renderPad, analyze, trimNorm, prepare, DEMOS, MODES, get E() { return E; } };   // test hook
+setView('home'); renderLib(); showTime(); syncOpts(); uiPlay(); pvUi(); fillRange($('rngVol'));
+window.__resona = { S, PV, T, renderPad, analyze, trimNorm, prepare, DEMOS, MODES, getLog, get E() { return E; } };   // test hook
 })();
 </script>
 
