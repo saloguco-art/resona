@@ -5,14 +5,14 @@
    A full-bleed canvas draws each sound's "huella" as rings of thin lines in the stage of the visible view. */
 :root{
   color-scheme: light;
-  --bg:#f3efe6; --ink:#1c1b17; --dim:#5d5b50; --faint:#8b887a; --line:rgba(28,27,23,.18);
-  --panel:#faf7f0; --accent:#2f4526; --on:#f3efe6; --warn:#8a4b12;
+  --bg:#f3efe3; --ink:#1f2a22; --dim:#4f5a50; --faint:#7d8579; --line:rgba(31,42,34,.17);
+  --panel:#f8f5ec; --accent:#1f2a22; --on:#f3efe3; --warn:#8a3f25; --sage:#cdd4bd; --rust:#8a3f25;
   --display:ui-serif,"New York","Iowan Old Style","Palatino Linotype",Georgia,serif;
   --ui:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,"Segoe UI",Roboto,sans-serif;
   --ease-out:cubic-bezier(.23,1,.32,1); --ease-drawer:cubic-bezier(.32,.72,0,1);
 }
-html.dark{ --bg:#0e1b18; --ink:#f1ecdf; --dim:#b7bfb4; --faint:#819087; --line:rgba(241,236,223,.22);
-  --panel:#16271f; --accent:#f1ecdf; --on:#0e1b18; --warn:#f0b27a }
+html.dark{ --bg:#1f2a22; --ink:#f1ecdf; --dim:#b9c2b4; --faint:#8a968a; --line:rgba(241,236,223,.24);
+  --panel:#273329; --accent:#cdd4bd; --on:#1f2a22; --warn:#e3a07c; --sage:#cdd4bd; --rust:#e3a07c }
 html,body{height:100%}
 /* The app is one fixed screen: no page scroll, no rubber-band, no pinch or double-tap zoom. Only the inner lists scroll. */
 html{overflow:hidden;overscroll-behavior:none;touch-action:none;background:var(--bg);transition:background-color .6s}
@@ -121,7 +121,6 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 .seg{display:flex;gap:6px;flex-wrap:wrap}
 #segBreath{gap:4px}
 #segBreath .pill{padding:7px 8px}
-html:not(.dark) #optPres{display:none}
 #toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(58px + env(safe-area-inset-top, 0px));z-index:5;
   background:var(--ink);color:var(--bg);border-radius:13px;padding:11px 16px;font-size:14px;max-width:min(88vw,420px);width:max-content;text-align:center}
 /* practice, guide */
@@ -244,7 +243,7 @@ html{transition:background-color .35s ease} body{transition:background-color .35
 .trim-tip{position:absolute;top:8px;transform:translateX(-50%);background:var(--ink);color:var(--bg);border-radius:9px;padding:6px 10px;font-size:.9rem;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none;transition:opacity 90ms ease}
 .trim-tip[hidden]{display:block!important;opacity:0}
 #trimInfo{font-size:.95rem;color:var(--dim);margin-top:2px}
-#vTrim h1{font-size:1.25rem} #vTrim .sub{font-size:.9rem;margin-top:4px}
+#vTrim .sub:empty{display:none}
 .nudge button{font-size:.86rem;min-height:44px}
 /* session: one hand, little light. Pause is the largest thing on screen; the instant is a labelled bar, not a circle */
 #sName{font-size:clamp(1.6rem,7.6vw,2.1rem);line-height:1.15}
@@ -268,6 +267,81 @@ html.paused #vSession .count{opacity:.45}
 .mrow{width:100%;justify-content:flex-start;min-height:52px;border-bottom:1px solid var(--line);font-size:1rem}
 #btnKeep{min-height:52px}
 #vProc{justify-content:center}
+/* ═════ PDF «rediseño y experiencia»: its route, palette and shapes. Photos and illustrations are replaced by the sound's own
+   fingerprint, pause stays the largest control, and type stays the system's (the serif only names a landscape). ═════ */
+.primary,.outline{border-radius:999px;min-height:58px}
+.outline{border-color:var(--accent);color:var(--ink);font-weight:600}
+.pill{border-color:var(--faint);min-height:46px;justify-content:center}
+.pill[aria-pressed="true"]{background:var(--sage);border-color:var(--sage);color:#1f2a22;font-weight:650}
+.kicker{font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--rust);margin:0 0 4px}
+.top .mid{font-family:var(--display);font-style:italic;font-weight:400;font-size:1.15rem} .top .mid.brand{font-size:1.15rem}
+h1{font-size:clamp(1.7rem,7.6vw,2.05rem);font-weight:600;letter-spacing:-.02em;line-height:1.12}
+.view{gap:14px;padding-top:6px}
+.foot{gap:6px} .foot .text{min-height:48px;font-weight:600}
+/* tabs */
+.tabs{display:flex;gap:6px;border-top:1px solid var(--line);padding-top:10px;margin-top:10px;flex:none}
+.tabs button{flex:1;min-height:48px;border-radius:999px;font-size:.92rem;color:var(--ink);transition:transform 140ms var(--ease-out)}
+.tabs button[aria-pressed="true"]{background:var(--sage);font-weight:650}
+.tabs button:active{transform:scale(.97)}
+/* home */
+#heroFp{width:min(46vw,190px);height:min(46vw,190px);align-self:flex-start;margin:2px 0 0 -6px}
+.hero{padding:0;align-items:flex-end} .hero .iname{font-size:clamp(1.9rem,8.6vw,2.4rem);line-height:1.08;-webkit-line-clamp:3}
+.hero .meta{font-size:1rem;color:var(--dim)}
+#btnListen{min-height:58px;flex-direction:row;gap:10px;padding-block:0} #btnListen svg{width:18px;height:18px} #btnListen #listenTxt{font-size:1.06rem;font-weight:600;order:0}
+/* library */
+.li{min-height:68px;padding:6px 0;border-top:0;border-bottom:1px solid var(--line)}
+.li .open b{font-size:1.3rem;font-style:normal} .li .open small{font-size:.86rem;color:var(--dim)}
+.li .tri{width:48px;height:48px;background:var(--sage);border:0;color:#1f2a22}
+/* capture, in the dark */
+.recTime{margin:0;display:flex;align-items:baseline;gap:10px} .recTime .count{font-size:clamp(3.4rem,19vw,4.6rem);text-align:left;font-weight:300} .recTime .of{font-size:1rem;color:var(--dim);font-variant-numeric:tabular-nums}
+.recHint{margin:0;display:flex;justify-content:space-between;gap:12px;font-size:1rem;color:var(--ink);min-height:2.8em} #recHz{color:var(--dim);white-space:nowrap}
+#vRec .stage{min-height:110px}
+.meter{height:8px;background:rgba(241,236,223,.16)} .meter i{background:var(--sage)}
+/* instant */
+#trimName{font-size:1.25rem;margin:8px 0 0}
+.trim{background:transparent;border-block:1px solid var(--line);min-height:160px}
+.trim-sel{background:rgba(138,63,37,.10);border-inline:3px solid var(--rust)} .trim-sel i{background:var(--rust)}
+.trim-head{background:var(--ink)}
+.range{font-weight:700;color:var(--rust);font-variant-numeric:tabular-nums;font-size:1rem}
+/* first listen: three stops on a line */
+.steps{display:flex;justify-content:space-between;position:relative;flex:none;margin-top:6px}
+.steps::before{content:"";position:absolute;left:10px;right:10px;top:9px;height:2px;background:var(--ink)}
+.steps button{display:flex;flex-direction:column;gap:10px;font-size:.95rem;color:var(--ink);min-width:72px;min-height:56px;position:relative;transition:transform 140ms var(--ease-out)}
+.steps button:first-child{align-items:flex-start} .steps button:nth-child(2){align-items:center} .steps button:last-child{align-items:flex-end}
+.steps i{width:20px;height:20px;border-radius:50%;background:var(--ink);border:4px solid var(--bg);box-sizing:border-box;transition:transform 160ms var(--ease-out)}
+.steps button[aria-pressed="true"] i{background:var(--rust);transform:scale(1.25)} .steps button[aria-pressed="true"] span{font-weight:700}
+.steps button:active{transform:scale(.97)}
+.pvtxt{margin:0;font-size:1rem;color:var(--dim);min-width:0} #pvHint{color:var(--ink);font-weight:600} #pvHint:not(:empty)+#pvIdle{display:none}
+.hz{font-size:1rem;font-weight:700;color:var(--ink)}
+#landName{font-size:clamp(1.8rem,8vw,2.2rem)}
+#vLand.demo #landName{display:-webkit-box}
+#vLand.demo #landTitle{font-size:.72rem;font-weight:700;color:var(--rust);letter-spacing:.09em}
+/* end: two fields on a line */
+.fld{display:flex;flex-direction:column;gap:2px}
+.line{font:inherit;font-size:1.3rem;color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:8px 0;width:100%;-webkit-user-select:text;user-select:text}
+.line.iname{font-family:var(--display)} .line:focus{outline:0;border-bottom-color:var(--ink)} .line::placeholder{color:var(--faint)}
+.fld .fine{text-align:left;margin-top:4px} #endSug{margin-top:8px} #endSug .pill{min-height:40px;font-size:.84rem}
+/* adjust: a page before the session, a sheet during it */
+.opt{display:flex;flex-direction:column;align-items:stretch;gap:8px;padding-bottom:14px;border-bottom:1px solid var(--line)} .opt .lbl{font-size:1.06rem;font-weight:600;color:var(--ink);letter-spacing:0;margin:0}
+.seg.eq{flex-wrap:nowrap} .seg.eq .pill{flex:1;padding-inline:4px;font-size:.9rem;white-space:nowrap}
+.sw{width:58px;height:34px;border-radius:17px;background:var(--faint);position:relative;flex:none;transition:background-color 160ms ease}
+.sw i{position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:var(--bg);transition:transform 180ms var(--ease-out)}
+.sw[aria-checked="true"]{background:var(--ink)} html.dark .sw[aria-checked="true"]{background:var(--sage)} .sw[aria-checked="true"] i{transform:translateX(24px)}
+.ptop,.ph{display:none}
+.sheet.page{inset:0;left:0;right:0;bottom:0;max-width:520px;max-height:none;border:0;border-radius:0;box-shadow:none;background:var(--bg);gap:14px;
+  padding:calc(8px + env(safe-area-inset-top,0px)) max(22px, env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(22px, env(safe-area-inset-left,0px))}
+.sheet.page .ptop{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;min-height:44px;text-align:center;font-family:var(--display);font-style:italic;font-size:1.15rem} .sheet.page .ptop .icon{margin-left:-10px}
+.sheet.page .ph{display:block}
+#opts:not(.page) #optsDone{min-height:50px}
+.sheet.page #optsDone{position:sticky;bottom:0;flex:none;box-shadow:0 -14px 0 6px var(--bg)}
+#trimListen{font-weight:650}
+#sSub,#sRest{color:var(--dim);text-transform:none;letter-spacing:.02em;font-weight:400;font-size:.9rem;margin:2px 0 0}
+/* session */
+.inst{border-radius:999px;min-height:58px;border-color:var(--ink)}
+#btnPlay.round.xl{background:var(--sage);color:#1f2a22}
+.round{background:var(--accent);color:var(--on)} .round.sm{width:56px;height:56px}
+@media (max-height:640px){ #heroFp{width:120px;height:120px} .primary,.outline{min-height:52px} }
+@media (prefers-reduced-motion:reduce){ .steps i,.sw i{transition:none} }
 .pbar{height:3px;border-radius:2px;background:var(--line);overflow:hidden;margin:18px auto 0;width:min(240px,70%)}
 .pbar i{display:block;height:100%;background:var(--accent);transform-origin:left center;transform:scaleX(.08);transition:transform 200ms linear}
 @media (max-height:640px){ h1{font-size:1.35rem} .round.stop{width:80px;height:80px} #btnPlay.round.xl{width:84px;height:84px} .hero canvas{width:64px;height:64px} .hero .iname{font-size:1.5rem} #btnListen{min-height:68px} }
@@ -284,48 +358,63 @@ html.paused #vSession .count{opacity:.45}
 
   <!-- HOME: first time = record or import; returning = play your last landscape -->
   <section class="view" id="vHome">
-    <div class="col grow" id="homeFirst">
-      <h1>Vuelve a un lugar que te hace bien</h1>
-      <p class="sub">Un sonido tuyo, convertido en un paisaje para meditar.</p>
+    <h1>Volver aquí</h1>
+    <canvas id="heroFp" width="1" height="1" aria-hidden="true"></canvas>
+    <div class="hero">
+      <div class="hero-txt"><p class="kicker" id="heroKick">Mi ritual</p><p class="iname" id="heroName"></p><p class="meta" id="heroMeta"></p></div>
+      <button class="dots" id="heroEdit" aria-label="Cambiar nombre, momento o borrar">···</button>
+      <button id="heroPlay" hidden aria-hidden="true" tabindex="-1"></button>
     </div>
-    <div class="col grow" id="homeBack" hidden>
-      <div class="hero">
-        <canvas id="heroFp" width="1" height="1" aria-hidden="true"></canvas>
-        <div class="hero-txt"><p class="iname" id="heroName"></p><p class="meta" id="heroMeta"></p></div>
-        <button class="dots" id="heroEdit" aria-label="Cambiar nombre, momento o borrar">···</button>
-        <button id="heroPlay" hidden aria-hidden="true" tabindex="-1"></button>
-      </div>
-      <p class="lbl" id="libLbl" hidden>Tus paisajes</p>
-      <div class="list" id="lib"></div>
-    </div>
+    <div class="grow"></div>
     <div class="foot">
-      <p class="note" id="micNote" hidden></p>
-      <button class="primary" id="btnListen" hidden><small id="listenSub"></small><span id="listenName"></span><span id="listenTxt">Escuchar</span></button>
-      <button class="primary" id="btnDemoHome"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor"><path d="M8 5v14l11-7z"/></svg>Escuchar cómo funciona</button>
-      <button class="outline" id="btnCreate">Crear con mi sonido</button>
-      <p class="fine" id="homeFine">Tu sonido se queda en este dispositivo.</p>
-      <p class="links"><button id="lnkLugar" hidden>El mismo lugar, otro día</button><button data-go="eval" id="lnkEval" hidden>Prueba de escucha</button><button data-go="stats">Tu práctica</button> · <button data-go="guide">Guía</button></p>
+      <button class="primary" id="btnListen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg><span id="listenTxt">Escuchar</span></button>
+      <button class="text" id="btnCreate">Crear con otro sonido</button>
     </div>
+  </section>
+
+  <!-- CREATE: the first thing seen with an empty library -->
+  <section class="view" id="vCreate" hidden>
+    <h1>¿Qué sonido quieres cerca?</h1>
+    <p class="sub">Puede ser la lluvia en tu ventana, un tarareo o el vaso que usas cada mañana.</p>
+    <div class="grow"></div>
+    <p class="note" id="micNote" hidden></p>
+    <div class="foot">
+      <button class="primary" id="btnRec"><span id="btnRecTxt">Grabar un sonido</span></button>
+      <label class="outline" id="lblFile">Elegir audio o vídeo<input class="sr" type="file" id="file" accept="video/*,audio/*"></label>
+      <button class="text" id="btnDemoHome">Escuchar antes una muestra</button>
+      <p class="links" id="kindLinks">Con guía: <button data-kind="objeto">objeto</button> <button data-kind="tarareo">tarareo</button> <button data-kind="rio">río a dos tomas</button></p>
+      <p class="links" id="demoLinks" hidden>Sintéticos: <button data-demo="madera">madera</button> <button data-demo="agua">agua</button> <button data-demo="voz">voz</button> <button data-demo="pajaro">pájaro</button></p>
+    </div>
+  </section>
+
+  <!-- LIBRARY -->
+  <section class="view" id="vLib" hidden>
+    <div><h1>Mis sonidos</h1><p class="sub">Guardados en este dispositivo</p></div>
+    <p class="fine" id="libEmpty" style="text-align:left" hidden>Aún no hay ninguno. Empieza en «Crear».</p>
+    <div class="list" id="lib"></div>
+    <p class="links"><button id="lnkLugar" hidden>El mismo lugar, otro día</button><button data-go="eval" id="lnkEval" hidden>Prueba de escucha</button><button data-go="stats">Tu práctica</button> · <button data-go="guide">Guía</button></p>
   </section>
 
   <!-- RECORDING -->
   <section class="view" id="vRec" hidden>
-    <div id="recLive" class="col grow" style="gap:12px">
-      <div class="center"><p class="count" id="recCount" aria-label="Tiempo grabado">00:00</p><p class="fine" style="margin-top:2px">de 00:30 · <span id="recHz">— Hz</span></p></div>
+    <div id="recLive" class="col grow" style="gap:10px">
+      <p class="kicker" id="recKick">Micrófono activo</p>
+      <p class="recTime"><span class="count" id="recCount" aria-label="Tiempo grabado">00:00</span><span class="of">/ 00:30</span></p>
       <div class="stage" data-stage></div>
-      <div><div class="meter" id="recMeter" role="meter" aria-label="Nivel de entrada del micrófono" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
-        <p class="fine" id="recHint" aria-live="polite" style="min-height:1.6em;margin-top:8px"></p></div>
+      <div class="meter" id="recMeter" role="meter" aria-label="Nivel de entrada del micrófono" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
+      <p class="recHint"><span id="recHint" aria-live="polite"></span><span id="recHz">— Hz</span></p>
       <div class="foot">
-        <button class="round stop" id="btnStop" aria-label="Detener la grabación"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg></button>
-        <span class="text" aria-hidden="true">Detener</span>
+        <button class="primary" id="btnStop">Terminar grabación</button>
+        <button class="text" id="recCancel">Cancelar</button>
       </div>
     </div>
     <div id="recDenied" class="col grow" hidden>
-      <div class="grow"></div>
+      <p class="kicker">Sin micrófono</p>
       <h1>No puedo usar el micrófono</h1>
       <p class="sub" id="recDeniedTxt"></p>
-      <div class="foot" style="margin-top:16px">
-        <label class="primary" id="lblFileRec">Elegir un vídeo o audio<input class="sr" type="file" id="fileRec" accept="video/*,audio/*"></label>
+      <div class="grow"></div>
+      <div class="foot">
+        <label class="primary" id="lblFileRec">Elegir audio o vídeo<input class="sr" type="file" id="fileRec" accept="video/*,audio/*"></label>
         <button class="text" id="recRetry">Probar otra vez el micrófono</button>
       </div>
     </div>
@@ -340,31 +429,25 @@ html.paused #vSession .count{opacity:.45}
 
   <!-- COMPARE: original against landscape, before configuring anything -->
   <section class="view" id="vLand" hidden>
-    <div><p class="lbl" id="landTitle" style="margin:0">Tu paisaje</p><h1 class="it" id="landName"></h1></div>
-    
-    <div class="seg2" id="segSrc" role="group" aria-label="Qué escuchar">
-      <button data-v="orig" aria-pressed="false">Original</button>
-      <button data-v="land" aria-pressed="true">Paisaje</button>
+    <div><p class="kicker" id="landTitle" hidden></p><h1 class="it" id="landName"></h1></div>
+    <div class="steps" id="segSrc" role="group" aria-label="Qué escuchar">
+      <button data-v="orig" aria-pressed="false"><i></i><span>Original</span></button>
+      <button data-v="trans" aria-pressed="false"><i></i><span>Transición</span></button>
+      <button data-v="land" aria-pressed="true"><i></i><span>Paisaje</span></button>
     </div>
-    <div class="center"><button class="round" id="pvPlay" aria-label="Reproducir"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-      <p class="fine" id="pvHint" style="min-height:1.5em;margin-top:6px"></p></div>
-    <div id="demoBox" hidden><p class="fine" id="demoNote"></p><div class="seg" id="demoTakes" role="group" aria-label="Qué toma escuchar" hidden style="justify-content:center;margin-top:6px"></div>
-      <div class="center"><button class="text small" id="btnAgain">Repetir la comparación</button></div></div>
-    <div class="nodemo"><label class="lbl" for="rngPres">Presencia del original</label>
-      <input type="range" id="rngPres" min="0" max="100" value="45"></div>
-    <div id="resRow" class="center">
-      <div class="row" style="justify-content:center;gap:10px"><span class="hz" id="hzFig"></span><button class="pill" id="btnDemo" aria-pressed="true"></button></div>
-      <div class="seg" id="segRes" role="group" aria-label="Qué resonancia escuchar" hidden style="justify-content:center;margin-top:6px"></div>
-      <p class="fine"><span id="hzNote"></span><span id="kindInfo"></span></p>
-    </div>
-    <div class="grow"></div>
-    <button class="outline nodemo" id="btnKeep"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 11v2"/></svg><span id="keepTxt">Elegir mi instante</span></button>
+    <div class="row" style="flex-wrap:nowrap;gap:14px"><button class="round sm" id="pvPlay" aria-label="Reproducir"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+      <p class="pvtxt"><span id="pvHint"></span><span id="pvIdle"><b class="hz" id="hzFig"></b> <span id="hzNote"></span><span id="kindInfo"></span></span></p></div>
+    <div class="seg" id="segRes" role="group" aria-label="Qué resonancia suena en la transición" hidden></div>
+    <button id="btnDemo" hidden aria-hidden="true" tabindex="-1"></button>
+    <div id="demoBox" hidden><p class="fine" id="demoNote" style="text-align:left"></p><div class="seg" id="demoTakes" role="group" aria-label="Qué toma escuchar" hidden style="margin-top:6px"></div><button id="btnAgain" hidden></button></div>
     <div id="labRow" hidden><p class="fine" id="labInfo"></p>
       <div class="row" style="justify-content:center;gap:2px"><button class="text small" id="labAB">A/B del laboratorio</button><button class="text small" id="labDiag">Diagnóstico</button></div></div>
+    <div class="grow"></div>
     <div class="foot">
-      <button class="primary serif" id="btnStart">Empezar sesión</button>
+      <button class="outline nodemo" id="btnKeep"><span id="keepTxt">Elegir mi instante</span></button>
+      <button class="primary" id="btnStart">Meditar 5 min</button>
       <div class="row between nodemo" style="flex-wrap:nowrap">
-        <button class="text small" id="btnSummary" aria-label="Cambiar intención y duración"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 8h9M19 8h1M4 16h1M11 16h9"/><circle cx="16" cy="8" r="2.5"/><circle cx="8" cy="16" r="2.5"/></svg><span id="sumTxt">Calma · 5 min</span></button>
+        <button class="text" id="btnSummary"><span id="sumTxt" hidden></span>Ajustar sesión</button>
         <span class="row" style="flex-wrap:nowrap;gap:0"><button class="text small" id="btnKeepHere">Volver aquí</button><button class="text small" id="btnMore" aria-haspopup="dialog">Más</button></span>
       </div>
     </div>
@@ -372,18 +455,19 @@ html.paused #vSession .count{opacity:.45}
 
   <!-- FRAGMENT -->
   <section class="view" id="vTrim" hidden>
-    <div class="center"><h1 id="trimTitle">Elige el fragmento</h1><p class="sub" id="trimSub">Arrastra los bordes y quédate con la parte que quieres volver a escuchar.</p></div>
+    <div><h1 id="trimTitle">Elige tu instante</h1><p class="sub" id="trimSub"></p><p class="iname" id="trimName"></p></div>
     <div class="trim" id="trim"><canvas id="trimCv"></canvas><div class="trim-sel" id="trimSel"><i class="l"></i><i class="r"></i></div><div class="trim-head" id="trimHead" hidden></div><div class="trim-tip" id="trimTip" hidden></div></div>
-    <p class="fine" id="trimInfo" style="font-variant-numeric:tabular-nums" aria-live="polite">&nbsp;</p>
+    <div class="row between" style="flex-wrap:nowrap"><span class="range" id="trimRange">&nbsp;</span><button class="text" id="trimListen">Oír selección</button></div>
+    <p class="sr" id="trimInfo" aria-live="polite">&nbsp;</p>
     <div class="nudge" id="trimNudge" role="group" aria-label="Ajustar los bordes">
       <button data-e="a" data-d="-1" aria-label="Inicio antes">Inicio −</button><button data-e="a" data-d="1" aria-label="Inicio después">Inicio +</button>
       <button data-e="b" data-d="-1" aria-label="Fin antes">Fin −</button><button data-e="b" data-d="1" aria-label="Fin después">Fin +</button>
     </div>
-    <div class="center"><button class="round" id="trimPlay" aria-label="Escuchar el fragmento"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
-      <p class="fine" id="trimHint" style="margin-top:8px">Suena al soltar un borde.</p></div>
+    <button id="trimPlay" hidden aria-hidden="true" tabindex="-1"></button><p id="trimHint" hidden></p>
     <div class="grow"></div>
     <div class="foot">
-      <button class="primary" id="trimUse">Usar este fragmento</button>
+      <button class="primary" id="trimUse">Escuchar el paisaje</button>
+      <button class="text" id="trimSkip">Usar toda la toma</button>
       <button class="text under" id="trimClear" hidden>Quitar mi instante</button>
     </div>
   </section>
@@ -440,15 +524,15 @@ html.paused #vSession .count{opacity:.45}
 
   <!-- END: keep it or not -->
   <section class="view" id="vEnd" hidden>
-    <p class="kicker center" id="endKick" style="margin-top:8px">Sesión terminada</p>
+    <div><h1 id="endQ">¿Volver aquí?</h1><p class="sub" id="endKick">Guarda la versión que acabas de escuchar.</p></div>
+    <div class="fld"><label class="kicker" for="endName">Nombre</label><input class="line iname" type="text" id="endName" maxlength="40" autocomplete="off"><p class="fine">Puedes cambiarlo cuando quieras.</p></div>
+    <div class="fld"><label class="kicker" for="endMoment">Momento · opcional</label><input class="line" type="text" id="endMoment" maxlength="40" autocomplete="off" placeholder="Al cerrar el portátil"><p class="fine">Una pista para elegirlo la próxima vez.</p>
+      <div class="seg" id="endSug"><button class="pill" data-v="Al terminar de trabajar">Al terminar de trabajar</button><button class="pill" data-v="Antes de dormir">Antes de dormir</button></div></div>
     <div class="grow"></div>
-    <h1 class="it" id="endQ">¿Volverías a este sonido?</h1>
-    <div><label class="lbl" for="endName">Nombre del sonido</label>
-      <input class="field" type="text" id="endName" maxlength="40" autocomplete="off"></div>
-    <div class="foot" style="margin-top:6px">
-      <button class="primary" id="endSave">Volver aquí</button>
-      <button class="text small" id="endPostal">Crear postal sonora</button>
-      <button class="text under" id="endDrop">Salir sin guardar</button>
+    <div class="foot">
+      <button class="primary" id="endSave">Guardar mi ritual</button>
+      <button class="text" id="endDrop">Ahora no</button>
+      <button id="endPostal" hidden aria-hidden="true" tabindex="-1"></button>
     </div>
   </section>
 
@@ -528,60 +612,58 @@ html.paused #vSession .count{opacity:.45}
       <p>Mide la vibración acústica que capta el micrófono: su nota dominante, sus armónicos, su brillo y cómo evoluciona. No mide campos electromagnéticos ni promete curar nada. Todo ocurre en tu dispositivo y nada se envía a ningún servidor.</p>
     </div>
   </section>
+  <nav class="tabs" id="tabs" aria-label="Secciones"><button data-v="home" aria-pressed="false">Inicio</button><button data-v="create" aria-pressed="false">Crear</button><button data-v="lib" aria-pressed="false">Biblioteca</button></nav>
 </main>
 
-<div class="sheet" id="opts" role="dialog" aria-label="Ajustes de la sesión" hidden>
+<div class="sheet" id="opts" role="dialog" aria-label="Ajustar sesión" hidden>
+  <div class="ptop"><button class="icon" id="optsBack" aria-label="Volver"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button><span>Ajustar sesión</span><i></i></div>
+  <h1 class="ph">A tu manera</h1>
   <div class="opt"><p class="lbl">Intención</p>
-    <div class="seg" id="segMode">
+    <div class="seg eq" id="segMode">
       <button class="pill" data-v="calma" aria-pressed="true">Calma</button>
       <button class="pill" data-v="foco" aria-pressed="false">Foco</button>
       <button class="pill" data-v="sueno" aria-pressed="false">Sueño</button>
     </div></div>
-  <div class="opt" id="optMov"><p class="lbl">Movimiento</p>
-    <div class="seg" id="segMov">
-      <button class="pill" data-v="estable" aria-pressed="false">Estable</button>
-      <button class="pill" data-v="suave" aria-pressed="true">Suave</button>
-    </div></div>
-  <div class="opt" id="optQuiet" hidden><p class="lbl">Instante</p>
-    <div class="seg" id="segQuiet">
-      <button class="pill" data-v="1" aria-pressed="true">En pausa</button>
-      <button class="pill" data-v="0" aria-pressed="false">Presente</button>
-    </div></div>
-  <div class="opt" id="optDim" hidden><p class="lbl">Orbe</p>
-    <div class="seg" id="segDim">
-      <button class="pill" data-v="0" aria-pressed="true">Visible</button>
-      <button class="pill" data-v="1" aria-pressed="false">Oscuro</button>
-    </div></div>
   <div class="opt"><p class="lbl">Duración</p>
-    <div class="seg" id="segDur">
+    <div class="seg eq" id="segDur">
       <button class="pill" data-v="5" aria-pressed="true">5 min</button>
-      <button class="pill" data-v="10" aria-pressed="false">10</button>
-      <button class="pill" data-v="20" aria-pressed="false">20</button>
-      <button class="pill" data-v="0" aria-pressed="false" aria-label="Sin límite">∞</button>
+      <button class="pill" data-v="10" aria-pressed="false">10 min</button>
+      <button class="pill" data-v="20" aria-pressed="false">20 min</button>
+      <button class="pill" data-v="0" aria-pressed="false">Sin límite</button>
     </div></div>
-  <div class="opt"><p class="lbl">Respira / min</p>
-    <div class="seg" id="segBreath">
-      <button class="pill" data-v="libre" aria-pressed="false">Libre</button>
-      <button class="pill" data-v="7" aria-pressed="false" aria-label="7 respiraciones por minuto">7</button>
+  <div class="opt" id="optPres"><p class="lbl">Presencia del original</p>
+    <div class="seg eq" id="segPres">
+      <button class="pill" data-v="20" aria-pressed="false">Lejana</button>
+      <button class="pill" data-v="45" aria-pressed="true">Media</button>
+      <button class="pill" data-v="75" aria-pressed="false">Cercana</button>
+    </div>
+    <input class="sr" type="range" id="rngPres" min="0" max="100" value="45" tabindex="-1" aria-hidden="true"><input class="sr" type="range" id="rngPres2" min="0" max="100" value="45" tabindex="-1" aria-hidden="true"></div>
+  <div class="opt"><div class="row between" style="flex-wrap:nowrap"><div><p class="lbl">Respiración</p><p class="fine" id="breathTxt" style="text-align:left">Desactivada · pulsa para elegir el ritmo</p></div>
+      <button class="sw" id="breathSw" role="switch" aria-checked="false" aria-label="Guía de respiración"><i></i></button></div>
+    <div class="seg" id="segBreath" hidden>
+      <button class="pill" data-v="libre" aria-pressed="false" hidden>Libre</button>
+      <button class="pill" data-v="7" aria-pressed="false" aria-label="7 respiraciones por minuto">7 / min</button>
       <button class="pill" data-v="6" aria-pressed="true" aria-label="6 respiraciones por minuto">6</button>
       <button class="pill" data-v="5.5" aria-pressed="false" aria-label="5,5 respiraciones por minuto">5,5</button>
       <button class="pill" data-v="4.5" aria-pressed="false" aria-label="4,5 respiraciones por minuto">4,5</button>
     </div></div>
-  <div class="opt"><p class="lbl">Tararear</p>
-    <div class="seg" id="segHum">
-      <button class="pill" data-v="0" aria-pressed="true">No</button>
-      <button class="pill" data-v="1" aria-pressed="false">Sí, al exhalar</button>
-    </div></div>
-  <div class="opt" id="optHint"><p class="lbl">Indicación</p>
-    <div class="seg" id="segHint">
-      <button class="pill" data-v="1" aria-pressed="true">Mostrar</button>
-      <button class="pill" data-v="0" aria-pressed="false">Ocultar</button>
-    </div></div>
-  <div class="opt" id="optPres"><label class="lbl" for="rngPres2">Original</label>
-    <input type="range" id="rngPres2" min="0" max="100" value="45" aria-label="Presencia del sonido original"></div>
-  <div class="opt"><label class="lbl" for="rngVol">Volumen</label>
-    <input type="range" id="rngVol" min="0" max="100" value="80" style="--p:80%"></div>
-  <div class="row" style="justify-content:flex-end"><button class="pill" id="optsDone" aria-pressed="true">Hecho</button></div>
+  <button class="text small" id="optMoreBtn" aria-expanded="false" style="align-self:flex-start">Más ajustes</button>
+  <div id="optMore" class="col" hidden>
+    <div class="opt" id="optMov"><p class="lbl">Movimiento</p>
+      <div class="seg" id="segMov"><button class="pill" data-v="estable" aria-pressed="false">Estable</button><button class="pill" data-v="suave" aria-pressed="true">Suave</button></div></div>
+    <div class="opt" id="optQuiet" hidden><p class="lbl">Mi instante en Foco</p>
+      <div class="seg" id="segQuiet"><button class="pill" data-v="1" aria-pressed="true">En pausa</button><button class="pill" data-v="0" aria-pressed="false">Presente</button></div></div>
+    <div class="opt" id="optDim" hidden><p class="lbl">Orbe</p>
+      <div class="seg" id="segDim"><button class="pill" data-v="0" aria-pressed="true">Visible</button><button class="pill" data-v="1" aria-pressed="false">Oscuro</button></div></div>
+    <div class="opt"><p class="lbl">Tararear</p>
+      <div class="seg" id="segHum"><button class="pill" data-v="0" aria-pressed="true">No</button><button class="pill" data-v="1" aria-pressed="false">Sí, al exhalar</button></div></div>
+    <div class="opt" id="optHint"><p class="lbl">Indicación</p>
+      <div class="seg" id="segHint"><button class="pill" data-v="1" aria-pressed="true">Mostrar</button><button class="pill" data-v="0" aria-pressed="false">Ocultar</button></div></div>
+    <div class="opt"><label class="lbl" for="rngVol">Volumen</label>
+      <input type="range" id="rngVol" min="0" max="100" value="80" style="--p:80%"></div>
+  </div>
+  <div class="grow"></div>
+  <button class="primary" id="optsDone">Hecho</button>
 </div>
 
 <div class="sheet" id="moreSheet" role="dialog" aria-label="Más acciones" hidden>
@@ -593,17 +675,7 @@ html.paused #vSession .count{opacity:.45}
   </div>
   <div class="row" style="justify-content:center"><button class="text small" id="moreClose">Cerrar</button></div>
 </div>
-<div class="sheet" id="createSheet" role="dialog" aria-label="Crear con mi sonido" hidden>
-  <p class="rate-q">Crear con mi sonido</p>
-  <p class="fine" style="font-size:15px;color:var(--dim)">Elige un vídeo de un lugar al que volverías, o graba lo que suena ahora. Todo se queda en este dispositivo.</p>
-  <div class="two">
-    <label class="outline" id="lblFile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3"/></svg>Elegir un vídeo o audio<input class="sr" type="file" id="file" accept="video/*,audio/*"></label>
-    <button class="outline" id="btnRec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg><span id="btnRecTxt">Grabar ahora</span></button>
-  </div>
-  <p class="links" id="kindLinks">Con guía: <button data-kind="objeto">objeto</button> <button data-kind="tarareo">tarareo</button> <button data-kind="rio">río a dos tomas</button></p>
-  <p class="links" id="demoLinks">Ejemplos sintéticos: <button data-demo="madera">madera</button> <button data-demo="agua">agua</button> <button data-demo="voz">voz</button> <button data-demo="pajaro">pájaro</button></p>
-  <div class="row" style="justify-content:center"><button class="text small" id="createCancel">Cancelar</button></div>
-</div>
+<div id="createSheet" hidden><button id="createCancel" hidden></button></div>
 <div class="sheet" id="postalSheet" role="dialog" aria-label="Postal sonora" hidden>
   <p class="rate-q">Postal sonora</p>
   <p class="fine" id="postalInfo" aria-live="polite">Preparando 15 segundos…</p>
@@ -643,7 +715,7 @@ html.paused #vSession .count{opacity:.45}
   <div><label class="lbl" for="editName">Nombre del sonido</label>
     <input class="field" type="text" id="editName" maxlength="40" autocomplete="off"></div>
   <p class="fine" id="editMeta" style="text-align:left"></p>
-  <div><p class="lbl">Momento</p><div class="seg" id="segEditMoment"><button class="pill" data-v="" aria-pressed="true">Sin momento</button><button class="pill" data-v="trabajo" aria-pressed="false">Al terminar de trabajar</button><button class="pill" data-v="dormir" aria-pressed="false">Antes de dormir</button></div></div>
+  <div><label class="lbl" for="editMoment">Momento · opcional</label><input class="field" type="text" id="editMoment" maxlength="40" autocomplete="off" placeholder="Al cerrar el portátil"></div>
   <div class="row between">
     <button class="text small" id="editDel">Borrar</button>
     <span class="row"><button class="text small" id="editCancel">Cancelar</button><button class="pill" id="editSave" aria-pressed="true">Guardar</button></span>
@@ -2061,7 +2133,7 @@ async function applyMark(clear) {
   try { await sleep(30); S.pads[S.mode] = await renderVariant(S.var, S.mode, p => { S.progress = p; }); mvGate(); if (mvActive()) await mvPrepare(); } catch (e) { console.error(e); } finally { S.busy = false; }
   if (S.sound.id) updateSound(S.sound.id, { mark: S.mark, lab: labMeta() });
   if (!clear && S.mode === 'foco' && S.quiet) toast('En Foco el instante conservado no reaparece entero. Puedes recuperarlo en los ajustes.', 5500);
-  enterLand(false);
+  enterLand(false); if (T.first) { T.first = false; demoStart(); }
 }
 
 /* ═════════════ Local test (only with ?prueba=1 or ?lab=1): three conditions, names hidden ═════════════
@@ -2168,8 +2240,8 @@ function origStart() {
   PV.src = s; PV.g = g; origPlaying = true;
 }
 function pvUi() {
-  pressSeg('segSrc', PV.which);
-  $('pvPlay').innerHTML = PV.on ? ICON.pause : ICON.play; $('pvPlay').setAttribute('aria-label', PV.on ? 'Pausar' : 'Reproducir');
+  const on = PV.on || DM.on; pressSeg('segSrc', DM.on ? 'trans' : PV.which);
+  $('pvPlay').innerHTML = on ? ICON.pause : ICON.play; $('pvPlay').setAttribute('aria-label', on ? 'Pausar' : 'Reproducir');
 }
 function pvApply() {
   const c = ensureCtx(); if (!c || !S.sound) return;
@@ -2204,23 +2276,23 @@ const ICON = {
   back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></svg>'
 };
-const VIEWS = ['Home', 'Rec', 'Proc', 'Land', 'Trim', 'AB', 'Cmp', 'Eval', 'Lugar', 'Pick', 'Session', 'End', 'Stats', 'Guide'];
+const VIEWS = ['Home', 'Create', 'Lib', 'Rec', 'Proc', 'Land', 'Trim', 'AB', 'Cmp', 'Eval', 'Lugar', 'Pick', 'Session', 'End', 'Stats', 'Guide'];
 function setView(v) {
   S.view = v;
   for (const id of VIEWS) $('v' + id).hidden = id.toLowerCase() !== v;
-  const dark = v === 'session'; document.documentElement.classList.toggle('dark', dark);
-  const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = dark ? '#0e1b18' : '#f3efe6';
-  const back = v === 'rec' || v === 'land' || v === 'trim' || v === 'ab' || v === 'cmp' || v === 'eval' || v === 'lugar' || v === 'pick' || v === 'session' || v === 'stats' || v === 'guide', bb = $('btnBack');
-  bb.style.visibility = back ? 'visible' : 'hidden'; bb.innerHTML = dark ? ICON.down : ICON.back; bb.setAttribute('aria-label', dark ? 'Volver a tu paisaje' : 'Atrás');
-  $('btnOpts').style.visibility = dark ? 'visible' : 'hidden';
-  const mid = $('topMid'), title = v === 'rec' ? 'Grabación' : (v === 'land' || v === 'trim' || v === 'ab' || v === 'cmp' || dark) ? '' : 'arrullo';
-  mid.textContent = title; mid.classList.toggle('brand', title === 'arrullo');
-  $('top').classList.toggle('left', v === 'home' && !!S.hasLib);
-  if (!dark && v !== 'land') $('opts').hidden = true;
-  if (v !== 'home') { $('edit').hidden = true; $('kindSheet').hidden = true; $('createSheet').hidden = true; if (v !== 'session') $('rioSheet').hidden = true; }
+  const sess = v === 'session', dark = sess || v === 'rec'; document.documentElement.classList.toggle('dark', dark);
+  const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = dark ? '#1f2a22' : '#f3efe3';
+  const root = v === 'home' || v === 'create' || v === 'lib', bb = $('btnBack');
+  bb.style.visibility = root || v === 'proc' ? 'hidden' : 'visible'; bb.innerHTML = sess ? ICON.down : ICON.back; bb.setAttribute('aria-label', sess ? 'Volver a tu paisaje' : 'Atrás');
+  $('btnOpts').style.visibility = sess ? 'visible' : 'hidden';
+  const mid = $('topMid'), title = { home: 'Arrullo', create: 'Arrullo', lib: 'Biblioteca', rec: 'Grabar', trim: 'Crear', pick: 'Crear', proc: 'Crear', land: S.sound && S.sound.demo ? 'Muestra' : S.sound && S.sound.isNew ? 'Primera escucha' : 'Tu paisaje', end: 'Fin de sesión', session: MODE_NAMES[S.mode], stats: 'Tu práctica', guide: 'Guía', lugar: 'El mismo lugar', eval: 'Prueba de escucha' }[v] || '';
+  mid.textContent = title; mid.classList.toggle('brand', title === 'Arrullo'); $('top').classList.remove('left');
+  $('tabs').hidden = !root; if (root) pressSeg('tabs', v);
+  if (!sess) $('opts').hidden = true;
+  if (v !== 'home' && v !== 'lib') { $('edit').hidden = true; $('kindSheet').hidden = true; $('createSheet').hidden = true; if (v !== 'session') $('rioSheet').hidden = true; }
   if (v !== 'eval' && EV.node) evStop();
   if (v !== 'lugar' && LG.src) lgStop(.2); if (v !== 'land') { demoStop(); $('keepSheet').hidden = true; $('moreSheet').hidden = true; } if (v !== 'land' && v !== 'end') postalClose(); if (v !== 'pick' && v !== 'proc') mediaDrop();
-  if (!dark) { S.dimNow = false; document.documentElement.classList.remove('dim'); }
+  if (!sess) { S.dimNow = false; document.documentElement.classList.remove('dim'); }
   if (v !== 'land' && v !== 'ab') $('diag').hidden = true;
   if (v === 'home' && typeof applyUpdate === 'function') setTimeout(applyUpdate, 50);
 }
@@ -2243,6 +2315,9 @@ function syncOpts() {
   if (E) { E.grain.gain.setTargetAtTime(S.pres, S.ctx.currentTime, .1); E.mark.gain.setTargetAtTime(Math.min(1, S.pres * 1.6), S.ctx.currentTime, .1); }
   pressSeg('segMov', S.mov); pressSeg('segQuiet', S.quiet ? 1 : 0); pressSeg('segDim', S.dim ? 1 : 0); pressSeg('segHint', hintOn() ? 1 : 0);
   const rio = !!(S.sound && S.sound.rio); $('btnInst').hidden = rio;
+  { const pv = Math.round(S.pres * 100), near = [20, 45, 75].reduce((a, b) => Math.abs(b - pv) < Math.abs(a - pv) ? b : a); pressSeg('segPres', near); const bon = !!BREATH[S.breath]; if (bon) S.lastBreath = S.breath;
+    $('breathSw').setAttribute('aria-checked', String(bon)); $('segBreath').hidden = !bon; $('breathTxt').textContent = bon ? String(S.breath).replace('.', ',') + ' respiraciones por minuto' : 'Desactivada · pulsa para elegir el ritmo';
+    $('optsDone').textContent = $('opts').classList.contains('page') ? 'Empezar · ' + (S.dur > 0 ? S.dur + ' min' : 'sin límite') : 'Hecho'; if (S.view === 'session') $('topMid').textContent = MODE_NAMES[S.mode]; }
   $('optMov').hidden = S.mode !== 'calma' || rio; $('optHint').hidden = S.mode !== 'calma'; $('optPres').hidden = rio; rioUi(); $('optQuiet').hidden = !(S.mode === 'foco' && VX().grain === 'mark'); $('optDim').hidden = S.mode !== 'sueno';
   $('sHint').hidden = !(S.mode === 'calma' && hintOn());
   $('keepTxt').textContent = S.mark ? 'Mi instante: ' + num(S.mark[0], 1) + '–' + num(S.mark[1], 1) + ' s · cambiar' : 'Elegir mi instante'; if (S.sound) $('landName').textContent = S.sound.name;
@@ -2302,7 +2377,7 @@ async function loadSound(raw, sr, name, o) {
     else if (!o.id && o.kind === 'tarareo' && S.var.profile !== 'tarareo') toast('No he encontrado una melodía clara, así que he hecho un paisaje de textura. Puedes repetir el tarareo.', 7500);
     else if (unsure && !o.id) toast(sat ? 'La grabación está saturada: he dejado el paisaje estable y sin notas añadidas. Si no te convence, graba de nuevo un poco más lejos.' : 'Apenas se oía nada: he dejado el paisaje estable. Si no es lo que buscabas, graba de nuevo más cerca.', 7500);
     else if (pr.boost >= 12) toast('Sonido suave: lo he amplificado +' + Math.round(pr.boost) + ' dB' + (pr.cleaned ? ' y he reducido el ruido de fondo.' : '.'), 5500);
-    next = o.direct ? () => startSession(o.auto) : () => enterLand(!!(o.demo && o.auto));      // the preview waits for the person; only the demo they asked for plays by itself      // the preview waits for the person: nothing plays until they ask
+    next = o.direct ? () => startSession(o.auto) : !o.id && !o.demo && !o.resel ? () => openTrim('mark', true) : o.demo && o.auto ? () => { enterLand(false); demoStart(); } : () => enterLand(false);      // the preview waits for the person; only the demo they asked for plays by itself      // the preview waits for the person: nothing plays until they ask
   } catch (err) {
     console.error(err); toast('No he podido transformar ese sonido. Prueba con otro.'); setView('home');
   } finally { S.busy = false; }
@@ -2334,14 +2409,10 @@ function home() { $('rate').hidden = true; rateCtx = null; setView('home'); rend
 // Every way out of a new sound passes through here: keeping it or not is the answer we want to learn.
 function goEnd() {
   if (!S.sound) return home();
-  hidePre(); pvStop(); const heard = S.listened; if (!S.endCause) S.endCause = 'manual'; teardown(); setTimeout(idleSuspend, 900);
-  const en = logSession(), isNew = S.sound.isNew;
-  if (!isNew && heard < 20) return home();
-  $('endKick').textContent = heard >= 20 ? 'Sesión terminada' : 'Antes de salir';
-  $('endQ').textContent = isNew ? '¿Volverías a este sonido?' : 'Tu paisaje te espera aquí';
-  $('endName').value = S.sound.name; $('endSave').textContent = 'Volver aquí'; $('endDrop').hidden = !isNew;
-  setView('end');
-  if (en && heard >= 60 && S.mode !== 'sueno') openRate(en);          // Sueño never ends with questions
+  hidePre(); pvStop(); const heard = S.listened, s = S.sound; if (!S.endCause) S.endCause = 'manual'; teardown(); setTimeout(idleSuspend, 900);
+  const en = logSession();
+  if (s.demo || !s.id || heard < 20) { s.isNew = false; return home(); }      // nothing was really heard: no question
+  keepHere('end').then(() => { if (en && heard >= 60 && S.mode !== 'sueno') openRate(en); });          // Sueño never ends with questions
 }
 
 /* recording */
@@ -2388,7 +2459,8 @@ function decode(c, ab) { return new Promise((res, rej) => { const p = c.decodeAu
 /* ───────────── Fragment: keep the part worth returning to ───────────── */
 const T = { a: 0, b: 1, env: null, drag: null, src: null };
 function trimMin() { return Math.min(.5, Math.max((T.mode === 'mark' ? .15 : .5) / (T.x.length / T.sr), T.mode === 'mark' ? .004 : .02)); }
-function openTrim(mode) {
+function openTrim(mode, first) {
+  T.first = first === true;
   mode = mode === 'mark' ? 'mark' : mode === 'pick' && T.pend ? 'pick' : 'frag';
   if (S.busy || (mode !== 'pick' && !S.sound) || (mode === 'frag' && !S.raw)) return; pvStop();
   T.mode = mode; T.buf = null; T.env = null;
@@ -2397,8 +2469,9 @@ function openTrim(mode) {
     for (let q = 0; q + win <= n; q += st) { let e = 0; for (let i = q; i < q + win; i += 16) e += x[i] * x[i]; if (e > best) { best = e; start = q; } } T.a = start / n; T.b = (start + win) / n; }      // starts on its loudest 30 s
   else { const n = S.raw.x.length; T.x = S.raw.x; T.sr = S.raw.sr; T.a = S.sel ? S.sel[0] / n : 0; T.b = S.sel ? S.sel[1] / n : 1; }
   $('trimTitle').textContent = mode === 'mark' ? 'Elige tu instante' : 'Elige el fragmento';
-  $('trimSub').textContent = mode === 'mark' ? 'Lo que quieras volver a oír durante la sesión.' : 'Arrastra los bordes y quédate con la parte que quieres volver a escuchar.';
-  $('trimUse').textContent = mode === 'mark' ? 'Guardar este instante' : mode === 'pick' ? 'Crear con este tramo' : 'Usar este fragmento';
+  $('trimName').textContent = S.sound && mode !== 'pick' ? S.sound.name : (T.pend ? T.pend.name : ''); $('trimSkip').hidden = !T.first;
+  $('trimSub').textContent = mode === 'mark' ? '' : 'Arrastra los bordes y quédate con la parte que quieres volver a escuchar.';
+  $('trimUse').textContent = mode === 'mark' ? (T.first ? 'Escuchar el paisaje' : 'Guardar este instante') : mode === 'pick' ? 'Crear con este tramo' : 'Usar este fragmento';
   if (mode === 'pick') { $('trimTitle').textContent = 'Elige el tramo'; $('trimSub').textContent = 'Tu archivo es largo. Quédate con hasta 30 segundos; puedes escucharlos antes de crear nada.'; } $('trimClear').hidden = !(mode === 'mark' && S.mark);
   setView('trim'); requestAnimationFrame(trimDraw);
 }
@@ -2415,11 +2488,11 @@ function trimDraw() {
   }
   const k = cvs.getContext('2d'); k.setTransform(d, 0, 0, d, 0, 0); k.clearRect(0, 0, w, h); k.lineWidth = 1.3; k.lineCap = 'round';
   for (let c = 0; c < cols; c++) { const u = (c + .5) / cols, hh = Math.max(1.5, T.env[c] * h * .44), px = c * 3 + 1.5;
-    k.strokeStyle = u >= T.a && u <= T.b ? '#2f4526' : 'rgba(28,27,23,.26)'; k.beginPath(); k.moveTo(px, h / 2 - hh); k.lineTo(px, h / 2 + hh); k.stroke(); }
+    k.strokeStyle = u >= T.a && u <= T.b ? '#8a3f25' : 'rgba(31,42,34,.32)'; k.beginPath(); k.moveTo(px, h / 2 - hh); k.lineTo(px, h / 2 + hh); k.stroke(); }
   const sel = $('trimSel'); sel.style.left = T.a * 100 + '%'; sel.style.width = (T.b - T.a) * 100 + '%';
-  const dur = n / T.sr; $('trimInfo').textContent = 'De ' + num(T.a * dur, 1) + ' a ' + num(T.b * dur, 1) + ' s · ' + num((T.b - T.a) * dur, 1) + ' s de ' + num(dur, 1);
+  const dur = n / T.sr; $('trimRange').textContent = num(T.a * dur, 1) + ' – ' + num(T.b * dur, 1) + ' s'; $('trimInfo').textContent = 'De ' + num(T.a * dur, 1) + ' a ' + num(T.b * dur, 1) + ' s · ' + num((T.b - T.a) * dur, 1) + ' s de ' + num(dur, 1);
 }
-function trimUi() { const on = !!T.src; $('trimPlay').innerHTML = on ? ICON.pause : ICON.play; $('trimPlay').setAttribute('aria-label', on ? 'Parar' : 'Escuchar el fragmento'); if (!on) $('trimHead').hidden = true; }
+function trimUi() { const on = !!T.src; $('trimListen').textContent = on ? 'Parar' : 'Oír selección'; $('trimPlay').innerHTML = on ? ICON.pause : ICON.play; $('trimPlay').setAttribute('aria-label', on ? 'Parar' : 'Escuchar el fragmento'); if (!on) $('trimHead').hidden = true; }
 function trimStop() { if (T.src) { const s = T.src; T.src = null; try { s.stop(); } catch (e) {} } trimUi(); }
 // Plays the chosen part of the recording as it is, from u0 to u1 (fractions of the whole), with a line showing where it is.
 function trimPlay(u0, u1) {
@@ -2455,7 +2528,8 @@ function trimPlay(u0, u1) {
   tb.addEventListener('pointercancel', () => { T.drag = null; tip(); });
   window.addEventListener('resize', () => { if (S.view === 'trim') { T.env = null; trimDraw(); } });
 })();
-$('trimPlay').onclick = () => { if (T.src) trimStop(); else trimPlay(T.a, T.b); };
+$('trimPlay').onclick = $('trimListen').onclick = () => { if (T.src) trimStop(); else trimPlay(T.a, T.b); };
+$('trimSkip').onclick = () => { trimStop(); T.first = false; enterLand(false); demoStart(); };
 // The same limits without dragging: for a small screen, a keyboard or a screen reader.
 $('trimNudge').onclick = e => {
   const b = e.target.closest('button'); if (!b || !T.x) return; const dur = T.x.length / T.sr, st = (dur < 2 ? .02 : .1) / dur * +b.dataset.d, min = trimMin();
@@ -2506,36 +2580,35 @@ function thumb(it, px) {            // the sound's fingerprint: rings drawn from
 }
 async function renderLib() {
   const all = (await dbAll()).sort((a, b) => (b.t || b.id) - (a.t || a.id)), lib = $('lib');
-  S.hasLib = all.length > 0; $('homeFirst').hidden = S.hasLib; $('homeBack').hidden = !S.hasLib;
-  $('btnListen').hidden = !S.hasLib; $('btnDemoHome').hidden = S.hasLib; $('btnCreate').textContent = S.hasLib ? 'Crear otro paisaje' : 'Crear con mi sonido'; $('btnCreate').className = S.hasLib ? 'text' : 'outline'; $('homeFine').hidden = S.hasLib;
-  $('top').classList.toggle('left', S.view === 'home' && S.hasLib);
-  lib.textContent = ''; S.hero = null; if (!S.hasLib) return;
-  // the landscape tied to the moment used most recently comes first; without moments, the last one used
-  const wm = all.filter(i => i.moment && MOMENTS[i.moment]), h = (wm.length ? wm : all)[0], hs = sigOf(h), dur = h.set && h.set.dur != null ? +h.set.dur : 5; S.hero = { H: harmonics(hs.sig, hs.sym), hue: hs.hue, it: h };
-  $('heroName').textContent = h.name; $('heroMeta').textContent = setLabel(h.set) + (MOMENTS[h.moment] ? ' · ' + MOMENTS[h.moment] : ''); { const fp = thumb(h, 84); fp.id = 'heroFp'; $('heroFp').replaceWith(fp); } $('libLbl').hidden = all.length < 2;
-  $('listenTxt').textContent = '▶ Escuchar ' + (dur > 0 ? dur + ' min' : 'sin límite'); $('listenName').textContent = h.name; $('listenSub').textContent = MOMENTS[h.moment] || ''; $('listenSub').hidden = !MOMENTS[h.moment];
-  $('btnListen').setAttribute('aria-label', 'Escuchar ' + (dur > 0 ? dur + ' minutos' : 'sin límite') + ' de ' + h.name + (MOMENTS[h.moment] ? ', ' + MOMENTS[h.moment] : ''));
-  for (const it of all.filter(i => i !== h)) {
-    const row = el('div', 'li'), open = el('button', 'open'), dots = el('button', 'dots', '···'), tri = el('button', 'tri'); open.append(el('b', '', it.name), el('small', '', setLabel(it.set) + (MOMENTS[it.moment] ? ' · ' + MOMENTS[it.moment] : ''))); open.setAttribute('aria-label', 'Abrir ' + it.name);
-    tri.innerHTML = ICON.play; tri.setAttribute('aria-label', 'Reproducir ' + it.name); dots.setAttribute('aria-label', 'Cambiar nombre o borrar ' + it.name);
+  S.hasLib = all.length > 0; lib.textContent = ''; S.hero = null; $('libEmpty').hidden = S.hasLib;
+  if (!S.hasLib) { if (S.view === 'home') setView('create'); return; }      // nothing to return to yet: the app opens on «Crear»
+  // the ritual saved or used most recently comes first; with none saved, the last landscape used
+  const kept = all.filter(i => i.keep || i.moment), h = (kept.length ? kept : all)[0], st = h.set || {}, dur = st.dur != null ? +st.dur : 5, what = (MODE_NAMES[st.mode] || 'Calma') + ' · ' + (dur > 0 ? dur + ' min' : 'sin límite');
+  S.hero = { it: h };
+  $('heroKick').textContent = kept.length ? 'Mi ritual' : 'Último paisaje'; $('heroName').textContent = h.name; $('heroMeta').textContent = momentLabel(h.moment); $('heroMeta').hidden = !h.moment;
+  { const fp = thumb(h, 190); fp.id = 'heroFp'; $('heroFp').replaceWith(fp); }
+  $('listenTxt').textContent = 'Escuchar · ' + what; $('btnListen').setAttribute('aria-label', 'Escuchar ' + h.name + ', ' + what + (h.moment ? ', ' + momentLabel(h.moment) : ''));
+  for (const it of all) {
+    const row = el('div', 'li'), open = el('button', 'open'), dots = el('button', 'dots', '···'), tri = el('button', 'tri');
+    open.append(el('b', '', it.name), el('small', '', it.keep || it.moment ? 'Mi ritual' + (it.moment ? ' · ' + momentLabel(it.moment) : '') : setLabel(it.set))); open.setAttribute('aria-label', 'Abrir ' + it.name);
+    tri.innerHTML = ICON.play; tri.setAttribute('aria-label', 'Escuchar ' + it.name); dots.setAttribute('aria-label', 'Cambiar nombre, momento o borrar ' + it.name);
     open.onclick = () => openSound(it); tri.onclick = () => openSound(it, true); dots.onclick = () => openEdit(it);
-    row.append(thumb(it), open, dots, tri); lib.append(row);
+    row.append(thumb(it, 44), open, dots, tri); lib.append(row);
   }
 }
 let editIt = null, delArmed = 0;
 function openEdit(it) {
   editIt = it; $('editName').value = it.name; clearTimeout(delArmed); delArmed = 0; $('editDel').textContent = 'Borrar';
   const secs = Math.round((it.sel ? it.sel[1] - it.sel[0] : it.data.length) / it.sr), date = new Date(it.id).toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
-  $('editMeta').textContent = [it.hz, secs + ' s', date].filter(Boolean).join(' · '); pressSeg('segEditMoment', it.moment || '');
+  $('editMeta').textContent = [it.hz, secs + ' s', date].filter(Boolean).join(' · '); $('editMoment').value = momentLabel(it.moment);
   $('edit').hidden = false;
 }
 $('heroEdit').onclick = () => { if (S.hero) openEdit(S.hero.it); };
 $('heroPlay').onclick = () => { if (S.hero) openSound(S.hero.it, true); };
 $('heroName').onclick = () => { if (S.hero) openSound(S.hero.it); };
 $('editCancel').onclick = () => { $('edit').hidden = true; };
-$('segEditMoment').onclick = e => { const b = e.target.closest('button'); if (b) pressSeg('segEditMoment', b.dataset.v); };
-$('editSave').onclick = async () => { const it = editIt; $('edit').hidden = true; if (!it) return; const v = $('editName').value.trim() || it.name, pm = $('segEditMoment').querySelector('[aria-pressed=true]'), m = pm ? pm.dataset.v : (it.moment || ''), patch = {};
-  if (v !== it.name) patch.name = v; if (m !== (it.moment || '')) { patch.moment = m; patch.keep = 1; if (m) patch.mt = Date.now(); }
+$('editSave').onclick = async () => { const it = editIt; $('edit').hidden = true; if (!it) return; const v = $('editName').value.trim() || it.name, m = $('editMoment').value.trim().slice(0, 40), patch = {};
+  if (v !== it.name) patch.name = v; if (m !== momentLabel(it.moment)) { patch.moment = m; if (m) { patch.keep = 1; patch.mt = Date.now(); } }
   if (Object.keys(patch).length) { await updateSound(it.id, patch); if (S.sound && S.sound.id === it.id) S.sound.name = v; renderLib(); } };
 $('editName').onkeydown = e => { if (e.key === 'Enter') $('editSave').click(); };
 $('editDel').onclick = async () => {
@@ -2628,12 +2701,8 @@ $('rateSend').onclick = () => {
     '\nUso: ' + st.n + (st.n === 1 ? ' sesión' : ' sesiones') + ' en ' + st.days + (st.days === 1 ? ' día' : ' días') + (st.avg == null ? '' : ' · media ' + num(st.avg, 1) + '/5');
   shareText(text);
 };
-$('endSave').onclick = () => keepHere('end');
-$('endDrop').onclick = async () => {
-  const s = S.sound; if (!s) return home();
-  if (s.isNew && s.entry) patchEntry(s.entry, { kp: 0 });
-  await delSound(s.id); S.sound = null; S.raw = null; home();
-};
+$('endSave').onclick = keepSave;
+$('endDrop').onclick = () => { const s = S.sound, from = KEEP.from; KEEP.id = 0; if (from === 'land' && s) return enterLand(false); if (s && s.entry && s.isNew) patchEntry(s.entry, { kp: 0 }); if (s) s.isNew = false; home(); };      // the sound stays in the library; it is just not made a ritual
 $('endName').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
 
 /* ═════════════ Offline render of the real engine ═════════════
@@ -2929,7 +2998,7 @@ function demoStop() {
   if (was) demoUi();
 }
 function demoUi() {
-  const h = S.hz, b = $('btnDemo'); if (!h || !S.sound) return;
+  const h = S.hz, b = $('btnDemo'); if (!h || !S.sound) return; pvUi();
   const what = h.kind === 'res' ? 'Escuchar la resonancia' : h.kind === 'tono' ? 'Escuchar el tono' : h.kind === 'rango' ? 'Escuchar el motivo' : S.detail ? 'Escuchar el detalle' : 'Comparar con su textura';
   b.innerHTML = (DM.on ? ICON.pause : ICON.play) + '<span></span>'; b.lastChild.textContent = DM.on ? 'Parar' : what;
   b.setAttribute('aria-label', DM.on ? 'Parar la demostración' : what + (h.kind === 'none' ? '' : ' de ' + hzText(h).replace('Hz', 'hercios')) + ': primero el original, después lo medido y al final el paisaje');
@@ -2965,17 +3034,22 @@ $('segRes').onclick = e => { const b = e.target.closest('button'); if (!b) retur
    recording). A moment is only a shortcut the person chose: there are no reminders or notifications behind it. */
 const MOMENTS = { trabajo: 'Al terminar de trabajar', dormir: 'Antes de dormir' };
 const KEEP = { id: 0, from: '' };
-async function keepHere(from) {
+async function keepHere(from) {            // opens «¿Volver aquí?» with what is already known about this landscape
   const s = S.sound; if (!s) return home();
-  if (from === 'end') s.name = $('endName').value.trim() || s.name;
   if (!s.id) return toast('Este sonido no se pudo guardar en el dispositivo, así que no puedo dejarlo para otro día. Tus otros sonidos siguen intactos.', 6500);
-  dbErr = null; await updateSound(s.id, { name: s.name, set: curSet(), t: Date.now(), keep: 1 });
-  if (dbErr) return toast('No se pudo guardar en este dispositivo. Tus otros sonidos siguen intactos.', 6000);
-  if (s.isNew && s.entry) patchEntry(s.entry, { kp: 1 }); s.isNew = false; KEEP.id = s.id; KEEP.from = from;
-  const it = (await dbAll()).find(i => i.id === s.id); pressSeg('segMoment', (it && it.moment) || '');
-  if (S.mode === 'sueno' && it && !it.moment) $('segMoment').querySelector('[data-v=dormir]').focus();
-  $('keepSheet').hidden = false;
+  KEEP.id = s.id; KEEP.from = from; const it = (await dbAll()).find(i => i.id === s.id);
+  $('endName').value = s.name; $('endMoment').value = momentLabel(it && it.moment); $('endKick').textContent = from === 'end' ? 'Guarda la versión que acabas de escuchar.' : 'Guarda este paisaje con sus ajustes.';
+  demoStop(); pvStop(); setView('end');
 }
+async function keepSave() {
+  const s = S.sound; if (!s || !KEEP.id) return home(); const name = $('endName').value.trim() || s.name, m = $('endMoment').value.trim().slice(0, 40);
+  dbErr = null; await updateSound(s.id, Object.assign({ name, set: curSet(), t: Date.now(), keep: 1, moment: m }, m ? { mt: Date.now() } : {}));
+  if (dbErr) return toast('No se pudo guardar en este dispositivo. Tus otros sonidos siguen intactos.', 6000);
+  s.name = name; if (s.entry) patchEntry(s.entry, { kp: 1 }); s.isNew = false; const from = KEEP.from; KEEP.id = 0;
+  if (from === 'land') { enterLand(false); toast('Guardado. Lo tienes en Inicio.', 3000); } else home();
+}
+$('endSug').onclick = e => { const b = e.target.closest('button'); if (b) $('endMoment').value = b.dataset.v; };
+$('endMoment').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
 async function keepDone(m) {
   $('keepSheet').hidden = true; const id = KEEP.id; KEEP.id = 0;
   if (id && m != null) await updateSound(id, m ? { moment: m, mt: Date.now() } : { moment: '' });
@@ -3094,18 +3168,20 @@ async function demoOpen(i, auto) {
     return loadSound(tk.x, tk.sr, t.title, { src: 'demo', demo: true, auto });
   } catch (e) { console.error(e); toast('No he podido abrir la demostración.'); setView('home'); }
 }
-function demoLand() {                // dresses the preview as a demo, or undresses it
+function demoLand() {                // dresses the first listen as a sample, or undresses it
   const s = S.sound, on = !!(s && s.demo), real = on && s.src === 'demo'; $('vLand').classList.toggle('demo', on);
-  $('landTitle').textContent = !on ? 'Tu paisaje' : real ? DEMO.data.place : 'Así funciona'; $('demoBox').hidden = !on;
-  $('btnStart').textContent = !on ? 'Empezar ' + (S.dur > 0 ? S.dur + ' min de ' : '') + MODE_NAMES[S.mode] + (S.dur > 0 ? '' : ' sin límite') : real ? 'Crear con un vídeo de mi viaje' : 'Crear con mi sonido';
+  $('landTitle').hidden = !on; $('landTitle').textContent = !on ? '' : real ? DEMO.data.place : 'Ejemplo sintetizado'; $('demoBox').hidden = !on;
+  $('btnStart').textContent = !on ? 'Meditar ' + (S.dur > 0 ? S.dur + ' min' : 'sin límite') : real ? 'Crear con un vídeo de mi viaje' : 'Crear con mi sonido';
   if (!on) return;
-  $('demoNote').textContent = real ? 'Una grabación de ' + DEMO.data.place + ' y la meditación que nace de ella. Alterna entre «Original» y «Paisaje».' : 'Esto es un ejemplo sintetizado en tu dispositivo (una resonancia de vidrio simulada, no una grabación real). Alterna «Original» y «Paisaje»; después podrás hacerlo con un sonido tuyo.';
+  $('demoNote').textContent = real ? 'Una grabación de ' + DEMO.data.place + ' y la meditación que nace de ella.' : 'Una resonancia de vidrio simulada en tu dispositivo, no una grabación real. Después podrás hacerlo con un sonido tuyo.';
   const box = $('demoTakes'); box.hidden = !(real && DEMO.data.takes.length > 1); if (!box.hidden) { box.textContent = ''; DEMO.data.takes.forEach((t, i) => { const b = el('button', 'pill', t.title); b.dataset.v = i; b.setAttribute('aria-pressed', String(i === DEMO.sel)); box.append(b); }); }
 }
 $('demoTakes').onclick = e => { const b = e.target.closest('button'); if (b && +b.dataset.v !== DEMO.sel) demoOpen(+b.dataset.v, true); };
 $('btnAgain').onclick = () => enterLand(true);
 $('btnDemoHome').onclick = () => demoOpen(0, true);
-function createOpen() { demoStop(); pvStop(); $('micNote').hidden = true; $('createSheet').hidden = false; }
+function createOpen() { demoStop(); pvStop(); $('micNote').hidden = true; setView('create'); }
+$('tabs').onclick = e => { const b = e.target.closest('button'); if (!b) return; const v = b.dataset.v; if (v === 'home') home(); else if (v === 'create') createOpen(); else { setView('lib'); renderLib(); } };
+function momentLabel(m) { return m ? (MOMENTS[m] || String(m)) : ''; }
 $('btnCreate').onclick = () => { ensureCtx(); createOpen(); };
 $('createCancel').onclick = () => { $('createSheet').hidden = true; };
 $('btnMore').onclick = () => { demoStop(); $('moreSheet').hidden = false; };
@@ -3266,6 +3342,7 @@ document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { const v 
 $('lnkEval').hidden = !(EVAL || TEST); if (!$('lnkEval').hidden) $('lnkEval').after(' · ');
 $('btnRec').onclick = startRec;
 $('btnStop').onclick = () => stopRec();
+$('recCancel').onclick = () => stopRec(true);
 $('recRetry').onclick = () => startRec(S.recKind || '');
 $('fileRec').onchange = e => { const f = e.target.files[0]; e.target.value = ''; if (f) onFile(f, S.recKind || ''); };
 $('lblFileRec').addEventListener('click', () => ensureCtx());
@@ -3277,6 +3354,7 @@ $('btnBack').onclick = () => {
   if (v === 'rec') return rec ? stopRec(true) : home();
   if (v === 'ab') return abLeave();
   if (v === 'cmp') return cmpLeave();
+  if (v === 'end') return $('endDrop').click();
   if (v === 'eval') { evStop(); return home(); }
   if (v === 'lugar') { lgStop(.2); return home(); }
   if (v === 'pick') { IMP.seq++; mediaDrop(); return home(); }
@@ -3288,11 +3366,16 @@ $('btnBack').onclick = () => {
   if (v === 'land') return S.sound && S.sound.isNew ? goEnd() : (pvStop(), teardown(), setTimeout(idleSuspend, 900), logSession(), home());
   home();
 };
-$('segSrc').onclick = e => { const b = e.target.closest('button'); if (!b) return; pvTouch(); PV.which = b.dataset.v; PV.on = true; pvApply(); };
-$('pvPlay').onclick = () => { pvTouch(); PV.on = !PV.on; pvApply(); };
+$('segSrc').onclick = e => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.v === 'trans') { if (DM.on) { demoStop(); PV.on = false; pvApply(); } else demoStart(); return; } pvTouch(); PV.which = b.dataset.v; PV.on = true; pvApply(); };
+$('pvPlay').onclick = () => { const was = DM.on; pvTouch(); PV.on = was ? false : !PV.on; pvApply(); };
 $('btnStart').onclick = () => { if (S.busy) return; if (S.sound && S.sound.demo) return createOpen(); startSession(); };
-$('btnSummary').onclick = $('btnOpts').onclick = () => { $('opts').hidden = !$('opts').hidden; };
-$('optsDone').onclick = () => { $('opts').hidden = true; };
+function optsOpen() { const page = S.view === 'land'; $('opts').classList.toggle('page', page); demoStop(); if (page) pvStop(); syncOpts(); $('opts').hidden = false; }
+$('btnSummary').onclick = optsOpen; $('btnOpts').onclick = () => { if ($('opts').hidden) optsOpen(); else $('opts').hidden = true; };
+$('optsBack').onclick = () => { $('opts').hidden = true; };
+$('optMoreBtn').onclick = () => { const o = $('optMore'); o.hidden = !o.hidden; $('optMoreBtn').setAttribute('aria-expanded', String(!o.hidden)); };
+$('segPres').onclick = e => { const b = e.target.closest('button'); if (!b) return; const r = $('rngPres'); r.value = b.dataset.v; r.oninput({ target: r }); r.onchange(); syncOpts(); };
+$('breathSw').onclick = () => { const on = !BREATH[S.breath]; S.breath = on ? (S.lastBreath || '6') : 'libre'; if (!on) S.hum = false; if (S.ctx) S.breathT0 = S.ctx.currentTime; syncOpts(); };
+$('optsDone').onclick = () => { const page = $('opts').classList.contains('page'); $('opts').hidden = true; if (page && !S.busy) startSession(); };
 $('btnTrim').onclick = () => openTrim('frag');
 $('btnKeep').onclick = () => openTrim('mark');
 $('btnCmp').onclick = cmpOpen;
@@ -3381,16 +3464,11 @@ function draw(ts) {
     if (txt !== recShown) { recShown = txt; $('recCount').textContent = txt; }
     { const hzT = S.recHz ? Math.round(S.recHz) + ' Hz' : '— Hz'; if (hzT !== S.recHzT) { S.recHzT = hzT; $('recHz').textContent = hzT; } }
     const kh = rec && el < 8 ? (rec.kind === 'objeto' ? 'Da un toque suave y deja que termine de sonar.' : rec.kind === 'tarareo' ? 'Tararea algo corto, como si recordaras una melodía.' : '') : '';
-    const hint = kh ? kh : (el > 1.5 && S.micRaw < .0012) ? 'Casi no llega sonido. Acércate al micrófono.' : (el > 1.5 && S.micRaw < .012) ? 'Suena suave, pero lo estoy captando.' : '';
+    const hint = kh ? kh : (el > 1.5 && S.micRaw < .0012) ? 'Casi no llega sonido. Acércate al micrófono.' : (el > 1.5 && S.micRaw < .012) ? 'Suena suave, pero lo estoy captando.' : 'Deja que se apague el último toque.';
     { const lv = Math.round((S.micDb || 0) * 100); if (lv !== S.micShown) { S.micShown = lv; const m = $('recMeter'); m.firstChild.style.transform = 'scaleX(' + lv / 100 + ')'; m.setAttribute('aria-valuenow', lv); } } if (hint !== recHintShown) { recHintShown = hint; $('recHint').textContent = hint; }
-    if (ts - wavePush > 55) { wavePush = ts; wave.copyWithin(0, 1); const last = wave[wave.length - 2]; wave[wave.length - 1] = last + (clamp(S.micLevel, 0, 1) - last) * .45; }
-    const n = wave.length, K = 8, amp = Math.min(rc.height * .46, 120); g.lineWidth = .9;
-    for (let q = -K; q <= K; q++) {
-      g.beginPath();
-      for (let i = 0; i < n; i++) { const u = i / (n - 1), win = Math.pow(Math.sin(Math.PI * u), 1.3), a = (.035 + wave[i]) * amp * win;
-        const y = cy + q / K * a * Math.sin(u * 21 - (REDUCED ? 0 : t * 2.2) + .35 * q / K), x = rc.left + u * rc.width; i ? g.lineTo(x, y) : g.moveTo(x, y); }
-      g.strokeStyle = `rgba(74,104,58,${.85 - .5 * Math.abs(q) / K})`; g.stroke();
-    }
+    if (ts - wavePush > 55) { wavePush = ts; wave.copyWithin(0, 1); const last = wave[wave.length - 2]; wave[wave.length - 1] = last + (clamp(S.micDb || 0, 0, 1) - last) * .5; }
+    { const n = 46, bw = rc.width / n, amp = Math.min(rc.height * .47, 120); g.lineCap = 'round'; g.lineWidth = Math.max(2.5, bw * .4); g.strokeStyle = '#cdd4bd';
+      for (let i = 0; i < n; i++) { const hh = Math.max(1.5, wave[wave.length - n + i] * amp), x = rc.left + (i + .5) * bw; g.beginPath(); g.moveTo(x, cy - hh); g.lineTo(x, cy + hh); g.stroke(); } }
     return;
   }
   const dark = v === 'session', R = Math.min(rc.width, rc.height) * .34;
@@ -3417,6 +3495,7 @@ function draw(ts) {
 requestAnimationFrame(draw);
 
 setView('home'); renderLib(); showTime(); syncOpts(); uiPlay(); pvUi(); fillRange($('rngVol'));
+$('demoLinks').hidden = !TEST;
 if (EVAL) { evUi(); setView('eval'); }
 if (DEMO_URL && !EVAL) demoOpen(0, false);          // a shared link opens the demo ready to play; nothing sounds until it is touched
 lugarLoad(); $('lnkLugar').onclick = () => { ensureCtx(); pvStop(); teardown(); setView('lugar'); lugarUi(); };            // ?eval=1 opens the listening test directly
