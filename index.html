@@ -148,6 +148,14 @@ html:not(.dark) #optPres{display:none}
 html.dim #top,html.dim #vSession{opacity:.22}
 #vCmp .pill{padding:7px 11px;font-size:13.5px;min-width:38px;justify-content:center}
 #vCmp .seg{flex-wrap:nowrap}
+.evc{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:14px}
+.evc.on{border-color:var(--accent)}
+.evc b{font-family:var(--display);font-weight:400;font-size:20px}
+.evc .fine{text-align:left}
+.evt{font-variant-numeric:tabular-nums;color:var(--dim);font-size:14px;margin-left:auto}
+#evRun .lbl{margin:8px 0 0}
+#rioBox{display:flex;flex-direction:column;gap:4px}
+#rngRio:disabled{opacity:.4}
 @media (prefers-reduced-motion:reduce){#top,#vSession{transition:none}}
 </style>
 
@@ -181,8 +189,9 @@ html.dim #top,html.dim #vSession{opacity:.22}
       <p class="note" id="micNote" hidden></p>
       <button class="primary" id="btnRec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg><span id="btnRecTxt">Grabar un sonido</span></button>
       <label class="text btn" id="lblFile">Importar audio o vídeo<input class="sr" type="file" id="file" accept="audio/*,video/*"></label>
+      <p class="links" id="kindLinks">Con guía: <button data-kind="objeto">objeto</button> <button data-kind="tarareo">tarareo</button> <button data-kind="rio">río a dos tomas</button></p>
       <p class="fine" id="homeFine">Tu sonido se queda en este dispositivo.</p>
-      <p class="links"><span id="demoLinks">Sin micrófono: <button data-demo="madera">madera</button> <button data-demo="agua">agua</button> <button data-demo="voz">voz</button> <button data-demo="pajaro">pájaro</button><br></span><button data-go="stats">Tu práctica</button> · <button data-go="guide">Guía</button></p>
+      <p class="links"><span id="demoLinks">Sin micrófono: <button data-demo="madera">madera</button> <button data-demo="agua">agua</button> <button data-demo="voz">voz</button> <button data-demo="pajaro">pájaro</button><br></span><button data-go="eval" id="lnkEval" hidden>Prueba de escucha</button><button data-go="stats">Tu práctica</button> · <button data-go="guide">Guía</button></p>
     </div>
   </section>
 
@@ -217,6 +226,7 @@ html.dim #top,html.dim #vSession{opacity:.22}
     <div><label class="lbl" for="rngPres">Presencia del original</label>
       <input type="range" id="rngPres" min="0" max="100" value="45"></div>
     <div class="row" style="justify-content:center;gap:2px;margin-top:-6px"><button class="text small" id="btnKeep">Conservar este instante</button><button class="text small" id="btnCmp" hidden>Comparar a ciegas</button></div>
+    <div id="kindRow" class="center" hidden><p class="fine" id="kindInfo"></p><button class="text small" id="btnRedo">Repetir la toma</button></div>
     <div id="labRow" hidden><p class="fine" id="labInfo"></p>
       <div class="row" style="justify-content:center;gap:2px"><button class="text small" id="labAB">A/B del laboratorio</button><button class="text small" id="labDiag">Diagnóstico</button></div></div>
     <div class="foot">
@@ -285,6 +295,9 @@ html.dim #top,html.dim #vSession{opacity:.22}
     <div class="center"><h1 class="it" id="sName">—</h1><p class="kicker" id="sSub" style="margin-top:6px">Calma</p>
       <p class="hint" id="sHint" hidden>Escucha un detalle de tu grabación. Cuando te distraigas, vuelve a él.<button id="sHintX">Ocultar</button></p></div>
     <div class="stage" data-stage><div class="cue" id="cue"></div></div>
+    <div id="rioBox" hidden><div class="row between" style="font-size:13.5px;color:var(--dim)"><span>Orilla</span><span>Bajo el agua</span></div>
+      <input type="range" id="rngRio" min="0" max="100" step="1" value="0" aria-label="Orilla o bajo el agua">
+      <div class="row between"><button class="text small" id="rioAuto" aria-pressed="false">Recorrido lento: no</button><button class="text small" id="rioEdit">Cambiar tomas</button></div></div>
     <div class="center"><p class="count" id="sTime">05:00</p><p class="kicker" id="sRest" style="margin-top:6px">restantes</p></div>
     <div class="foot">
       <button class="round xl" id="btnPlay" aria-label="Reproducir"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
@@ -305,6 +318,22 @@ html.dim #top,html.dim #vSession{opacity:.22}
     </div>
   </section>
 
+  <!-- LISTENING TEST (?eval=1): two recordings, two engines, four unnamed meditations -->
+  <section class="view" id="vEval" hidden>
+    <div><h1>Prueba de escucha</h1><p class="sub">Dos grabaciones, dos motores, cuatro meditaciones sin nombre. Todo se queda en este dispositivo.</p></div>
+    <div class="scroll">
+      <div id="evSetup" class="col" style="gap:12px">
+        <div class="opt"><p class="lbl">Grabación A</p><div><label class="pill"><span id="evN0">Elegir archivo</span><input class="sr" type="file" id="evF0" accept="audio/*,video/*"></label></div></div>
+        <div class="opt"><p class="lbl">Grabación B</p><div><label class="pill"><span id="evN1">Elegir archivo</span><input class="sr" type="file" id="evF1" accept="audio/*,video/*"></label></div></div>
+        <div class="opt"><p class="lbl">Tipo de toma</p><div class="seg" id="evKind"><button class="pill" data-v="objeto" aria-pressed="true">Objeto</button><button class="pill" data-v="tarareo" aria-pressed="false">Tarareo</button><button class="pill" data-v="" aria-pressed="false">Automático</button></div></div>
+        <button class="primary" id="evGo">Preparar las cuatro meditaciones</button>
+        <button class="text small" id="evDemo">Probar con dos impactos sintéticos</button>
+        <p class="fine" id="evMsg" style="min-height:2.6em"></p>
+      </div>
+      <div id="evRun" class="col" hidden style="gap:8px"></div>
+    </div>
+  </section>
+
   <!-- PRACTICE -->
   <section class="view" id="vStats" hidden>
     <div><h1>Tu práctica</h1><p class="sub">Lo que la app anota en este dispositivo. Nada sale de aquí si no lo envías tú.</p></div>
@@ -321,6 +350,8 @@ html.dim #top,html.dim #vSession{opacity:.22}
       <p>Al terminar de grabar oyes primero tu sonido tal cual y después su paisaje. Alterna entre los dos con un toque. «Presencia del original» decide cuánto se reconoce la fuente: baja para que quede solo su color, alta para que vuelva a asomar de vez en cuando.</p>
       <h3>Si el resultado no convence</h3>
       <p>Pulsa «Elegir otro fragmento» y quédate con la parte buena de la grabación: la risa del final sin el golpe del principio. No hace falta volver a grabar.</p>
+      <h3>Un objeto, un tarareo, un río</h3>
+      <p>En «Con guía» hay tres maneras de empezar. <b>Objeto</b>: da un toque suave y deja que termine de sonar; el paisaje se hace con las resonancias de ese objeto, sin notas añadidas, para que dos botellas distintas sigan sonando distintas. <b>Tarareo</b>: tararea algo corto y la meditación repetirá, despacio y con pausas, las mismas subidas y bajadas, aunque bajes a cero la presencia del original. <b>Río a dos tomas</b>: importa una grabación de la orilla y otra de un hidrófono y recorre las dos con un solo control; solo se oye el agua.</p>
       <h3>Conservar un instante</h3>
       <p>«Conservar este instante» marca una frase, una risa o un golpe para que vuelva tal cual de vez en cuando; el fondo se hace con el resto y baja cuando reaparece. Conserva ese tramo entero: no separa una voz del agua que suena a la vez. Es opcional y puedes quitarlo.</p>
       <h3>Movimiento</h3>
@@ -397,6 +428,20 @@ html.dim #top,html.dim #vSession{opacity:.22}
   <div class="row" style="justify-content:flex-end"><button class="pill" id="optsDone" aria-pressed="true">Hecho</button></div>
 </div>
 
+<div class="sheet" id="kindSheet" role="dialog" aria-label="Captura con guía" hidden>
+  <p class="rate-q" id="kindTitle"></p>
+  <p class="fine" id="kindHint" style="text-align:left;font-size:15px;color:var(--dim)"></p>
+  <div class="row between"><button class="text small" id="kindCancel">Cancelar</button>
+    <span class="row"><label class="pill">Importar<input class="sr" type="file" id="fileKind" accept="audio/*,video/*"></label><button class="pill" id="kindRec" aria-pressed="true">Grabar</button></span></div>
+</div>
+<div class="sheet" id="rioSheet" role="dialog" aria-label="Río a dos tomas" hidden>
+  <p class="rate-q">Dos perspectivas de un mismo lugar</p>
+  <p class="fine" style="text-align:left">Importa una toma de la orilla y, si la tienes, otra de un hidrófono. El micrófono del móvil no graba bajo el agua. Solo se oirá el agua.</p>
+  <div class="opt"><p class="lbl">Orilla</p><div><label class="pill"><span id="rioN0">Elegir archivo</span><input class="sr" type="file" id="rioF0" accept="audio/*,video/*"></label></div></div>
+  <div class="opt"><p class="lbl">Bajo el agua</p><div><label class="pill"><span id="rioN1">Elegir archivo</span><input class="sr" type="file" id="rioF1" accept="audio/*,video/*"></label></div></div>
+  <div class="row between"><button class="text small" id="rioDemo">Muestras sintéticas de prueba</button>
+    <span class="row"><button class="text small" id="rioCancel">Cancelar</button><button class="pill" id="rioGo" aria-pressed="true">Abrir</button></span></div>
+</div>
 <div class="sheet" id="diag" role="dialog" aria-label="Diagnóstico local" hidden>
   <p class="rate-q">Diagnóstico local</p>
   <pre id="diagTxt"></pre>
@@ -442,7 +487,8 @@ html.dim #top,html.dim #vSession{opacity:.22}
 const $ = id => document.getElementById(id);
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-const rand = (a, b) => a + Math.random() * (b - a);
+let prnd = Math.random;
+const rand = (a, b) => a + prnd() * (b - a);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -625,8 +671,8 @@ async function renderPad(x, sr, rootHz, cfg, onProgress) {
   const binHz = sr / N, kMax = Math.min(half - 1, Math.floor(9000 / binHz));
   // harmonic mask centred on the sound's own note
   const mask = new Float32Array(kMax + 1);
-  for (let k = 1; k <= kMax; k++) mask[k] = cfg.floor == null ? 0.028 : cfg.floor;
-  for (const [d, wt] of cfg.deg) {
+  for (let k = 1; k <= kMax; k++) mask[k] = cfg.raw ? 1 : cfg.floor == null ? 0.028 : cfg.floor;
+  for (const [d, wt] of cfg.deg || []) {
     for (let f0 = rootHz * R[d]; f0 < 7000; f0 *= 2) {
       const sg = Math.max(1.1, f0 * 0.0042), k0 = Math.max(1, Math.floor((f0 - 4 * sg) / binHz)), k1 = Math.min(kMax, Math.ceil((f0 + 4 * sg) / binHz));
       for (let k = k0; k <= k1; k++) { const z = (k * binHz - f0) / sg; mask[k] += wt * Math.exp(-0.5 * z * z); }
@@ -645,10 +691,10 @@ async function renderPad(x, sr, rootHz, cfg, onProgress) {
     for (let n = 0; n < N; n++) { const j = c + n; re[n] = (j >= 0 && j < M) ? x[j] * w[n] : 0; im[n] = 0; }
     fft(re, im);
     // fold the octaves above down onto each bin: keeps the pitch class, gives bright sounds a body
-    for (let k = 1; k < half; k++) raw[k] = Math.pow(re[k] * re[k] + im[k] * im[k], 0.375);
+    for (let k = 1; k < half; k++) raw[k] = Math.pow(re[k] * re[k] + im[k] * im[k], cfg.raw ? .5 : 0.375);
     for (let k = 1; k <= kMax; k++) {
       let m = raw[k];
-      if (2 * k < half) m += .7 * raw[2 * k]; if (4 * k < half) m += .5 * raw[4 * k]; if (8 * k < half) m += .3 * raw[8 * k];
+      if (!cfg.raw) { if (2 * k < half) m += .7 * raw[2 * k]; if (4 * k < half) m += .5 * raw[4 * k]; if (8 * k < half) m += .3 * raw[8 * k]; }
       mag[k] = m * mask[k];
     }
   };
@@ -659,7 +705,7 @@ async function renderPad(x, sr, rootHz, cfg, onProgress) {
   let bt = 0; for (let b = 0; b < 6; b++) bt += be[b];
   if (!(bt > 0)) throw new Error('silence');
   const bg = [], bc = [];
-  for (let b = 0; b < 6; b++) { bg.push(Math.pow(clamp(Math.sqrt(cfg.bal[b] / (be[b] / bt + 1e-6)), .08, 10), .85)); bc.push(Math.log(Math.sqrt(EDGE[b] * EDGE[b + 1]))); }
+  for (let b = 0; b < 6; b++) { bg.push(cfg.raw ? 1 : Math.pow(clamp(Math.sqrt(cfg.bal[b] / (be[b] / bt + 1e-6)), .08, 10), .85)); bc.push(Math.log(Math.sqrt(EDGE[b] * EDGE[b + 1]))); }
   for (let k = 1; k <= kMax; k++) {
     const lf = Math.log(k * binHz); let b = 0; while (b < 4 && lf > bc[b + 1]) b++;
     const u = clamp((lf - bc[b]) / (bc[b + 1] - bc[b]), 0, 1);
@@ -708,12 +754,12 @@ const DEMOS = {
     for (const [t0, a] of [[.08, 1], [.42, .8], [.62, .9]]) {
       const o = Math.floor(t0 * sr);
       for (let n = 0; o + n < y.length && n < sr * .5; n++) { const t = n / sr;
-        y[o + n] += a * (Math.exp(-t / .05) * (Math.sin(TAU * 196 * t) * .9 + Math.sin(TAU * 441 * t + 1) * .55 + Math.sin(TAU * 905 * t) * .3) + (Math.random() * 2 - 1) * Math.exp(-t / .007) * .5); }
+        y[o + n] += a * (Math.exp(-t / .05) * (Math.sin(TAU * 196 * t) * .9 + Math.sin(TAU * 441 * t + 1) * .55 + Math.sin(TAU * 905 * t) * .3) + (prnd() * 2 - 1) * Math.exp(-t / .007) * .5); }
     } return y;
   },
   agua(sr) {
     const y = new Float32Array(Math.floor(sr * 5)); let br = 0;
-    for (let n = 0; n < y.length; n++) { br = br * .995 + (Math.random() * 2 - 1) * .02; y[n] = br * .25; }
+    for (let n = 0; n < y.length; n++) { br = br * .995 + (prnd() * 2 - 1) * .02; y[n] = br * .25; }
     for (let d = 0; d < 46; d++) {
       const o = Math.floor(rand(0, 4.7) * sr), f0 = rand(480, 1500), dur = rand(.07, .2), a = rand(.3, 1); let ph = 0;
       for (let n = 0; n < dur * sr && o + n < y.length; n++) { const t = n / sr; ph += TAU * f0 * (1 + 1.3 * t / dur) / sr; y[o + n] += a * Math.sin(ph) * Math.exp(-t / (dur * .33)) * Math.min(1, n / 40); }
@@ -764,7 +810,7 @@ function makeIR(ctx) {
   const sr = ctx.sampleRate, len = Math.floor(sr * 5.5), buf = ctx.createBuffer(2, len, sr);
   for (let ch = 0; ch < 2; ch++) { const d = buf.getChannelData(ch); let lp = 0;
     for (let n = 0; n < len; n++) { const t = n / sr, a = 0.12 + 0.75 * Math.exp(-t / 0.9);   // darker as it decays
-      lp += a * ((Math.random() * 2 - 1) - lp); d[n] = lp * Math.exp(-t / 1.05) * Math.min(1, n / (sr * .012)); } }
+      lp += a * ((prnd() * 2 - 1) - lp); d[n] = lp * Math.exp(-t / 1.05) * Math.min(1, n / (sr * .012)); } }
   return buf;
 }
 
@@ -799,6 +845,7 @@ function buildEngine() {
   e.grainF.connect(e.delay); e.delay.connect(e.fb); e.fb.connect(e.delay); e.delay.connect(e.rev); e.grainF.connect(e.rev);
   e.mark = c.createGain(); e.mark.gain.value = Math.min(1, S.pres * 1.6); e.markDry = c.createGain(); e.markDry.gain.value = .9; e.markWet = c.createGain(); e.markWet.gain.value = .3;   // intact voice or hit: dry and a little room, no echoes
   e.mark.connect(e.markDry); e.markDry.connect(e.master); e.mark.connect(e.markWet); e.markWet.connect(e.rev);
+  e.motif = c.createGain(); e.motif.gain.value = .85; e.motifWet = c.createGain(); e.motifWet.gain.value = .55; e.motif.connect(e.master); e.motif.connect(e.motifWet); e.motifWet.connect(e.rev);   // the hummed line, independent of «Presencia del original»
   e.guide = c.createGain(); e.guide.gain.value = 0; e.guide.connect(e.master); e.guide.connect(e.rev);   // breath / humming guide note
   e.bell = c.createGain(); e.bell.gain.value = 1; e.bell.connect(e.rev); e.bellDry = c.createGain(); e.bellDry.gain.value = .5; e.bell.connect(e.bellDry); e.bellDry.connect(e.master);
   e.orig = c.createGain(); e.orig.connect(e.comp); e.orig.connect(e.an);   // the untouched recording, for comparing
@@ -819,12 +866,12 @@ function startVoices(pad, fade) {
   const buf = pad;
   const gg = c.createGain(); gg.gain.value = 0; gg.connect(E.padF);
   const nodes = [];
-  for (const [rate, gain] of [[1, cfg.v1], [.5, cfg.v2]]) {
+  for (const [rate, gain] of [[1, cfg.v1], [VX().lp ? 1 : .5, cfg.v2 * (VX().lp ? .7 : 1)]]) {      // an object is not doubled an octave below: that would be a note it never gave
     const s = c.createBufferSource(); s.buffer = buf; s.loop = true; s.playbackRate.value = rate;
     const g = c.createGain(); g.gain.value = gain; s.connect(g); g.connect(gg);
-    s.start(0, Math.random() * buf.duration); nodes.push(s);
+    s.start(0, prnd() * buf.duration); nodes.push(s);
   }
-  gg.gain.setTargetAtTime(1, c.currentTime, fade / 4);
+  gg.gain.setTargetAtTime(VX().pad || 1, c.currentTime, fade / 4);
   S.group = { gain: gg, nodes };
   // drone: grounds the texture on the sound's own note
   stopDrone();
@@ -848,10 +895,10 @@ function playGrain() {
   // Foco: a kept phrase does not come back whole while someone reads or writes; short pieces of the rest still do
   const fx = VX(), quiet = S.mode === 'foco' && S.quiet && fx.grain === 'mark'; if (fx.grain !== 'std' && !quiet) return playIntact(fx);
   const c = S.ctx, cfg = MODES[S.mode], buf = srcBuffer(), t = c.currentTime + .05;
-  const rate = fx.rate1 ? 1 : cfg.rates[Math.floor(Math.random() * cfg.rates.length)];
+  const rate = fx.rate1 ? 1 : cfg.rates[Math.floor(prnd() * cfg.rates.length)];
   let seg = Math.min(buf.duration, rand(1.2, 2.6)), off; const hot = S.sound.an.hot;
   if (quiet) { const D = buf.duration, reg = fx.span[0] >= D - fx.span[1] ? [0, fx.span[0]] : [fx.span[1], D]; if (reg[1] - reg[0] < .4) return; seg = Math.min(reg[1] - reg[0], rand(.5, 1.1)); off = rand(reg[0], reg[1] - seg); }
-  else off = buf.duration > seg ? clamp((hot.length ? hot[Math.floor(Math.random() * hot.length)] : rand(0, buf.duration)) + rand(-.2, .3), 0, buf.duration - seg) : 0;
+  else off = buf.duration > seg ? clamp((hot.length ? hot[Math.floor(prnd() * hot.length)] : rand(0, buf.duration)) + rand(-.2, .3), 0, buf.duration - seg) : 0;
   const len = seg / rate;
   const s = c.createBufferSource(); s.buffer = buf; s.playbackRate.value = rate;
   const g = c.createGain(), at = Math.min(.35, len * .3), pk = rand(.35, .7);
@@ -864,13 +911,257 @@ function playGrain() {
 
 function playBell(level, oct) {
   const c = S.ctx, cfg = MODES[S.mode], t = c.currentTime + .05;
-  const d = cfg.deg[Math.floor(Math.random() * cfg.deg.length)][0];
-  const f = (VX().root || S.sound.an.rootHz) * R[d] * (oct || (Math.random() < .5 ? 4 : 8));
+  const d = cfg.deg[Math.floor(prnd() * cfg.deg.length)][0];
+  const f = (VX().root || S.sound.an.rootHz) * R[d] * (oct || (prnd() < .5 ? 4 : 8));
   for (const [m, a, dec] of [[1, 1, 5.5], [2.01, .22, 3], [3.02, .08, 1.6]]) {
     const o = c.createOscillator(); o.frequency.value = f * m; const g = c.createGain();
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(level * a, t + .02); g.gain.exponentialRampToValueAtTime(1e-4, t + dec);
     o.connect(g); g.connect(E.bell); o.start(t); o.stop(t + dec + .1); o.onended = () => g.disconnect();
   }
+}
+
+/* ═════════════ Objetos: several resonances, each with its own frequency, level and decay ═════════════
+   One note is not enough to tell two bottles apart. After a hit, the peaks that persist from one window to the next are
+   followed: each keeps its frequency (not rounded to any scale, so inharmonic partials stay), its level relative to the
+   strongest, how fast it dies and how far it can be trusted. Nothing is invented: a dry knock yields none. */
+function resAnalyze(x, sr) {
+  const out = { res: [], t0: 0, tail: [0, 0], hits: 0, why: '' }, sh = shape(x, sr), env = sh.env, nE = env.length;
+  if (nE < 8 || !(sh.peak > 1e-4)) { out.why = 'no se oye un golpe'; return out; }
+  // one usable hit: the one followed by the longest clean stretch before the next attack, so two attacks are never read as one tail
+  // attacks are looked for in the brightness of the signal (its sample-to-sample change), where a new strike shows even on top of a tail that is still ringing
+  const hN = Math.floor(sr * .005), hf = [], on = []; let hMax = 0;
+  for (let i = 1; i + hN <= x.length; i += hN) { let q = 0; for (let j = 0; j < hN; j++) { const d = x[i + j] - x[i + j - 1]; q += d * d; } const v = Math.sqrt(q / hN); hf.push(v); if (v > hMax) hMax = v; }
+  for (let i = 1, lastOn = -99; i < hf.length; i++) { let pv = 0, c = 0; for (let j = Math.max(0, i - 8); j < i; j++) { pv += hf[j]; c++; } pv /= c || 1;
+    if (hf[i] > .15 * hMax && hf[i] > 2.2 * pv + .02 * hMax && i - lastOn > 12) { on.push(Math.floor(i / 2)); lastOn = i; } }
+  if (!on.length) on.push(sh.on.length ? sh.on[0] : Math.max(0, Math.round(sh.attackT * 100)));
+  let best = 0, bs = -1; out.hits = on.length;
+  for (let i = 0; i < on.length; i++) { const end = i + 1 < on.length ? on[i + 1] : nE; let pk = 0; for (let j = on[i]; j < Math.min(nE, on[i] + 5); j++) pk = Math.max(pk, env[j]);
+    if (pk < .3 * sh.peak) continue; const sc = (end - on[i]) * Math.sqrt(pk); if (sc > bs) { bs = sc; best = i; } }
+  const f0 = on[best], f1 = best + 1 < on.length ? on[best + 1] - 2 : nE;
+  let pkf = f0; for (let j = f0; j < Math.min(nE, f0 + 6); j++) if (env[j] > env[pkf]) pkf = j;
+  const a = Math.floor((pkf * .01 + .02) * sr), b = Math.min(x.length, Math.floor(f1 * .01 * sr), a + Math.floor(sr * 3));      // the tail starts once the click is over
+  out.t0 = f0 * .01; out.tail = [a / sr, b / sr];
+  let N = sr >= 30000 ? 4096 : 2048; while (N > 512 && b - a < N + N / 2) N >>= 1;
+  const hop = N >> 3, F = Math.floor((b - a - N) / hop) + 1;
+  if (F < 4) { out.why = 'la cola dura demasiado poco (' + Math.max(0, Math.round((b - a) / sr * 1000)) + ' ms)'; return out; }
+  const half = N / 2, fft = getFFT(N), w = hann(N), re = new Float32Array(N), im = new Float32Array(N), M = new Float32Array(F * half), avg = new Float64Array(half), binHz = sr / N, nA = Math.min(F, 12);
+  for (let f = 0; f < F; f++) { const o = a + f * hop; for (let n = 0; n < N; n++) { re[n] = x[o + n] * w[n]; im[n] = 0; } fft(re, im);
+    for (let k = 0; k < half; k++) { const m = Math.sqrt(re[k] * re[k] + im[k] * im[k]); M[f * half + k] = m; if (f < nA) avg[k] += m / nA; } }
+  const kLo = Math.max(2, Math.ceil(60 / binHz)), kHi = Math.min(half - 3, Math.floor(Math.min(12000, sr * .45) / binHz)), W = Math.max(8, N >> 6), tmp = [];
+  // the background at each frequency: the median of its neighbourhood in that same frame
+  const floorAt = (arr, off, k) => { tmp.length = 0; for (let j = Math.max(1, k - W); j <= Math.min(half - 1, k + W); j++) tmp.push(arr[off + j]); tmp.sort((p, q) => p - q); return tmp[tmp.length >> 1] + 1e-12; };
+  let top = 0; for (let k = kLo; k <= kHi; k++) if (avg[k] > top) top = avg[k];
+  const cand = [];
+  for (let k = kLo; k <= kHi; k++) if (avg[k] > avg[k - 1] && avg[k] >= avg[k + 1] && avg[k] > .02 * top) { const prom = avg[k] / floorAt(avg, 0, k); if (prom >= 4) cand.push({ k, m: avg[k], prom }); }
+  cand.sort((p, q) => q.m - p.m);
+  const dT = hop / sr, res = [];
+  for (const c of cand.slice(0, 16)) {
+    const k = c.k, la = Math.log(avg[k - 1] + 1e-20), lb = Math.log(avg[k] + 1e-20), lc = Math.log(avg[k + 1] + 1e-20), d = la - 2 * lb + lc, f = (k + (d ? .5 * (la - lc) / d : 0)) * binHz;
+    let n = 0; const ys = [];
+    for (let fr = 0; fr < F; fr++) { const o = fr * half, m = Math.max(M[o + k - 1], M[o + k], M[o + k + 1]); if (m < 2.5 * floorAt(M, o, k) || m < .004 * top) break; ys.push(Math.log(m)); n++; }
+    if (n < 4 || n * dT < .04) continue;                                   // it must outlast the hit itself
+    let sx = 0, sy = 0, sxx = 0, sxy = 0, syy = 0; for (let i = 0; i < n; i++) { const t = i * dT; sx += t; sy += ys[i]; sxx += t * t; sxy += t * ys[i]; syy += ys[i] * ys[i]; }
+    const den = n * sxx - sx * sx, cov = n * sxy - sx * sy, vy = n * syy - sy * sy, slope = den ? cov / den : 0, r2 = vy > 1e-9 && den ? cov * cov / (den * vy) : 1, tau = slope < -.2 ? -1 / slope : 5;
+    let rel = clamp(n * dT / .15, 0, 1) * clamp((20 * Math.log10(c.prom) - 8) / 14, 0, 1) * clamp(.4 + .6 * r2, .4, 1);
+    if (tau >= 5 && (b - a) / sr < 1) rel *= .5;                           // it does not decay in a short take: it may be a hum in the room, not the object
+    if (rel < .3 || res.some(r => Math.abs(r.f / f - 1) < .025)) continue;
+    res.push({ f, lvl: c.m / top, tau, rel, ms: Math.round(n * dT * 1000) });
+    if (res.length >= 6) break;
+  }
+  if (!res.length) out.why = cand.length ? 'los picos no persisten tras el golpe' : 'sin picos claros sobre el fondo';
+  const mx = res.reduce((q, r) => Math.max(q, r.lvl), 0) || 1; for (const r of res) r.lvl /= mx;
+  out.res = res.sort((p, q) => p.f - q.f); return out;
+}
+// The landscape of an object: the stretched colour of its real tail plus one soft voice per resonance, at the measured
+// frequency. Each voice swells and recedes at its own pace, so the resonances take turns instead of forming a fixed chord.
+async function renderObj(x, sr, ra, mode, onProgress) {
+  const cfg = MODES[mode], a = Math.floor(ra.tail[0] * sr), b = Math.floor(ra.tail[1] * sr), tail = b - a > sr * .2 ? x.subarray(a, b) : x;
+  const bed = await renderPad(tail, sr, 0, { raw: true, tilt: Math.max(cfg.tilt, 2600) }, p => onProgress && onProgress(p * .6));
+  const L = bed.L.length, D = L / sr, vL = new Float32Array(L), vR = new Float32Array(L), res = ra.res; let last = performance.now();
+  for (let i = 0; i < res.length; i++) {
+    const r = res[i], g = Math.pow(r.lvl, .75) * (.5 + .5 * r.rel) / Math.sqrt(1 + Math.pow(r.f / 5200, 2)), cy = Math.round(r.f * D);      // whole cycles in the loop: it closes without a seam
+    const wL = TAU * cy / L, wR = TAU * (cy + 1) / L, wB = TAU * (cy + 3 + Math.floor(rnd() * 3)) / L, wE = TAU * (2 + Math.floor(rnd() * 3) + (i % 2)) / L, pe = (i / res.length + rnd() * .25) * TAU, p0 = rnd() * TAU, p1 = rnd() * TAU, p2 = rnd() * TAU;
+    for (let n = 0; n < L; n++) { const e = .5 - .5 * Math.cos(wE * n + pe), en = g * (.2 + .8 * e * Math.sqrt(e)), bt = .3 * Math.sin(wB * n + p2);
+      vL[n] += en * (Math.sin(wL * n + p0) + bt); vR[n] += en * (Math.sin(wR * n + p1) + bt); }
+    if (performance.now() - last > 40) { onProgress && onProgress(.6 + .4 * i / res.length); await sleep(0); last = performance.now(); }
+  }
+  const rmsOf = (p, q) => { let s = 0; for (let n = 0; n < L; n += 3) s += p[n] * p[n] + q[n] * q[n]; return Math.sqrt(s / (2 * Math.ceil(L / 3))) || 1e-9; };
+  const gv = .12 / rmsOf(vL, vR), gb = .07 / rmsOf(bed.L, bed.R); let pk = 1e-9;
+  for (let n = 0; n < L; n++) { vL[n] = vL[n] * gv + bed.L[n] * gb; vR[n] = vR[n] * gv + bed.R[n] * gb; const m = Math.max(Math.abs(vL[n]), Math.abs(vR[n])); if (m > pk) pk = m; if (vL[n] !== vL[n]) throw new Error('nan'); }
+  if (pk > .7) { const k = .7 / pk; for (let n = 0; n < L; n++) { vL[n] *= k; vR[n] *= k; } }
+  return { L: vL, R: vR, sr };
+}
+// What the engine did before, raised to the new treatments when the evidence (or the person's own choice of capture) allows.
+function upgrade(d) {
+  const s = S.sound, an = s.an, sh = S.shape, why = d.why.slice(); let p = d.profile;
+  if (s.kind === 'tarareo') {
+    const h = S.hm = humAnalyze(s.x, s.sr);
+    if (h.ok) { p = 'tarareo'; why.push('REGLA (la persona eligió tararear): ' + h.notes.length + (h.notes.length === 1 ? ' nota sostenida' : ' notas') + ', ' + h.pauses + (h.pauses === 1 ? ' pausa' : ' pausas')); }
+    else why.push('tarareo sin melodía clara (' + h.why + '): paisaje de textura');
+  } else if (p === 'agua' && s.kind !== 'objeto' && voiceFrac(s.x, s.sr) >= .6) {
+    p = 'actual'; why.push('REGLA: casi todo lo que suena tiene altura de voz; no se trata como agua');      // speech is not a river: overlapping it with itself would only make a murmur
+  } else if (s.kind === 'objeto' || (p !== 'voz' && p !== 'agua' && sh.onsets >= 1 && an.dur < 12)) {
+    const ra = S.ra = resAnalyze(s.x, s.sr), strong = ra.res.filter(r => r.rel >= .5 && r.tau < 3).length;
+    if (ra.res.length && (s.kind === 'objeto' || p === 'golpe' || strong >= 2)) { p = 'objeto'; why.push('REGLA: objeto con ' + ra.res.length + (ra.res.length === 1 ? ' resonancia fiable' : ' resonancias fiables') + ' (' + ra.res.map(r => Math.round(r.f) + ' Hz').join(', ') + ')'); }
+    else if (s.kind === 'objeto' || p === 'golpe') { p = 'seco'; why.push('REGLA: golpe seco, sin resonancia fiable (' + ra.why + ')'); }
+  }
+  return { profile: p, mix: p === d.profile ? d.mix : false, why };
+}
+
+/* ═════════════ Tarareo: the person gives the musical motif ═════════════ */
+function voiceFrac(x, sr) {           // share of what sounds that carries a pitch in the range of a voice
+  const pt = pitchTrack(x.length > sr * 15 ? x.subarray(0, Math.floor(sr * 15)) : x, sr), es = Float32Array.from(pt.en).sort(), ref = es[Math.floor(pt.F * .9)] || 1e-9; let a = 0, v = 0;
+  for (let f = 0; f < pt.F; f++) if (pt.en[f] > .1 * ref) { a++; if (pt.conf[f] > .55 && pt.f0[f] > 75 && pt.f0[f] < 350) v++; }
+  return v / Math.max(1, a);
+}
+function pitchTrack(x, sr) {          // pitch, confidence and level every 10 ms (autocorrelation, as the harmonic model does)
+  const N = sr >= 30000 ? 2048 : 1024, hop = Math.floor(sr * .01), half = N / 2, fft = getFFT(N), w = hann(N), F = Math.max(0, Math.floor((x.length - N) / hop) + 1);
+  const re = new Float32Array(N), im = new Float32Array(N), f0 = new Float32Array(F), conf = new Float32Array(F), en = new Float32Array(F), lagMin = Math.max(2, Math.floor(sr / 700)), lagMax = Math.min(half - 2, Math.ceil(sr / 70));
+  for (let f = 0; f < F; f++) {
+    const o = f * hop; let e = 0; for (let n = 0; n < N; n++) { const s = x[o + n]; re[n] = s * w[n]; im[n] = 0; e += s * s; } en[f] = Math.sqrt(e / N); fft(re, im);
+    for (let k = 0; k <= half; k++) { const p = re[k] * re[k] + im[k] * im[k]; re[k] = p; im[k] = 0; if (k && k < half) { re[N - k] = p; im[N - k] = 0; } }
+    fft(re, im);
+    const r0 = re[0] || 1e-20, val = l => re[l] / r0 / (1 - l / N), isPk = l => re[l] >= re[l - 1] && re[l] >= re[l + 1]; let bl = 0, bv = 0;
+    for (let l = lagMin; l <= lagMax; l++) if (isPk(l)) { const v = val(l); if (v > bv) { bv = v; bl = l; } }
+    if (bl) for (let l = lagMin; l < bl; l++) if (isPk(l) && val(l) > .88 * bv) { bl = l; break; }
+    if (bl) { const a = re[bl - 1], b = re[bl], c = re[bl + 1], d = a - 2 * b + c; f0[f] = sr / (bl + (d ? .5 * (a - c) / d : 0)); conf[f] = Math.min(1, val(bl)); }
+  }
+  return { f0, conf, en, F, dt: hop / sr };
+}
+// Notes, pauses and how sure each one is. Slight vibrato stays inside a note; a deliberate interval starts a new one.
+function humAnalyze(x0, sr) {
+  const x = x0.length > sr * 12 ? x0.subarray(0, Math.floor(sr * 12)) : x0, pt = pitchTrack(x, sr), F = pt.F, dt = pt.dt, out = { ok: false, why: '', notes: [], pauses: 0 };
+  if (F < 30) { out.why = 'demasiado corto'; return out; }
+  const es = Float32Array.from(pt.en).sort(), eRef = es[Math.floor(F * .9)] || 1e-9, st = new Float32Array(F), vo = new Uint8Array(F); let act = 0, nv = 0;
+  for (let f = 0; f < F; f++) { const loud = pt.en[f] > .1 * eRef; if (loud) act++; if (loud && pt.conf[f] > .55 && pt.f0[f] > 70 && pt.f0[f] < 700) { vo[f] = 1; st[f] = 12 * Math.log2(pt.f0[f] / 55); nv++; } }
+  out.voiced = nv / Math.max(1, act);
+  if (nv < 30) { out.why = 'muy poco sonido con altura'; return out; }
+  if (out.voiced < .45) { out.why = 'solo un ' + Math.round(out.voiced * 100) + ' % tiene altura estable'; return out; }
+  const sm = new Float32Array(F), t5 = [];
+  for (let f = 0; f < F; f++) if (vo[f]) { t5.length = 0; for (let j = f - 2; j <= f + 2; j++) if (j >= 0 && j < F && vo[j]) t5.push(st[j]); sm[f] = medianOf(t5); }
+  let notes = [], cur = null, pend = [], gap = 0;
+  const close = () => { if (cur) { const m = medianOf(cur.v); let dv = 0, cf = 0, lv = 0; for (const v of cur.v) dv += Math.abs(v - m); for (let j = cur.a; j < cur.b; j++) { cf += pt.conf[j]; lv += pt.en[j]; }
+      notes.push({ t: cur.a * dt, dur: (cur.b - cur.a) * dt, st: m, dev: dv / cur.v.length, conf: cf / (cur.b - cur.a), lvl: lv / (cur.b - cur.a) / eRef, a: cur.a, b: cur.b }); } cur = null; pend = []; };
+  for (let f = 0; f < F; f++) {
+    if (!vo[f]) { if (cur && ++gap >= 8) close(); continue; }
+    gap = 0;
+    if (!cur) { cur = { a: f, b: f + 1, v: [sm[f]] }; continue; }
+    const m = medianOf(cur.v.slice(-30));
+    if (Math.abs(sm[f] - m) > .8) { pend.push(sm[f]); if (pend.length >= 6) { const p = pend; cur.b = f - 5; close(); cur = { a: f - 5, b: f + 1, v: p }; } }       // 60 ms away from the note: a new one, not a wobble
+    else { cur.v.push(sm[f]); cur.b = f + 1; pend = []; }
+  }
+  close();
+  notes = notes.filter(n => n.dur >= .09);
+  // an isolated octave slip of the detector, between two stretches that agree with each other, is put back; a held leap is not touched
+  for (let i = 1; i < notes.length; i++) { const p = notes[i - 1], n = notes[i], q = notes[i + 1], d = n.st - p.st;
+    if (n.dur < .18 && Math.abs(Math.abs(d) - 12) < 1.2 && n.t - (p.t + p.dur) < .08 && (!q || Math.abs(q.st - p.st) < 2)) n.st -= Math.sign(d) * 12; }
+  // neighbours that ended up on the same pitch with no pause between them are one note
+  const mg = []; for (const n of notes) { const p = mg[mg.length - 1]; if (p && Math.abs(n.st - p.st) < .5 && n.t - (p.t + p.dur) < .08) { p.dur = n.t + n.dur - p.t; p.b = n.b; p.lvl = Math.max(p.lvl, n.lvl); } else mg.push(n); }
+  notes = mg.slice(0, 12);
+  if (!notes.length) { out.why = 'sin notas sostenidas'; return out; }
+  const tot = notes.reduce((q, n) => q + n.dur, 0), mean = tot / notes.length, dev = notes.reduce((q, n) => q + n.dev * n.dur, 0) / tot, cf = notes.reduce((q, n) => q + n.conf * n.dur, 0) / tot;
+  if (tot < .5) { out.why = 'muy poco sonido con altura (' + tot.toFixed(1) + ' s)'; return out; }
+  if (notes.length > 3 && mean < .17) { out.why = 'la altura cambia sin detenerse, como al hablar'; return out; }
+  if (dev > .6 || cf < .6) { out.why = 'la altura es demasiado incierta'; return out; }
+  for (let i = 1; i < notes.length; i++) if (notes[i].t - (notes[i - 1].t + notes[i - 1].dur) >= .15) out.pauses++;
+  out.notes = notes; out.ok = true; out.conf = cf;
+  // the pitch held the longest gives the background its note; the melody itself is never forced onto a scale
+  const held = {}; let bk = 0, bv = -1; for (const n of notes) { const k = ((Math.round(n.st) % 12) + 12) % 12; held[k] = (held[k] || 0) + n.dur; if (held[k] > bv) { bv = held[k]; bk = k; } }
+  let r = 55 * Math.pow(2, bk / 12); while (r >= 130.81) r /= 2; while (r < 65.4) r *= 2; out.rootHz = r;
+  if (notes.length === 1) { const n = notes[0], env = []; let mx = 1e-9; for (let j = n.a; j < n.b; j += 5) { let q = 0, c = 0; for (let i = j; i < Math.min(n.b, j + 5); i++) { q += pt.en[i]; c++; } env.push(q / c); mx = Math.max(mx, q / c); } out.env = env.map(v => v / mx); }
+  out.motif = humMotif(out); return out;
+}
+function humMotif(h) {
+  const ns = h.notes, t0 = ns[0].t, K = 1.5, w = []; for (const n of ns) for (let i = 0; i < Math.max(1, Math.round(n.dur * 20)); i++) w.push(n.st);
+  const med = medianOf(w), hz = v => 55 * Math.pow(2, v / 12), mxL = ns.reduce((q, n) => Math.max(q, n.lvl), 1e-9); let sh = 0;
+  while (hz(med + sh) > 392) sh -= 12; while (hz(med + sh) < 196) sh += 12;          // whole octaves only: every interval stays as it was sung
+  const notes = ns.map(n => ({ t: (n.t - t0) * K, d: Math.max(.12, n.dur * K), f: hz(n.st + sh), g: clamp(.45 + .55 * n.lvl / mxL, .3, 1) })), last = notes[notes.length - 1];
+  return { notes, len: last.t + last.d, K, shift: sh, env: h.env || null };
+}
+// The motif as sound: plain soft tones at the sung pitches, with the sung lengths and silences (one and a half times slower).
+function renderMotif(m, sr) {
+  const rel = .4, n = Math.ceil((m.len + rel + .2) * sr), L = new Float32Array(n), R = new Float32Array(n), rc = rel * sr / 5; let pk = 1e-9;
+  for (const q of m.notes) { const i0 = Math.floor(q.t * sr), nd = Math.floor(q.d * sr), at = Math.max(1, Math.min(.09, q.d * .3) * sr), wL = TAU * q.f / sr, wR = wL * 1.0017, ev = m.env;
+    for (let i = 0; i < nd + rel * sr && i0 + i < n; i++) { let e = i < at ? .5 - .5 * Math.cos(Math.PI * i / at) : i < nd ? 1 : Math.exp(-(i - nd) / rc);
+      if (ev) { const p = Math.min(1, i / nd) * (ev.length - 1), j = Math.min(ev.length - 2, Math.floor(p)); e *= ev.length > 1 ? ev[j] + (ev[j + 1] - ev[j]) * (p - j) : 1; }      // a single held note keeps the swell it was sung with
+      const g = q.g * e; L[i0 + i] += g * (Math.sin(wL * i) + .3 * Math.sin(2 * wL * i) + .1 * Math.sin(3 * wL * i)); R[i0 + i] += g * (Math.sin(wR * i) + .3 * Math.sin(2 * wR * i) + .1 * Math.sin(3 * wR * i)); } }
+  for (let i = 0; i < n; i++) { const a = Math.max(Math.abs(L[i]), Math.abs(R[i])); if (a > pk) pk = a; }
+  const k = .5 / pk; for (let i = 0; i < n; i++) { L[i] *= k; R[i] *= k; }
+  return { L, R, sr };
+}
+function motifStep(m, rng) { return m.len + 5 + rng() * 9; }           // the phrase, then 5 to 14 s of room before it returns
+function playMotif(t) {
+  const c = S.ctx, s = c.createBufferSource(), g = c.createGain(); s.buffer = S.motifBuf; g.gain.value = 1; s.connect(g); g.connect(E.motif);
+  s.onended = () => { try { g.disconnect(); } catch (e) {} }; s.start(t + .05);
+}
+// The same schedule the session follows, as a list: when each note of the motif starts, its pitch and its length.
+function humEvents(m, seed, horizon, first) {
+  const rng = mulberry(((seed || 1) ^ 0x7a11) | 0), ev = []; let t = first == null ? 3 : first;
+  while (t < horizon) { for (const q of m.notes) ev.push({ t: t + .05 + q.t, f: q.f, d: q.d, g: q.g }); t += motifStep(m, rng); }
+  return ev;
+}
+
+/* ═════════════ Río: two takes of one place, shore and underwater ═════════════
+   Only the water: no pad, no bells, no bass. One control moves between the two takes with an equal-power fade, so the
+   loudness holds and each end leaves exactly one take sounding. Each take loops on its own; nothing assumes they began together. */
+const RIO = { tk: [null, null], buf: [null, null], g: [null, null], pos: 0, auto: false, t0: 0, ph: 0, save: 0 };
+const RIO_MAX = 60;
+function rioGains(p) { p = clamp(p, 0, 1); return p <= 0 ? [1, 0] : p >= 1 ? [0, 1] : [Math.cos(p * Math.PI / 2), Math.sin(p * Math.PI / 2)]; }
+function rioLoop(chs, sr) {            // a take closed on itself, brought to a common level with room below the ceiling
+  const n = chs[0].length, X = Math.floor(Math.min(sr * 2, n * .2)), L = n - X; if (L < sr * .5) return null;
+  const out = chs.map(() => new Float32Array(L)); let q = 0, pk = 1e-9;
+  for (let c = 0; c < chs.length; c++) { const s = chs[c], d = out[c]; d.set(s.subarray(0, L));
+    for (let i = 0; i < X; i++) { const u = i / X * Math.PI / 2; d[i] = s[i] * Math.sin(u) + s[L + i] * Math.cos(u); }
+    for (let i = 0; i < L; i++) { q += d[i] * d[i]; const a = Math.abs(d[i]); if (a > pk) pk = a; } }
+  const rms = Math.sqrt(q / (L * chs.length)); if (!(rms > 1e-5)) return null;
+  const g = Math.min(.1 / rms, .85 / pk); for (const d of out) for (let i = 0; i < L; i++) d[i] *= g;
+  return { chs: out, gain: g, len: L / sr };
+}
+function rioPack(chs, sr, name) {      // stored as 16-bit, stereo kept when the file has it
+  const ch = Math.min(2, chs.length), n = Math.min(chs[0].length, Math.floor(sr * RIO_MAX)), d = new Int16Array(n * ch); let pk = 1e-9;
+  for (let c = 0; c < ch; c++) for (let i = 0; i < n; i++) { const a = Math.abs(chs[c][i]); if (a > pk) pk = a; }
+  const k = Math.min(300, .98 / pk); for (let c = 0; c < ch; c++) for (let i = 0; i < n; i++) d[i * ch + c] = Math.round(clamp(chs[c][i] * k, -1, 1) * 32767);
+  return { d, sr, ch, name: String(name || '').slice(0, 60) };
+}
+function rioUnpack(tk) { const n = tk.d.length / tk.ch, chs = []; for (let c = 0; c < tk.ch; c++) { const f = new Float32Array(n); for (let i = 0; i < n; i++) f[i] = tk.d[i * tk.ch + c] / 32767; chs.push(f); } return chs; }
+function rioBuffer(tk) { const lp = rioLoop(rioUnpack(tk), tk.sr); if (!lp) return null; const b = S.ctx.createBuffer(lp.chs.length, lp.chs[0].length, tk.sr); lp.chs.forEach((d, c) => b.getChannelData(c).set(d)); return b; }
+function rioStart(fade) {
+  const c = S.ctx, gg = c.createGain(), nodes = [], gs = rioGains(RIO.buf[1] ? RIO.pos : 0); gg.gain.value = 0; gg.connect(E.master);
+  for (let i = 0; i < 2; i++) { const b = RIO.buf[i]; RIO.g[i] = null; if (!b) continue; const s = c.createBufferSource(), g = c.createGain(); s.buffer = b; s.loop = true; g.gain.value = gs[i]; s.connect(g); g.connect(gg); s.start(0, prnd() * b.duration); nodes.push(s); RIO.g[i] = g; }
+  gg.gain.setTargetAtTime(1, c.currentTime, fade / 4); S.group = { gain: gg, nodes, rio: true };
+  if (RIO.auto) rioAuto(true);
+}
+function rioApply(t, ramp) {           // linear ramps end exactly on the target, so an end of the control leaves one take only
+  const gs = rioGains(RIO.buf[1] ? RIO.pos : 0);
+  for (let i = 0; i < 2; i++) { const g = RIO.g[i]; if (!g) continue; g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t); g.gain.linearRampToValueAtTime(gs[i], t + ramp); }
+}
+function rioAuto(on) { RIO.auto = !!on && !!RIO.buf[1]; if (RIO.auto && S.ctx) { RIO.t0 = S.ctx.currentTime; RIO.ph = Math.acos(clamp(1 - 2 * RIO.pos, -1, 1)); } rioUi(); }
+function rioTick(t, dt) {
+  curBreath = breathAt(t); const sleep = S.mode === 'sueno';
+  if (RIO.auto && RIO.buf[1]) { RIO.pos = .5 - .5 * Math.cos(TAU * (t - RIO.t0) / 100 + RIO.ph); rioApply(t, .4); const r = $('rngRio'); r.value = Math.round(RIO.pos * 100); fillRange(r); }      // one slow crossing every 50 s
+  const fl = sleep && S.dur > 0 && !S.preview ? Math.min(120, S.dur * 15) : 0, fv = fl && S.remain < fl ? Math.pow(Math.max(0, S.remain) / fl, 1.6) : 1;
+  if (!S.ending && (fv < 1 || S.fadeV < 1)) E.master.gain.setTargetAtTime(.9 * fv, t, .5);
+  S.fadeV = fv;
+  if (lastTick && S.dur > 0 && !S.ending && !S.preview) { S.remain -= dt; if (S.remain <= 0) { S.remain = 0; endSession(); } showTime(); }
+  lastTick = t;
+}
+function rioUi() {
+  const on = !!(S.sound && S.sound.rio), two = !!RIO.buf[1]; $('rioBox').hidden = !on; if (!on) return;
+  const r = $('rngRio'); r.disabled = !two; r.value = Math.round((two ? RIO.pos : 0) * 100); fillRange(r);
+  r.setAttribute('aria-valuetext', !two ? 'Solo la orilla' : RIO.pos <= 0 ? 'Orilla' : RIO.pos >= 1 ? 'Bajo el agua' : Math.round(RIO.pos * 100) + ' % hacia bajo el agua');
+  $('rioAuto').hidden = !two; $('rioAuto').setAttribute('aria-pressed', String(RIO.auto)); $('rioAuto').textContent = RIO.auto ? 'Recorrido lento: sí' : 'Recorrido lento: no';
+  $('rioEdit').textContent = two ? 'Cambiar tomas' : 'Añadir «Bajo el agua»';
+}
+function rioSave() { clearTimeout(RIO.save); RIO.save = setTimeout(() => { if (S.sound && S.sound.rio && S.sound.id) updateSound(S.sound.id, { rio: { pos: RIO.pos, auto: RIO.auto } }); }, 400); }
+// Synthetic stand-ins, never presented as a real place: bright broadband water for the shore, a dull rumble with bubbles for below.
+function rioDemo(i, sr) {
+  const n = Math.floor(sr * (i ? 17 : 12)), chs = [new Float32Array(n), new Float32Array(n)], r = mulberry(i ? 991 : 337);
+  for (const y of chs) { let lp = 0, lp2 = 0, sl = 0;
+    for (let k = 0; k < n; k++) { const w = r() * 2 - 1; sl += .00003 * (r() * 2 - 1); sl *= .99995; const fl = 1 + 6 * sl;
+      if (!i) { lp += .35 * (w - lp); y[k] = (w - lp * .6) * .12 * fl; } else { lp += .02 * (w - lp); lp2 += .02 * (lp - lp2); y[k] = lp2 * 2.2 * fl; } }
+    for (let d = 0; d < (i ? 26 : 60); d++) { const o = Math.floor(r() * (n - sr * .3)), f = i ? 300 + r() * 500 : 900 + r() * 2600, du = (i ? .05 + r() * .12 : .03 + r() * .08) * sr, a = (i ? .25 : .1) * (.4 + r()); let ph = 0;
+      for (let k = 0; k < du; k++) { ph += TAU * f * (1 + (i ? .9 : .3) * k / du) / sr; y[o + k] += a * Math.sin(ph) * Math.sin(Math.PI * k / du); } } }
+  return chs;
 }
 
 /* ═════════════ Movimiento suave (Calma) ═════════════
@@ -889,6 +1180,8 @@ function mvLog(t, o) { MV.log.push(Object.assign({ t: Math.round((t - MV.t0) * 1
 function mvGate() {
   const s = S.sound, v = S.var; MV.vbuf = null; MV.tonal = s.an.tonal;
   if (s.unsure) { MV.ok = false; MV.why = 'entrada dudosa (' + s.unsure + '): sin nota añadida'; return; }
+  if (v.profile === 'objeto' || v.profile === 'seco') { MV.ok = false; MV.why = 'objeto: sin nota añadida; sus propias resonancias se turnan'; return; }
+  if (v.profile === 'tarareo') { MV.ok = false; MV.why = 'tarareo: la melodía es la de la persona; no se añade otra'; return; }
   if (v.profile === 'agua' || (v.profile === 'voz' && v.mix)) { MV.ok = false; MV.why = 'agua o ambiente continuo: sin nota añadida, varían brillo, densidad y pausas'; return; }
   if (v.profile === 'golpe' && !markOf(v)) { const tl = tailOf(s, S.shape.attackT); MV.tonal = tl.length > s.sr * .25 ? analyze(tl, s.sr).tonal : 0; }
   MV.ok = MV.tonal >= MV_MIN; MV.why = MV.ok ? 'altura fiable (confianza tonal ' + MV.tonal.toFixed(2) + '): una voz superior sale de ' + (v.profile === 'golpe' ? 'la cola del golpe' : 'la resonancia del sonido') : 'sin altura fiable (confianza tonal ' + MV.tonal.toFixed(2) + '): sin nota añadida';
@@ -966,7 +1259,7 @@ function mvTick(t) {
 function playAir(t) {
   const c = S.ctx, fx = VX(), buf = srcBuffer(), D = buf.duration, an = S.sound.an, kept = fx.grain !== 'std' && fx.span, cont = !kept && an.sustain > .6 && D > 5; let a = 0, len = D;
   if (kept) { a = clamp(fx.span[0], 0, Math.max(0, D - .05)); len = Math.min(fx.grain === 'attack' ? 3 : fx.span[1] - a, D - a); }
-  else if (D > 9) { len = rand(6, 9); const hot = an.hot; a = clamp((hot.length ? hot[Math.floor(Math.random() * hot.length)] : rand(0, D)) - 1, 0, D - len); }
+  else if (D > 9) { len = rand(6, 9); const hot = an.hot; a = clamp((hot.length ? hot[Math.floor(prnd() * hot.length)] : rand(0, D)) - 1, 0, D - len); }
   if (!(len > .04)) return t + 2;
   const t0 = t + .05, fi = cont ? Math.min(1.2, len / 3) : .006, fo = cont ? Math.min(1.2, len / 3) : Math.min(.3, len / 3), s = c.createBufferSource(), g = c.createGain(); s.buffer = buf;
   g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(.62, t0 + fi); g.gain.setValueAtTime(.62, t0 + len - fo); g.gain.linearRampToValueAtTime(0, t0 + len);
@@ -985,12 +1278,14 @@ function breathAt(t) {
   return ph < b[0] ? { v: .5 - .5 * Math.cos(Math.PI * ph / b[0]), cue: 'Inhala', ex: false } : { v: .5 + .5 * Math.cos(Math.PI * (ph - b[0]) / b[1]), cue: S.hum ? 'Tararea «mmm»' : 'Exhala', ex: true };
 }
 
+let nextMotif = 0, motifRng = Math.random;
 let nextGrain = 0, nextBell = 0, lastTick = 0, curBreath = { v: .5, cue: '' };
 function tick() {
   const c = S.ctx; if (!c || !E) return;
   if (!S.playing || c.state !== 'running') { lastTick = 0; return; }
   const t = c.currentTime, cfg = MODES[S.mode], dt = lastTick ? t - lastTick : 0, fx = VX();
   if (!S.preview) S.listened += dt; S.elapsed += dt;
+  if (S.sound && S.sound.rio) return rioTick(t, dt);
   if (S.elapsed > 5 && !origPlaying) { const r = masterRms(); S.padRms = S.padRms ? S.padRms + (r - S.padRms) * .012 : r; }
   abLevel(t); mvTick(t); const mv = MV.on;
   // Session arc: arrival -> depth (darker, slower, fewer echoes) -> return. In "Sueño" it never returns: it keeps sinking.
@@ -1006,7 +1301,7 @@ function tick() {
   const depth = cfg.depth, v = curBreath.v;
   E.breath.gain.setTargetAtTime(1 - depth + depth * v, t, .12);
   if (mv) MV.bc += (MV.bright - MV.bc) * Math.min(1, dt / Math.max(1, MV.tr / 2)); else MV.bc = 1;
-  E.padF.frequency.setTargetAtTime(lo * Math.pow(hi / lo, v) * MV.bc, t, .15);
+  E.padF.frequency.setTargetAtTime(Math.max(lo * Math.pow(hi / lo, v) * MV.bc, fx.lp || 0), t, .15);      // an object's own resonances are never filtered away
   E.drone.gain.setTargetAtTime(cfg.drone * fx.drone * (1 + .25 * d1) * (mv ? MV.drone : 1), t, mv ? Math.max(1.5, MV.tr / 3) : 1.5);
   // Sueño: the fade belongs to the timer, so the last stretch is already quiet when it ends. Without a limit there is nothing to fade.
   const fl = sleep && S.dur > 0 && !S.preview ? Math.min(120, S.dur * 15) : 0, fv = fl && S.remain < fl ? Math.pow(Math.max(0, S.remain) / fl, 1.6) : 1;
@@ -1019,6 +1314,7 @@ function tick() {
       if (air) nextGrain = S.pres > .02 ? playAir(t) : t + 2;
       else { if (S.pres > .02 && !(sleep && p > .6)) playGrain(); nextGrain = Math.max(t + rand(cfg.grain[0], cfg.grain[1]) * (1.5 - S.pres) * (1 + .8 * d1) * (fx.grain === 'mark' ? 2 : 1) * (mv ? MV.dens : 1), grainEnd + 1.5); }
     }
+    if (fx.motif && S.motifBuf && t >= nextMotif) { if (!(sleep && p > .8)) playMotif(t); nextMotif = t + motifStep(S.hm.motif, motifRng); }
     if (cfg.bellGain && fx.bells && t >= nextBell) { if (!(sleep && p > .5) && !air) playBell(cfg.bellGain); nextBell = t + rand(cfg.bell[0], cfg.bell[1]) * (1 + .5 * d1); }
   }
   if (lastTick && S.dur > 0 && !S.ending && !S.preview) {
@@ -1037,10 +1333,10 @@ async function lockScreen(on) {
 }
 
 function play() {
-  const c = ensureCtx(); if (!c || !S.sound || !S.pads[S.mode]) return;
+  const c = ensureCtx(); if (!c || !S.sound || (!S.sound.rio && !S.pads[S.mode])) return;
   if (S.dur > 0 && S.remain <= 0) S.remain = S.dur * 60;
   S.ending = false;
-  if (!S.group) { startVoices(S.pads[S.mode], 3); S.breathT0 = c.currentTime; S.elapsed = 0; nextGrain = c.currentTime + 4; nextBell = c.currentTime + rand(6, 12); }
+  if (!S.group) { if (S.sound.rio) rioStart(3); else startVoices(S.pads[S.mode], 3); nextMotif = c.currentTime + (S.preview ? 1.5 : 3); motifRng = mulberry(((S.sound.seed || 1) ^ 0x7a11) | 0); S.breathT0 = c.currentTime; S.elapsed = 0; nextGrain = c.currentTime + 4; nextBell = c.currentTime + rand(6, 12); }
   const t = c.currentTime; E.master.gain.cancelScheduledValues(t); E.master.gain.setTargetAtTime(.9, t, .9);
   S.playing = true; lastTick = 0; lockScreen(true); uiPlay();
   c.resume().then(() => { if (c.state !== 'running') { S.playing = false; uiPlay(); } }).catch(() => {});
@@ -1053,7 +1349,7 @@ function pause(silent) {
 }
 function endSession() {
   const c = S.ctx, sleep = S.mode === 'sueno'; S.ending = true; S.endCause = 'timer';
-  if (!sleep) playBell(.09, 4);                                   // no bell when the goal is to fall asleep
+  if (!sleep && !S.sound.rio) playBell(.09, 4);                                   // no bell when the goal is to fall asleep
   const t = c.currentTime; E.master.gain.cancelScheduledValues(t); E.master.gain.setTargetAtTime(0, t + (sleep ? 0 : 2), sleep ? 1.2 : 4);
   setTimeout(() => { if (S.ending) { pause(); S.ending = false; S.remain = S.dur * 60; if (sleep) sleepDone(); else { showTime(); goEnd(); } } }, sleep ? 6000 : 16000);
 }
@@ -1155,7 +1451,7 @@ function shape(x, sr) {
     if (env[i] > .25 * pk && env[i] > 3 * pv + .01 * pk && i - lastOn > 8) { on.push(i); lastOn = i; } }
   let best = on.length ? on[0] : Math.max(0, at - 1), bv = -1;
   for (const i of on) { let m = 0; for (let j = i; j < Math.min(env.length, i + 4); j++) m = Math.max(m, env[j]); if (m > bv) { bv = m; best = i; } }
-  return { env, peak: pk, onsets: on.length, rate: on.length / (x.length / sr), attackT: best * .01 };
+  return { env, peak: pk, on, onsets: on.length, rate: on.length / (x.length / sr), attackT: best * .01 };
 }
 
 // The decision. Each line of `why` says whether the network or a rule made that call; it is shown in the diagnostic.
@@ -1199,15 +1495,27 @@ function setupVar(v) {
   if (v.profile === 'voz') { if (!S.mark && !v.mark) v.mark = autoMark(S.net, s); v.fx = { drone: v.mix ? 0 : .6, bells: !v.mix, guide: !v.mix, grain: 'std' }; }
   else if (v.profile === 'golpe') v.fx = { drone: .7, bells: true, guide: true, grain: 'attack', span: [Math.max(0, sh.attackT - .015), Math.min(dur, sh.attackT + 1.4)] };
   else if (v.profile === 'agua') v.fx = { drone: 0, bells: false, guide: false, grain: 'std', rate1: true };
+  else if (v.profile === 'tarareo') { const h = S.hm || (S.hm = humAnalyze(s.x, s.sr));
+    if (h.ok) { v.fx = { drone: .4, bells: false, guide: true, grain: 'std', root: h.rootHz, motif: true, pad: .65 }; if (!S.motifBuf && S.ctx) S.motifBuf = toBuf(renderMotif(h.motif, s.sr)); }
+    else { v.profile = 'actual'; v.fx = FX0; v.why = (v.why || []).concat('tarareo sin melodía clara (' + h.why + '): paisaje de textura'); } }
+  else if (v.profile === 'objeto' || v.profile === 'seco') {
+    const ra = S.ra || (S.ra = resAnalyze(s.x, s.sr)), span = [Math.max(0, ra.t0 - .015), Math.min(dur, ra.t0 + 1.6)];
+    if (v.profile === 'objeto' && !ra.res.length) v.profile = 'seco';
+    if (v.profile === 'objeto') { const top = ra.res.reduce((q, r) => Math.max(q, r.f), 0); let r = ra.res.reduce((a, b) => b.lvl * b.rel > a.lvl * a.rel ? b : a).f; while (r >= 130.81) r /= 2; while (r < 65.4) r *= 2;
+      v.fx = { drone: 0, bells: false, guide: true, grain: 'attack', span, root: r, lp: Math.min(9000, top * 1.6) }; }      // no fixed bass, no chord: only what the object itself gave
+    else v.fx = { drone: 0, bells: false, guide: false, grain: 'attack', span, lp: 3200 };
+  }
   else v.fx = FX0;
   const m = markOf(v); if (m) v.fx = Object.assign({}, v.fx, { grain: 'mark', span: m });      // a kept instant comes back whole in any profile
 }
 // The instant the person chose to keep wins over the one the network guessed for a voice.
 function markOf(v) { return S.mark || (v && v.mark) || null; }
 function clampMark(m, dur) { if (!m || m.length !== 2) return null; const a = clamp(+m[0] || 0, 0, dur), b = clamp(+m[1] || 0, 0, dur); return b - a >= Math.min(.1, dur * .5) ? [a, b] : null; }
-function quality(x) {            // share of samples stuck at the ceiling: a clipped recording
-  let pk = 0; for (let i = 0; i < x.length; i += 2) { const a = Math.abs(x[i]); if (a > pk) pk = a; } if (pk < .97) return 0;
-  let n = 0; const th = pk * .985; for (let i = 0; i < x.length; i += 2) if (Math.abs(x[i]) >= th) n++; return n / (x.length / 2);
+function quality(x) {            // share of samples lying in flat tops at the ceiling: a clipped recording. A clean steady tone has rounded tops and scores zero.
+  let pk = 0; for (let i = 0; i < x.length; i++) { const a = Math.abs(x[i]); if (a > pk) pk = a; } if (pk < .5) return 0;
+  const th = pk * (1 - 1e-4); let run = 0, n = 0;
+  for (let i = 0; i <= x.length; i++) { if (i < x.length && Math.abs(x[i]) >= th) run++; else { if (run >= 5) n += run; run = 0; } }
+  return n / x.length;
 }
 
 // Level evening + seamless loop, as the current engine does at the end of its own render (kept separate so A stays untouched).
@@ -1254,6 +1562,9 @@ async function renderVariant(v, mode, onProgress) {
   if (!v || v.profile === 'actual') return toBuf(await renderPad(m ? restOf(s, m) : s.x, s.sr, s.an.rootHz, cfg, onProgress));
   rnd = mulberry((v.seed ^ (mode.charCodeAt(0) * 7919)) | 0);
   try {
+    if (v.profile === 'objeto') return toBuf(await renderObj(s.x, s.sr, S.ra, mode, onProgress));
+    if (v.profile === 'seco') return toBuf(await renderPad(s.x, s.sr, 0, { raw: true, tilt: cfg.tilt }, onProgress));       // a dry knock keeps its percussive colour: no note is imposed on it
+    if (v.profile === 'tarareo') return toBuf(await renderPad(m ? restOf(s, m) : s.x, s.sr, v.fx.root, Object.assign({}, cfg, { deg: [[0, 1], [7, .25]] }), onProgress));
     if (v.profile === 'agua') return toBuf(await renderFlow(m ? restOf(s, m) : s.x, s.sr, onProgress));
     if (v.profile === 'golpe') return toBuf(await renderPad(m ? restOf(s, m) : tailOf(s, S.shape.attackT), s.sr, s.an.rootHz, cfg, onProgress));
     const rest = restOf(s, m);
@@ -1414,10 +1725,10 @@ async function labSetup(st, legacy) {
   } else D.err = 'red apagada (solo se carga con ?lab=1): deciden las reglas del motor';
   const seed = (st && st.seed) || (s.id ? s.id & 0x7fffffff : (Date.now() ^ (s.x.length * 2654435761)) & 0x7fffffff) || 1; s.seed = seed;
   const mk = (key, d) => ({ key, profile: d.profile, mix: d.mix, why: d.why, seed, pads: {}, mark: null, fx: null });
-  const B = mk('B', decide(S.net, s.an, S.shape)), C = mk('C', decide(null, s.an, S.shape));
+  const d0 = decide(S.net, s.an, S.shape), B = mk('B', upgrade(d0)), C = mk('C', decide(null, s.an, S.shape)), I = mk('I', d0);   // I = what the engine did before objects and humming existed
   if (st && st.profile) { B.profile = st.profile; B.mix = !!st.mix; B.mark = clampMark(st.mark, s.x.length / s.sr); B.why = B.why.concat('perfil, marca y semilla recuperados de la biblioteca'); }
   if (s.unsure) for (const v of [B, C]) { v.profile = 'actual'; v.mix = false; v.mark = null; v.why = v.why.concat('entrada dudosa (' + s.unsure + '): motor estable y sin armonizar'); }
-  S.vars.B = B; S.vars.C = C; setupVar(S.vars.A); setupVar(B); setupVar(C);
+  S.vars.B = B; S.vars.C = C; S.vars.I = I; setupVar(S.vars.A); setupVar(B); setupVar(C); setupVar(I);
   if (B.profile === 'voz' && !B.mix) S.vars.D = Object.assign({}, B, { key: 'D', pads: {}, noHN: true, fx: Object.assign({}, B.fx) });      // same voice, previous background: isolates what harmonic + noise adds
   S.var = (st ? st.use === 'A' : legacy) ? S.vars.A : B; S.pads = S.var.pads;      // landscapes saved before profiles existed keep the engine they were made with
 }
@@ -1466,7 +1777,7 @@ function abNext() { const ks = ['ab', 'diag'].concat(S.vars && S.vars.D ? ['hn']
 function abOpen(kind) {
   if (!S.vars || !S.vars.B || S.busy) return; pvStop(); teardown();
   AB.kind = kind || 'ab'; const B = S.vars.B, other = S.vars[{ ab: 'A', diag: 'C', hn: 'D' }[AB.kind]];
-  AB.order = Math.random() < .5 ? [other.key, 'B'] : ['B', other.key]; AB.sel = 0; AB.on = false; AB.heard = { A: 0, B: 0, C: 0, D: 0, orig: 0 }; AB.pref = AB.rec = ''; AB.done = false; $('abWhy').value = '';
+  AB.order = prnd() < .5 ? [other.key, 'B'] : ['B', other.key]; AB.sel = 0; AB.on = false; AB.heard = { A: 0, B: 0, C: 0, D: 0, orig: 0 }; AB.pref = AB.rec = ''; AB.done = false; $('abWhy').value = '';
   AB.same = AB.kind === 'ab' ? (B.profile === 'actual' ? 'Con este sonido no hay confianza suficiente y la versión experimental usa el motor actual: las dos versiones serían la misma.' : '')
     : AB.kind === 'diag' ? (B.profile === other.profile && B.mix === other.mix ? 'Con este sonido las reglas, sin la red, eligen lo mismo (' + B.profile + '): aquí la red no cambia nada audible.' : '')
     : (B.pads[S.mode] && !B.hn ? 'En este sonido no se pudo usar el modelo armónico (' + (B.hnFail || 'sin datos') + '): las dos versiones serían la misma.' : '');
@@ -1559,7 +1870,7 @@ async function cmpOpen() {
   CMP.mov0 = S.mov;
   if (MV.ok && !MV.vbuf) { S.busy = true; toast('Preparando las versiones…', 2500); try { await sleep(30); await mvPrepare(); } finally { S.busy = false; } }
   let off = 0, n = 0;
-  try { const v = localStorage.getItem('resona.cmp0'); off = v == null ? Math.floor(Math.random() * 6) : +v % 6 || 0; if (v == null) localStorage.setItem('resona.cmp0', String(off)); n = getAB().filter(e => e.kind === 'mov').length; } catch (e) {}
+  try { const v = localStorage.getItem('resona.cmp0'); off = v == null ? Math.floor(prnd() * 6) : +v % 6 || 0; if (v == null) localStorage.setItem('resona.cmp0', String(off)); n = getAB().filter(e => e.kind === 'mov').length; } catch (e) {}
   CMP.order = CMP_PERMS[(off + n) % 6].slice(); CMP.sel = 0; CMP.heard = { orig: 0, est: 0, sua: 0 }; CMP.lv = {}; CMP.pref = CMP.rec = ''; CMP.done = false; $('cmpWhy').value = '';
   $('cmpSub').textContent = 'Tres versiones del mismo sonido, a volumen parecido. No sabrás cuál es cuál hasta responder. Dale a cada una al menos un minuto.';
   S.preview = true; setView('cmp'); cmpUi();
@@ -1659,7 +1970,7 @@ function pvApply() {
 function pvTouch() { clearTimeout(PV.auto); PV.auto = 0; $('pvHint').textContent = ''; }
 function pvStop() { pvTouch(); PV.on = false; origStop(.2); if (S.playing) pause(); pvUi(); }
 function enterLand(auto) {
-  S.preview = true; pvTouch(); syncOpts(); setView('land'); labUi(); $('btnCmp').hidden = !TEST;
+  S.preview = true; pvTouch(); syncOpts(); setView('land'); labUi(); $('btnCmp').hidden = !TEST; { const kt = kindText(); $('kindRow').hidden = !kt; $('kindInfo').textContent = kt; $('btnRedo').hidden = !(S.sound.kind && S.sound.isNew); }
   if (!auto) { PV.on = false; PV.which = 'land'; pvUi(); return; }
   // Make the transformation audible before asking anything: the sound as it is, then what it became.
   PV.which = 'orig'; PV.on = true; pvApply(); $('pvHint').textContent = 'Primero, tu sonido tal cual…';
@@ -1679,20 +1990,21 @@ const ICON = {
   back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></svg>'
 };
-const VIEWS = ['Home', 'Rec', 'Proc', 'Land', 'Trim', 'AB', 'Cmp', 'Session', 'End', 'Stats', 'Guide'];
+const VIEWS = ['Home', 'Rec', 'Proc', 'Land', 'Trim', 'AB', 'Cmp', 'Eval', 'Session', 'End', 'Stats', 'Guide'];
 function setView(v) {
   S.view = v;
   for (const id of VIEWS) $('v' + id).hidden = id.toLowerCase() !== v;
   const dark = v === 'session'; document.documentElement.classList.toggle('dark', dark);
   const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = dark ? '#0e1b18' : '#f3efe6';
-  const back = v === 'rec' || v === 'land' || v === 'trim' || v === 'ab' || v === 'cmp' || v === 'session' || v === 'stats' || v === 'guide', bb = $('btnBack');
+  const back = v === 'rec' || v === 'land' || v === 'trim' || v === 'ab' || v === 'cmp' || v === 'eval' || v === 'session' || v === 'stats' || v === 'guide', bb = $('btnBack');
   bb.style.visibility = back ? 'visible' : 'hidden'; bb.innerHTML = dark ? ICON.down : ICON.back; bb.setAttribute('aria-label', dark ? 'Volver a tu paisaje' : 'Atrás');
   $('btnOpts').style.visibility = dark ? 'visible' : 'hidden';
   const mid = $('topMid'), title = v === 'rec' ? 'Grabación' : (v === 'land' || v === 'trim' || v === 'ab' || v === 'cmp' || dark) ? '' : 'arrullo';
   mid.textContent = title; mid.classList.toggle('brand', title === 'arrullo');
   $('top').classList.toggle('left', v === 'home' && !!S.hasLib);
   if (!dark && v !== 'land') $('opts').hidden = true;
-  if (v !== 'home') $('edit').hidden = true;
+  if (v !== 'home') { $('edit').hidden = true; $('kindSheet').hidden = true; if (v !== 'session') $('rioSheet').hidden = true; }
+  if (v !== 'eval' && EV.node) evStop();
   if (!dark) { S.dimNow = false; document.documentElement.classList.remove('dim'); }
   if (v !== 'land' && v !== 'ab') $('diag').hidden = true;
   if (v === 'home' && typeof applyUpdate === 'function') setTimeout(applyUpdate, 50);
@@ -1715,11 +2027,12 @@ function syncOpts() {
   for (const id of ['rngPres', 'rngPres2']) { $(id).value = Math.round(S.pres * 100); fillRange($(id)); }
   if (E) { E.grain.gain.setTargetAtTime(S.pres, S.ctx.currentTime, .1); E.mark.gain.setTargetAtTime(Math.min(1, S.pres * 1.6), S.ctx.currentTime, .1); }
   pressSeg('segMov', S.mov); pressSeg('segQuiet', S.quiet ? 1 : 0); pressSeg('segDim', S.dim ? 1 : 0); pressSeg('segHint', hintOn() ? 1 : 0);
-  $('optMov').hidden = $('optHint').hidden = S.mode !== 'calma'; $('optQuiet').hidden = !(S.mode === 'foco' && VX().grain === 'mark'); $('optDim').hidden = S.mode !== 'sueno';
+  const rio = !!(S.sound && S.sound.rio);
+  $('optMov').hidden = S.mode !== 'calma' || rio; $('optHint').hidden = S.mode !== 'calma'; $('optPres').hidden = rio; rioUi(); $('optQuiet').hidden = !(S.mode === 'foco' && VX().grain === 'mark'); $('optDim').hidden = S.mode !== 'sueno';
   $('sHint').hidden = !(S.mode === 'calma' && hintOn());
   $('btnKeep').textContent = S.mark ? 'Instante conservado · cambiar' : 'Conservar este instante';
   $('sumTxt').textContent = setLabel(curSet());
-  if (S.sound) $('sSub').textContent = MODE_NAMES[S.mode] + ' · afinado a ' + S.sound.an.note;
+  if (S.sound) $('sSub').textContent = MODE_NAMES[S.mode] + (S.sound.rio ? ' · solo el agua' : S.var && (S.var.profile === 'objeto' || S.var.profile === 'seco') ? ' · el sonido del objeto' : ' · afinado a ' + S.sound.an.note);
 }
 function applySet(s) {
   if (!s) return;
@@ -1749,12 +2062,12 @@ async function loadSound(raw, sr, name, o) {
       if (o.resel && prev) { next = () => { setView('trim'); requestAnimationFrame(trimDraw); }; } else setView('home');
       return;
     }
-    const an = analyze(x, sr), sat = quality(sel ? raw.subarray(sel[0], sel[1]) : raw) > .01, unsure = sat ? 'saturada' : pr.boost >= 40 ? 'apenas se oía' : '';
+    const an = analyze(x, sr), sat = quality(sel ? raw.subarray(sel[0], sel[1]) : raw) > .002, unsure = sat ? 'saturada' : pr.boost >= 40 ? 'apenas se oía' : '';
     applySet(o.set); if (!o.id) { S.mov = unsure ? 'estable' : 'suave'; S.quiet = true; } else if (!o.set && !o.resel) { S.mov = 'estable'; S.quiet = true; S.dim = false; }   // saved before these settings existed
-    S.sound = { x, sr, name, an, src: o.src || '', boost: pr.boost, cleaned: pr.cleaned, id: o.id || 0, isNew: o.id ? !!o.isNew : true, logged: !!(o.resel && prev && prev.logged), before: 0, unsure };
+    S.sound = { x, sr, name, an, src: o.src || '', boost: pr.boost, cleaned: pr.cleaned, id: o.id || 0, isNew: o.id ? !!o.isNew : true, logged: !!(o.resel && prev && prev.logged), before: 0, unsure, kind: o.kind || '' };
     S.raw = { x: raw, sr }; S.sel = sel; S.pads = {}; S.hue = an.hue; S.padRms = 0; S.procOk = true;
     S.var = { key: 'A', profile: 'actual', pads: S.pads, fx: FX0, seed: 0, why: [] }; S.vars = { A: S.var }; S.diag = null;
-    S.mark = o.resel ? null : clampMark(o.mark, x.length / sr);
+    S.mark = o.resel ? null : clampMark(o.mark, x.length / sr); S.ra = S.hm = null; S.motifBuf = null;
     await labSetup(o.lab, !!o.id && !o.lab);
     if (!o.resel) { S.listened = 0; S.pvT = { o: 0, l: 0 }; }
     $('procTitle').textContent = 'Creando tu paisaje…'; $('procSub').textContent = 'Afinado a ' + an.note + ', la nota de tu sonido';
@@ -1762,12 +2075,14 @@ async function loadSound(raw, sr, name, o) {
     S.pads[S.mode] = await renderVariant(S.var, S.mode, p => { S.progress = p; });
     mvGate(); if (mvActive()) await mvPrepare();
     S.progress = 1;
-    const meta = { sel, note: an.note, hue: an.hue, sig: Array.from(an.sig, v => Math.round(v * 100) / 100), sym: an.sym, mark: S.mark, lab: labMeta() };
+    const meta = { sel, note: an.note, hue: an.hue, sig: Array.from(an.sig, v => Math.round(v * 100) / 100), sym: an.sym, mark: S.mark, lab: labMeta(), kind: o.kind || '' };
     S.diag.listenMs = Math.round(performance.now() - tLoad);
     // Saved at once so a recording is never lost by accident; the person decides at the end whether to keep it.
     if (!o.id) { S.sound.id = Date.now(); await saveSound(Object.assign({ id: S.sound.id, name, sr, data: toPCM(raw), set: curSet(), src: o.src || '' }, meta)); }
     else if (o.resel || !o.hasSig) updateSound(o.id, meta);
-    if (unsure && !o.id) toast(sat ? 'La grabación está saturada: he dejado el paisaje estable y sin notas añadidas. Si no te convence, graba de nuevo un poco más lejos.' : 'Apenas se oía nada: he dejado el paisaje estable. Si no es lo que buscabas, graba de nuevo más cerca.', 7500);
+    if (!o.id && o.kind === 'objeto' && S.var.profile === 'seco') toast('No he encontrado una resonancia clara: conservo el golpe tal cual. Si el objeto resuena, repite con un toque suave y deja que termine de sonar.', 7500);
+    else if (!o.id && o.kind === 'tarareo' && S.var.profile !== 'tarareo') toast('No he encontrado una melodía clara, así que he hecho un paisaje de textura. Puedes repetir el tarareo.', 7500);
+    else if (unsure && !o.id) toast(sat ? 'La grabación está saturada: he dejado el paisaje estable y sin notas añadidas. Si no te convence, graba de nuevo un poco más lejos.' : 'Apenas se oía nada: he dejado el paisaje estable. Si no es lo que buscabas, graba de nuevo más cerca.', 7500);
     else if (pr.boost >= 12) toast('Sonido suave: lo he amplificado +' + Math.round(pr.boost) + ' dB' + (pr.cleaned ? ' y he reducido el ruido de fondo.' : '.'), 5500);
     next = o.direct ? startSession : () => enterLand(true);
   } catch (err) {
@@ -1780,6 +2095,7 @@ async function switchMode(m) {
   if (m === S.mode || S.busy || !S.sound) return;
   S.busy = true; S.mode = m; syncOpts();
   try {
+    if (S.sound.rio) { S.busy = false; syncOpts(); return; }          // the river has nothing to retune: only the timer and the ending change
     if (!S.pads[m]) { toast('Reafinando el paisaje…', 2500); await sleep(30); S.pads[m] = await renderVariant(S.var, m); }
     if (S.group) { startVoices(S.pads[m], 5); nextGrain = S.ctx.currentTime + 3; }
     await mvEnsure();
@@ -1812,8 +2128,8 @@ function goEnd() {
 
 /* recording */
 let rec = null;
-async function startRec() {
-  const c = ensureCtx(); if (!c) return;
+async function startRec(kind) {
+  kind = typeof kind === 'string' ? kind : ''; const c = ensureCtx(); if (!c) return;
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !c.createScriptProcessor) return micUnavailable();
   pvStop(); teardown();
   try {
@@ -1821,7 +2137,7 @@ async function startRec() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, channelCount: 1 } });
     await c.resume();
     const src = c.createMediaStreamSource(stream), proc = c.createScriptProcessor(4096, 1, 1), mute = c.createGain(); mute.gain.value = 0;
-    rec = { stream, src, proc, mute, chunks: [], len: 0, sr: c.sampleRate };
+    rec = { stream, src, proc, mute, chunks: [], len: 0, sr: c.sampleRate, kind };
     proc.onaudioprocess = e => {
       if (!rec) return; const d = e.inputBuffer.getChannelData(0); rec.chunks.push(new Float32Array(d)); rec.len += d.length;
       let s = 0; for (let i = 0; i < d.length; i++) s += d[i] * d[i]; const rm = Math.sqrt(s / d.length); S.micLevel = Math.max(Math.min(1, Math.sqrt(rm * 40)), S.micLevel * .8); S.micRaw = Math.max(rm, (S.micRaw || 0) * .97);
@@ -1838,7 +2154,7 @@ function stopRec(discard) {
   if (discard === true) { setView('home'); return; }
   if (r.len < r.sr * .35) { toast('Demasiado corto. Mantén la grabación al menos medio segundo.'); setView('home'); return; }
   const x = new Float32Array(r.len); let o = 0; for (const ch of r.chunks) { x.set(ch, o); o += ch.length; }
-  const d = new Date(); loadSound(x, r.sr, 'Grabación ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'), { src: 'grabación' });
+  const d = new Date(); loadSound(x, r.sr, (r.kind === 'objeto' ? 'Objeto ' : r.kind === 'tarareo' ? 'Tarareo ' : 'Grabación ') + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'), { src: 'grabación', kind: r.kind });
 }
 function micUnavailable(err) {
   const n = $('micNote'); n.hidden = false;
@@ -1851,7 +2167,7 @@ function micUnavailable(err) {
 
 /* file import */
 function decode(c, ab) { return new Promise((res, rej) => { const p = c.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(rej); }); }
-async function onFile(file) {
+async function onFile(file, kind) {
   const c = ensureCtx(); if (!c || !file) return;
   try {
     pvStop(); setView('proc'); S.procOk = false; $('procTitle').textContent = 'Abriendo el audio…'; $('procSub').textContent = file.name; S.progress = 0;
@@ -1861,7 +2177,7 @@ async function onFile(file) {
     // long files: keep the first 90 s and start on their loudest 30 s; the person can move the fragment afterwards
     let sel = null; const win = Math.floor(buf.sampleRate * REC_MAX);
     if (n > win) { const st = Math.floor(buf.sampleRate * .25); let best = -1, start = 0; for (let s = 0; s + win <= n; s += st) { let e = 0; for (let i = s; i < s + win; i += 16) e += x[i] * x[i]; if (e > best) { best = e; start = s; } } sel = [start, start + win]; }
-    await loadSound(x, buf.sampleRate, file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'Audio', { src: 'archivo', sel });
+    await loadSound(x, buf.sampleRate, file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'Audio', { src: 'archivo', sel, kind: typeof kind === 'string' ? kind : '' });
   } catch (e) { console.error(e); toast('No he podido leer ese archivo. Prueba con m4a, mp3, wav o un vídeo corto.'); setView('home'); }
 }
 
@@ -1941,7 +2257,7 @@ $('trimUse').onclick = () => {
   if (T.mode === 'mark') return applyMark();
   if (!S.raw || !S.sound) return; trimStop();
   const n = S.raw.x.length, a = Math.floor(T.a * n), b = Math.floor(T.b * n), s = S.sound;
-  loadSound(S.raw.x, S.raw.sr, s.name, { id: s.id, isNew: s.isNew, sel: a <= 0 && b >= n ? null : [a, b], src: s.src, resel: true, lab: Object.assign(labMeta(), { mark: null }) });
+  loadSound(S.raw.x, S.raw.sr, s.name, { id: s.id, isNew: s.isNew, sel: a <= 0 && b >= n ? null : [a, b], src: s.src, kind: s.kind, resel: true, lab: Object.assign(labMeta(), { mark: null }) });
 };
 
 /* ───────────── Library (this device only) ───────────── */
@@ -1956,9 +2272,9 @@ const updateSound = (id, patch) => store('readwrite', st => { const q = st.get(i
 const delSound = id => store('readwrite', st => { st.delete(id); });
 function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
 function openSound(it) {
-  if (!ensureCtx()) return; const d = it.data, f = new Float32Array(d.length);
+  if (!ensureCtx()) return; if (it.kind === 'rio' && it.tk) return openRio(it, false); const d = it.data, f = new Float32Array(d.length);
   if (d instanceof Int16Array) for (let i = 0; i < d.length; i++) f[i] = d[i] / 32767; else f.set(d);
-  loadSound(f, it.sr, it.name, { id: it.id, sel: it.sel, src: it.src || 'biblioteca', set: it.set, lab: it.lab, mark: it.mark, direct: true, hasSig: !!it.sig });
+  loadSound(f, it.sr, it.name, { id: it.id, sel: it.sel, src: it.src || 'biblioteca', set: it.set, lab: it.lab, mark: it.mark, kind: it.kind || '', direct: true, hasSig: !!it.sig });
 }
 function sigOf(it) {                 // older sounds were saved without their drawing: give them a stable one
   if (it.sig) return { sig: Float32Array.from(it.sig), sym: it.sym || 5, hue: it.hue == null ? 100 : it.hue };
@@ -2104,6 +2420,221 @@ $('endDrop').onclick = async () => {
 };
 $('endName').onkeydown = e => { if (e.key === 'Enter') e.target.blur(); };
 
+/* ═════════════ Offline render of the real engine ═════════════
+   The session is normally driven live, tick by tick. Here the same tick() runs against a simulated clock on an
+   OfflineAudioContext, with a seeded generator, so a stretch of session can be rendered ahead of time and replayed from
+   any point with exactly the same content (used by the listening test, and to check the output without waiting). */
+async function renderOffline(v, secs, o) {
+  const OC = window.OfflineAudioContext || window.webkitOfflineAudioContext, sr = S.ctx.sampleRate, oc = new OC(2, Math.ceil(sr * secs), sr); let simT = 0;
+  const fake = new Proxy(oc, { get(t, p) { if (p === 'currentTime') return simT; if (p === 'state') return 'running'; const q = t[p]; return typeof q === 'function' ? q.bind(t) : q; } });
+  const keep = { ctx: S.ctx, E, prnd, nextGrain, nextBell, lastTick, grainEnd, curBreath, nextMotif, motifRng, MV: Object.assign({}, MV), S: {} };
+  for (const k of ['group', 'playing', 'preview', 'elapsed', 'var', 'pads', 'mode', 'pres', 'mov', 'dur', 'remain', 'listened', 'padRms', 'breathT0', 'ending', 'fadeV', 'breath', 'hum']) keep.S[k] = S[k];
+  try {
+    prnd = mulberry(o.seed | 0); S.ctx = fake; buildEngine();
+    Object.assign(S, { var: v, pads: v.pads, mode: o.mode, pres: o.pres, mov: o.mov, group: null, preview: false, dur: 5, remain: 300, ending: false, fadeV: 1, elapsed: 0, padRms: 0, breath: '6', hum: false });
+    Object.assign(MV, { on: false, voice: null, log: [], st: 'hold', bc: 1 });
+    E.grain.gain.value = S.pres; E.mark.gain.value = Math.min(1, S.pres * 1.6); E.out.gain.value = 1.6;
+    startVoices(S.pads[S.mode], 3); S.breathT0 = 0; nextGrain = 4; nextBell = rand(6, 12); lastTick = 0; grainEnd = 0; nextMotif = 3; motifRng = mulberry(((S.sound.seed || 1) ^ 0x7a11) | 0);
+    E.master.gain.setTargetAtTime(.9, 0, .9); S.playing = true;
+    for (simT = 0; simT < secs; simT += .07) tick();
+  } finally {
+    S.ctx = keep.ctx; E = keep.E; prnd = keep.prnd; nextGrain = keep.nextGrain; nextBell = keep.nextBell; lastTick = keep.lastTick; grainEnd = keep.grainEnd; curBreath = keep.curBreath; nextMotif = keep.nextMotif; motifRng = keep.motifRng;
+    Object.assign(MV, keep.MV); Object.assign(S, keep.S); showTime();
+  }
+  return oc.startRendering();
+}
+// Loudness as heard (A-weighted) of a stretch of a rendered buffer, and its peak
+function bufLoud(buf, t0, t1) {
+  const N = 4096, fft = getFFT(N), w = hann(N), re = new Float32Array(N), im = new Float32Array(N), sr = buf.sampleRate, a = buf.getChannelData(0), b = buf.numberOfChannels > 1 ? buf.getChannelData(1) : a; let q = 0, n = 0, pk = 0;
+  if (!bufLoud.aw || bufLoud.sr !== sr) { bufLoud.aw = new Float32Array(N / 2); for (let k = 0; k < N / 2; k++) { const g = aWeight(k * sr / N); bufLoud.aw[k] = g * g; } bufLoud.sr = sr; }
+  for (let o = Math.floor(t0 * sr); o + N < Math.min(buf.length, t1 * sr); o += Math.floor(sr * .37)) { for (let i = 0; i < N; i++) { re[i] = (a[o + i] + b[o + i]) * .5 * w[i]; im[i] = 0; } fft(re, im); let s = 0; for (let k = 1; k < N / 2; k++) s += (re[k] * re[k] + im[k] * im[k]) * bufLoud.aw[k]; q += s; n++; }
+  for (let i = 0; i < buf.length; i++) { const m = Math.max(Math.abs(a[i]), Math.abs(b[i])); if (m > pk) pk = m; if (a[i] !== a[i]) pk = NaN; }
+  return { loud: Math.sqrt(q / Math.max(1, n)), peak: pk };
+}
+
+/* ═════════════ Prueba de escucha (?eval=1): two recordings × two engines, names hidden ═════════════
+   Each of the four meditations is rendered ahead with the app's own engine (78 s of a 5-minute Calma session, same seed,
+   Movimiento estable in both). The diagnostic mix has «Presencia del original» at zero, so no literal reappearance of the
+   recording gives the answer away; the normal mix (45 %) can be heard too. Nothing leaves the device. */
+const EVAL = /[?&]eval=1/.test(location.search), EV_SEED = 20261126, EV_SECS = 78, EV_LATE = 55;
+const EV = { src: [null, null], kind: 'objeto', snap: [], items: [], order: [], mix: 'diag', cur: -1, node: null, gain: null, t0: 0, late: [0, 0, 0, 0], ans: ['', '', '', ''], keep: '', done: false, busy: false, last: 0, cache: {} };
+async function evalPrep(raw, sr, kind) {
+  const pr = prepare(raw, sr); if (!pr) throw new Error('silencio');
+  const x = pr.x, an = analyze(x, sr);
+  S.sound = { x, sr, name: '', an, src: 'prueba', boost: pr.boost, cleaned: pr.cleaned, id: 0, isNew: false, logged: true, before: 0, unsure: '', kind: kind || '', seed: EV_SEED };
+  S.raw = null; S.sel = null; S.mark = null; S.ra = S.hm = null; S.motifBuf = null; S.pads = {}; S.var = { key: 'A', profile: 'actual', pads: S.pads, fx: FX0, seed: 0, why: [] }; S.vars = { A: S.var };
+  await labSetup({ seed: EV_SEED }, false);
+  const snap = { sound: S.sound, shape: S.shape, net: S.net, vars: S.vars, ra: S.ra, hm: S.hm, motifBuf: S.motifBuf, diag: S.diag };
+  for (const k of ['I', 'B']) { const v = S.vars[k]; S.var = v; S.pads = v.pads; v.pads.calma = await renderVariant(v, 'calma'); }
+  return snap;
+}
+function evalUse(sn) { S.sound = sn.sound; S.shape = sn.shape; S.net = sn.net; S.vars = sn.vars; S.ra = sn.ra; S.hm = sn.hm; S.motifBuf = sn.motifBuf; S.diag = sn.diag; S.mark = null; S.var = sn.vars.B; S.pads = S.var.pads; }
+function evPack(buf, g) { const a = buf.getChannelData(0), b = buf.getChannelData(1), d = new Int16Array(buf.length * 2); for (let i = 0; i < buf.length; i++) { d[2 * i] = Math.round(clamp(a[i] * g, -1, 1) * 32767); d[2 * i + 1] = Math.round(clamp(b[i] * g, -1, 1) * 32767); } return d; }
+async function evRender(mix) {            // the four of one mix, then brought to one loudness with room under the ceiling
+  const pres = mix === 'diag' ? 0 : .45, out = [];
+  for (const it of EV.items) { evalUse(EV.snap[it.f]); const buf = await renderOffline(S.vars[it.eng], EV_SECS, { mode: 'calma', pres, mov: 'estable', seed: EV_SEED }); out.push({ buf, m: bufLoud(buf, 20, EV_SECS - 1) }); await sleep(0); }
+  if (out.some(o => !(o.m.loud > 0) || o.m.peak !== o.m.peak)) throw new Error('render vacío');
+  const tgt = Math.exp(out.reduce((q, o) => q + Math.log(o.m.loud), 0) / out.length); let gs = out.map(o => tgt / o.m.loud); const top = Math.max(...out.map((o, i) => o.m.peak * gs[i])); if (top > .89) gs = gs.map(g => g * .89 / top);
+  EV.items.forEach((it, i) => { it[mix] = evPack(out[i].buf, gs[i]); it.meta = it.meta || {}; it.meta[mix] = { gainDb: +(20 * Math.log10(gs[i])).toFixed(1), peak: +(out[i].m.peak * gs[i]).toFixed(2), loudDb: +(20 * Math.log10(out[i].m.loud * gs[i])).toFixed(1) }; });
+  EV.cache = {};
+}
+async function evBuild(srcs, kind) {      // srcs: [{x, sr}, {x, sr}] — mono
+  if (EV.busy || !ensureCtx()) return; EV.busy = true; evStop(); pvStop(); teardown();
+  const msg = t => { $('evMsg').textContent = t; };
+  try {
+    EV.snap = []; EV.items = [{ f: 0, eng: 'I' }, { f: 0, eng: 'B' }, { f: 1, eng: 'I' }, { f: 1, eng: 'B' }]; EV.kind = kind;
+    for (let f = 0; f < 2; f++) { msg('Analizando la grabación ' + 'AB'[f] + '…'); await sleep(30); EV.snap.push(await evalPrep(srcs[f].x, srcs[f].sr, kind)); }
+    msg('Renderizando las cuatro meditaciones (78 s cada una)…'); await sleep(30); await evRender('diag');
+    EV.order = [0, 1, 2, 3]; for (let i = 3; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [EV.order[i], EV.order[j]] = [EV.order[j], EV.order[i]]; }
+    EV.mix = 'diag'; EV.late = [0, 0, 0, 0]; EV.ans = ['', '', '', '']; EV.keep = ''; EV.done = false; msg(''); evUi(true);
+  } catch (e) { console.error(e); msg(String(e && e.message) === 'silencio' ? 'En una de las dos grabaciones no se oye nada claro. Elige otra.' : 'No he podido preparar la prueba con esos archivos.'); }
+  finally { EV.busy = false; S.sound = null; S.raw = null; S.vars = null; S.var = null; S.pads = {}; }
+}
+function evBuf(key, mk) { if (!EV.cache[key]) { EV.cache = {}; EV.cache[key] = mk(); } return EV.cache[key]; }      // one decoded buffer in memory at a time
+function evStop() { if (EV.node) { try { EV.node.stop(); } catch (e) {} try { EV.gain.disconnect(); } catch (e) {} } EV.node = null; EV.cur = -1; if (S.view === 'eval') evUi(); setTimeout(idleSuspend, 700); }
+function evPlay(slot, off) {              // slot 0–3 = a meditation in its hidden position; 'A' / 'B' = the reference recordings
+  const c = ensureCtx(); if (!c) return; if (EV.node) { try { EV.node.stop(); } catch (e) {} try { EV.gain.disconnect(); } catch (e) {} }
+  let buf, g = 1;
+  if (typeof slot === 'number') { const it = EV.items[EV.order[slot]], d = it[EV.mix]; buf = evBuf(slot + EV.mix, () => { const b = c.createBuffer(2, d.length / 2, c.sampleRate), l = b.getChannelData(0), r = b.getChannelData(1); for (let i = 0; i < l.length; i++) { l[i] = d[2 * i] / 32767; r[i] = d[2 * i + 1] / 32767; } return b; }); }
+  else { const s = EV.snap[slot === 'A' ? 0 : 1].sound; buf = evBuf('o' + slot, () => { const b = c.createBuffer(1, s.x.length, s.sr); b.getChannelData(0).set(s.x); return b; }); g = .8; off = 0; }
+  const n = c.createBufferSource(), gn = c.createGain(); n.buffer = buf; gn.gain.value = 0; gn.gain.setTargetAtTime(g * S.vol * 1.25, c.currentTime, .05); n.connect(gn); gn.connect(c.destination);
+  n.onended = () => { if (EV.node === n) evStop(); };
+  const go = () => { n.start(0, Math.min(off || 0, buf.duration - .1)); EV.t0 = c.currentTime - (off || 0); };
+  EV.node = n; EV.gain = gn; EV.cur = slot; EV.last = performance.now(); if (c.state === 'running') go(); else c.resume().then(go).catch(() => evStop());
+  evUi();
+}
+function evPos() { return EV.node && S.ctx ? S.ctx.currentTime - EV.t0 : 0; }
+function evUi(build) {
+  const run = $('evRun'), ready = EV.items.length === 4 && !!EV.items[0].diag; $('evSetup').hidden = ready; run.hidden = !ready; if (!ready) return;
+  if (build || !run.firstChild) {
+    run.textContent = '';
+    const row = (cls) => { const d = el('div', cls || 'row'); run.append(d); return d; }, btn = (parent, txt, fn, cls) => { const b = el('button', cls || 'pill', txt); b.onclick = fn; parent.append(b); return b; };
+    run.append(el('p', 'lbl', 'Primero, las dos grabaciones de referencia'));
+    const r0 = row(); btn(r0, 'Grabación A', () => EV.cur === 'A' ? evStop() : evPlay('A')).dataset.ref = 'A'; btn(r0, 'Grabación B', () => EV.cur === 'B' ? evStop() : evPlay('B')).dataset.ref = 'B';
+    run.append(el('p', 'lbl', 'Después, las cuatro meditaciones. Salta a 00:55 y responde con lo que oigas a partir de ahí.'));
+    for (let s = 0; s < 4; s++) { const card = row('evc'); card.dataset.slot = s; card.append(el('b', '', 'Meditación ' + (s + 1)));
+      const r1 = el('div', 'row'); card.append(r1); btn(r1, '▶ 00:00', () => evPlay(s, 0)); btn(r1, '▶ 00:55', () => evPlay(s, EV_LATE)); btn(r1, 'Parar', evStop); r1.append(el('span', 'evt', ''));
+      card.append(el('p', 'fine', '¿De cuál de las dos grabaciones crees que procede?'));
+      const r2 = el('div', 'seg'); card.append(r2); for (const [v, t] of [['A', 'A'], ['B', 'B'], ['?', 'No lo sé']]) btn(r2, t, () => { if (EV.done) return; if (EV.late[s] < 5) return toast('Escucha antes unos segundos de esa meditación a partir de 00:55.', 3200); EV.ans[s] = v; evUi(); }).dataset.v = v; }
+    run.append(el('p', 'lbl', '¿Con cuál te quedarías para meditar?'));
+    const r3 = row('seg'); r3.id = 'evKeep'; for (const [v, t] of [['0', '1'], ['1', '2'], ['2', '3'], ['3', '4'], ['none', 'Ninguna']]) btn(r3, t, () => { if (!EV.done) { EV.keep = v; evUi(); } }).dataset.v = v;
+    run.append(el('p', 'lbl', 'Mezcla'));
+    const r4 = row('seg'); r4.id = 'evMix'; btn(r4, 'Sin reapariciones del original', () => evMix('diag')).dataset.v = 'diag'; btn(r4, 'Mezcla normal', () => evMix('norm')).dataset.v = 'norm';
+    const r5 = row('col'); r5.style.gap = '8px'; btn(r5, 'Ver el resultado', evReveal, 'primary').id = 'evDone'; r5.append(el('p', 'fine', '')); r5.lastChild.id = 'evRes'; r5.lastChild.style.textAlign = 'left';
+    btn(r5, 'Empezar con otras grabaciones', () => { evStop(); EV.items = []; EV.cache = {}; evUi(); }, 'text small');
+  }
+  run.querySelectorAll('[data-ref]').forEach(b => b.setAttribute('aria-pressed', String(EV.cur === b.dataset.ref)));
+  run.querySelectorAll('.evc').forEach(c => { const s = +c.dataset.slot; c.classList.toggle('on', EV.cur === s); c.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(EV.ans[s] === b.dataset.v))); c.querySelector('.evt').textContent = EV.cur === s ? clock(Math.max(0, evPos())) : ''; });
+  $('evKeep').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(EV.keep === b.dataset.v)));
+  $('evMix').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(EV.mix === b.dataset.v)));
+}
+async function evMix(m) {
+  if (EV.busy || m === EV.mix) return; evStop();
+  if (!EV.items[0][m]) { EV.busy = true; toast('Renderizando la mezcla normal…', 4000); try { await sleep(40); await evRender(m); } catch (e) { console.error(e); EV.busy = false; return toast('No se pudo renderizar esa mezcla.'); } finally { S.sound = null; S.vars = null; S.var = null; S.pads = {}; } EV.busy = false; }
+  EV.mix = m; EV.cache = {}; evUi();
+}
+function evReveal() {
+  if (EV.done) return; if (EV.ans.some(a => !a)) return toast('Responde A, B o «No lo sé» en las cuatro.', 3000); if (!EV.keep) return toast('Elige con cuál te quedarías, o «Ninguna».', 3000);
+  evStop(); EV.done = true; const names = { I: 'motor inicial', B: 'motor nuevo' }, hit = { I: 0, B: 0 }, lines = [];
+  for (let s = 0; s < 4; s++) { const it = EV.items[EV.order[s]], truth = 'AB'[it.f], okk = EV.ans[s] === truth; if (okk) hit[it.eng]++; lines.push('Meditación ' + (s + 1) + ': grabación ' + truth + ', ' + names[it.eng] + ' · respondiste ' + (EV.ans[s] === '?' ? 'no lo sé' : EV.ans[s]) + (okk ? ' ✓' : '')); }
+  const kp = EV.keep === 'none' ? 'ninguna' : (it => 'grabación ' + 'AB'[it.f] + ', ' + names[it.eng])(EV.items[EV.order[+EV.keep]]);
+  const prof = EV.snap.map(sn => sn.vars.B.profile);
+  $('evRes').textContent = lines.join('\n') + '\n\nAciertos con el motor inicial: ' + hit.I + ' de 2 · con el motor nuevo: ' + hit.B + ' de 2.\nTe quedarías con: ' + kp + '.\nTratamiento del motor nuevo: A «' + prof[0] + '», B «' + prof[1] + '».\n\nCuatro respuestas de una persona no demuestran nada: sirven para oír la diferencia, no para medirla.';
+  $('evRes').style.whiteSpace = 'pre-line';
+  const log = getAB(); log.push({ t: Date.now(), d: new Date().toISOString().slice(0, 16), kind: 'ident', order: EV.order.map(i => 'AB'[EV.items[i].f] + EV.items[i].eng), ans: EV.ans.slice(), hitI: hit.I, hitB: hit.B, keep: EV.keep === 'none' ? 'none' : 'AB'[EV.items[EV.order[+EV.keep]].f] + EV.items[EV.order[+EV.keep]].eng, mix: EV.mix, prof, tipo: EV.kind, secs: EV_SECS, seed: EV_SEED, meta: EV.items.map(i => i.meta) });
+  try { localStorage.setItem(ABKEY, JSON.stringify(log.slice(-300))); } catch (e) {}
+  evUi();
+}
+setInterval(() => { if (S.view !== 'eval' || !EV.node) return; const now = performance.now(), dt = Math.min(1, (now - EV.last) / 1000); EV.last = now; if (typeof EV.cur === 'number' && evPos() >= EV_LATE) EV.late[EV.cur] += dt; evUi(); }, 250);
+async function evFile(i, file) {
+  const c = ensureCtx(); if (!c || !file) return;
+  try { const buf = await decode(c, await file.arrayBuffer()), n = Math.min(buf.length, Math.floor(buf.sampleRate * REC_MAX)), x = new Float32Array(n);
+    for (let ch = 0; ch < buf.numberOfChannels; ch++) { const d = buf.getChannelData(ch); for (let k = 0; k < n; k++) x[k] += d[k] / buf.numberOfChannels; }
+    EV.src[i] = { x, sr: buf.sampleRate }; $('evN' + i).textContent = 'Archivo elegido (' + Math.round(n / buf.sampleRate) + ' s)'; }
+  catch (e) { console.error(e); EV.src[i] = null; $('evN' + i).textContent = 'Elegir archivo'; toast('No he podido leer ese archivo. Prueba con m4a, mp3, wav o un vídeo corto.'); }
+}
+// Two struck bottles that never existed: known inharmonic resonances, for trying the test without recordings
+function evSynth(i, sr) {
+  const modes = i ? [[388, 1, .6], [1127, .7, .35], [2415, .3, .22]] : [[520, 1, .9], [1432, .6, .5], [2790, .35, .3], [4410, .2, .18]], y = new Float32Array(Math.floor(sr * 2.4)), r = mulberry(7 + i), s = Math.floor(.08 * sr);
+  for (let n = 0; n < y.length; n++) y[n] = (r() * 2 - 1) * .0008;
+  for (let n = 0; s + n < y.length; n++) { const t = n / sr; let v = (r() * 2 - 1) * Math.exp(-t / .004) * .5; for (const [f, a, tau] of modes) v += a * Math.exp(-t / tau) * Math.sin(TAU * f * t); y[s + n] += v * .4 * Math.min(1, n / (sr * .0008)); }
+  return y;
+}
+$('evF0').onchange = e => { const f = e.target.files[0]; e.target.value = ''; evFile(0, f); };
+$('evF1').onchange = e => { const f = e.target.files[0]; e.target.value = ''; evFile(1, f); };
+$('evKind').onclick = e => { const b = e.target.closest('button'); if (b) { EV.kind = b.dataset.v; pressSeg('evKind', EV.kind); } };
+$('evGo').onclick = () => { if (!EV.src[0] || !EV.src[1]) return toast('Elige las dos grabaciones.', 2500); evBuild(EV.src, EV.kind); };
+$('evDemo').onclick = () => { const c = ensureCtx(); if (!c) return; $('evMsg').textContent = 'Usando dos impactos sintéticos de prueba (no son botellas reales).'; evBuild([{ x: evSynth(0, c.sampleRate), sr: c.sampleRate }, { x: evSynth(1, c.sampleRate), sr: c.sampleRate }], 'objeto'); };
+
+/* ═════════════ Guided capture (object, hummed line) and the river sheet ═════════════ */
+const KIND = { objeto: ['Un objeto que resuena', 'Da un toque suave y deja que termine de sonar. Sirve una botella, un cuenco, una taza: lo que suene un momento después del golpe.'],
+  tarareo: ['Tararear una melodía', 'Tararea algo corto, como si recordaras una melodía. Con 3 a 8 segundos basta; la meditación heredará sus subidas, sus pausas y su vuelta.'] };
+let kindSel = '';
+document.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => { const k = b.dataset.kind; ensureCtx(); if (k === 'rio') return rioSheet(false); kindSel = k; $('kindTitle').textContent = KIND[k][0]; $('kindHint').textContent = KIND[k][1]; $('kindSheet').hidden = false; });
+$('kindCancel').onclick = () => { $('kindSheet').hidden = true; };
+$('kindRec').onclick = () => { $('kindSheet').hidden = true; startRec(kindSel); };
+$('fileKind').onchange = e => { const f = e.target.files[0]; e.target.value = ''; $('kindSheet').hidden = true; onFile(f, kindSel); };
+function kindText() {
+  const v = S.var, s = S.sound; if (!v || !s) return '';
+  if (v.profile === 'objeto' && S.ra) return 'Objeto · ' + S.ra.res.length + (S.ra.res.length === 1 ? ' resonancia' : ' resonancias') + ': ' + S.ra.res.map(r => Math.round(r.f)).join(', ') + ' Hz';
+  if (v.profile === 'seco') return 'Golpe seco: no encontré una resonancia clara y conservo su carácter.';
+  if (v.profile === 'tarareo' && S.hm) return 'Tarareo · ' + S.hm.notes.length + (S.hm.notes.length === 1 ? ' nota sostenida' : ' notas') + (S.hm.pauses ? ', ' + S.hm.pauses + (S.hm.pauses === 1 ? ' pausa' : ' pausas') : '');
+  if (s.kind === 'tarareo') return 'No encontré una melodía clara: es un paisaje de textura.';
+  return '';
+}
+$('btnRedo').onclick = async () => { const s = S.sound; if (!s || S.busy) return; const k = s.kind; pvStop(); teardown(); if (s.isNew && s.id) await delSound(s.id); S.sound = null; S.raw = null; startRec(k); };
+
+const RS = { tk: [null, null], edit: false, demo: false, busy: false };
+function rioSheet(edit) {
+  RS.edit = !!edit; RS.demo = false; RS.tk = edit ? RIO.tk.slice() : [null, null];
+  for (const i of [0, 1]) $('rioN' + i).textContent = RS.tk[i] ? (RS.tk[i].name || 'Toma cargada') + ' · cambiar' : 'Elegir archivo';
+  $('rioDemo').hidden = RS.edit; $('rioGo').textContent = RS.edit ? 'Hecho' : 'Abrir'; $('rioSheet').hidden = false;
+}
+async function rioFile(i, file) {         // a take that cannot be read changes nothing: the other one, and the library, stay as they were
+  const c = ensureCtx(); if (!c || !file || RS.busy) return; RS.busy = true; $('rioN' + i).textContent = 'Leyendo…';
+  try { const buf = await decode(c, await file.arrayBuffer()), chs = []; for (let ch = 0; ch < Math.min(2, buf.numberOfChannels); ch++) chs.push(buf.getChannelData(ch));
+    const pk = rioPack(chs, buf.sampleRate, file.name.replace(/\.[^.]+$/, '')); if (!rioLoop(rioUnpack(pk), pk.sr)) throw new Error('muda o demasiado corta');
+    RS.tk[i] = pk; RS.demo = false; if (RS.edit) await rioCommit(i); }
+  catch (e) { console.error(e); toast('No he podido usar ese archivo (ilegible, mudo o de menos de un segundo). ' + (RS.tk[1 - i] ? 'La otra toma sigue como estaba.' : 'No se ha cambiado nada.'), 5500); }
+  finally { RS.busy = false; $('rioN' + i).textContent = RS.tk[i] ? (RS.tk[i].name || 'Toma cargada') + ' · cambiar' : 'Elegir archivo'; }
+}
+async function rioCommit(i) {
+  RIO.tk[i] = RS.tk[i]; RIO.buf[i] = rioBuffer(RIO.tk[i]); if (S.sound && S.sound.id) await updateSound(S.sound.id, { tk: RIO.tk.slice() });
+  if (S.group && S.group.rio) { stopVoices(.6); rioStart(.8); } rioUi();
+}
+$('rioF0').onchange = e => { const f = e.target.files[0]; e.target.value = ''; rioFile(0, f); };
+$('rioF1').onchange = e => { const f = e.target.files[0]; e.target.value = ''; rioFile(1, f); };
+$('rioCancel').onclick = () => { $('rioSheet').hidden = true; };
+$('rioDemo').onclick = () => { const c = ensureCtx(); if (!c) return; RS.tk = [rioPack(rioDemo(0, c.sampleRate), c.sampleRate, 'Orilla sintética'), rioPack(rioDemo(1, c.sampleRate), c.sampleRate, 'Bajo el agua sintética')]; RS.demo = true; for (const i of [0, 1]) $('rioN' + i).textContent = RS.tk[i].name; };
+$('rioGo').onclick = async () => {
+  if (RS.edit) { $('rioSheet').hidden = true; return; }
+  if (!RS.tk[0]) return toast('Falta la toma de la orilla. La de bajo el agua puede añadirse después.', 3500);
+  $('rioSheet').hidden = true; const t0 = RS.tk[0], mono = rioMono(t0, 30);
+  const it = { id: Date.now(), name: RS.demo ? 'Río · muestras sintéticas de prueba' : 'Río a dos tomas', sr: t0.sr, data: toPCM(mono), kind: 'rio', src: RS.demo ? 'muestras sintéticas' : 'río', tk: RS.tk.slice(), rio: { pos: 0, auto: false }, set: Object.assign(curSet(), { mov: 'estable' }) };
+  await saveSound(it); openRio(it, true);
+};
+function rioMono(tk, secs) { const chs = rioUnpack(tk), n = Math.min(chs[0].length, Math.floor(tk.sr * secs)), x = new Float32Array(n); for (const c of chs) for (let i = 0; i < n; i++) x[i] += c[i] / chs.length; return x; }
+async function openRio(it, isNew) {
+  if (S.busy || !ensureCtx()) return; S.busy = true; let ok = false;
+  try {
+    pvStop(); teardown(); setView('proc'); S.progress = 0; S.procOk = false; $('procTitle').textContent = 'Abriendo el río…'; $('procSub').textContent = it.name; await sleep(40);
+    const tk = it.tk || []; if (!tk[0]) throw new Error('sin toma');
+    RIO.tk = [tk[0], tk[1] || null]; RIO.buf = [rioBuffer(tk[0]), tk[1] ? rioBuffer(tk[1]) : null]; if (!RIO.buf[0]) throw new Error('toma muda');
+    const mono = rioMono(tk[0], 30), pr = prepare(mono, tk[0].sr), x = pr ? pr.x : mono, an = analyze(x, tk[0].sr);
+    applySet(it.set); S.mov = 'estable';
+    S.sound = { rio: true, x, sr: tk[0].sr, name: it.name, an, src: it.src || 'río', boost: 0, cleaned: false, id: it.id, isNew: !!isNew, logged: false, before: 0, unsure: '', kind: 'rio', seed: it.id & 0x7fffffff };
+    S.raw = null; S.sel = null; S.mark = null; S.ra = S.hm = null; S.motifBuf = null; S.pads = {}; S.hue = an.hue; S.padRms = 0; S.var = { key: 'A', profile: 'actual', pads: S.pads, fx: FX0, seed: 0, why: [] }; S.vars = { A: S.var }; S.diag = null; S.listened = 0; S.pvT = { o: 0, l: 0 };
+    MV.ok = false; MV.vbuf = null; RIO.pos = clamp(+(it.rio && it.rio.pos) || 0, 0, 1); RIO.auto = !!(it.rio && it.rio.auto) && !!RIO.buf[1]; S.procOk = true; S.progress = 1;
+    if (!it.sig) updateSound(it.id, { note: an.note, hue: an.hue, sig: Array.from(an.sig, v => Math.round(v * 100) / 100), sym: an.sym });
+    ok = true;
+  } catch (e) { console.error(e); toast('No he podido abrir esas tomas.'); setView('home'); }
+  finally { S.busy = false; }
+  if (ok) { rioUi(); startSession(); }
+}
+$('rngRio').oninput = e => { RIO.pos = e.target.value / 100; fillRange(e.target); if (RIO.auto) { RIO.auto = false; toast('El recorrido lento se detiene: ahora lo llevas tú.', 2600); } if (S.ctx && S.group && S.group.rio) rioApply(S.ctx.currentTime, .12); rioUi(); rioSave(); };
+$('rioAuto').onclick = () => { rioAuto(!RIO.auto); rioSave(); };
+$('rioEdit').onclick = () => rioSheet(true);
+
 /* ───────────── Keep the screen still: block pinch, double-tap zoom and page drag ───────────── */
 for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, e => e.preventDefault(), { passive: false });
 document.addEventListener('touchmove', e => {
@@ -2119,7 +2650,7 @@ if (window.visualViewport) {
 }
 
 /* ───────────── Self-update: load the newest version without the person reloading ───────────── */
-const BUILD = '20261125213114'; let pendingBuild = '';
+const BUILD = '20261125221133'; let pendingBuild = '';
 function applyUpdate() {
   if (!pendingBuild || S.view !== 'home' || S.busy || rec || rateCtx || !$('edit').hidden) return;      // never interrupt a session
   try { if (sessionStorage.getItem('resona.tried') === pendingBuild) return; sessionStorage.setItem('resona.tried', pendingBuild); } catch (e) {}
@@ -2134,7 +2665,8 @@ window.addEventListener('pageshow', checkUpdate);
 setInterval(checkUpdate, 5 * 60 * 1000);
 
 /* ───────────── UI wiring ───────────── */
-document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { const v = b.dataset.go; if (v === 'stats') renderStats(); setView(v); });
+document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { const v = b.dataset.go; if (v === 'stats') renderStats(); if (v === 'eval') { pvStop(); teardown(); evUi(); } setView(v); });
+$('lnkEval').hidden = !(EVAL || TEST); if (!$('lnkEval').hidden) $('lnkEval').after(' · ');
 $('btnRec').onclick = startRec;
 $('btnStop').onclick = () => stopRec();
 $('lblFile').addEventListener('click', () => ensureCtx());
@@ -2145,6 +2677,8 @@ $('btnBack').onclick = () => {
   if (v === 'rec') return stopRec(true);
   if (v === 'ab') return abLeave();
   if (v === 'cmp') return cmpLeave();
+  if (v === 'eval') { evStop(); return home(); }
+  if (v === 'session' && S.sound && S.sound.rio) { hidePre(); return goEnd(); }
   if (v === 'trim') { trimStop(); return enterLand(false); }
   if (v === 'session') { hidePre(); if (S.playing) pause(); return enterLand(false); }
   if (v === 'land') return S.sound && S.sound.isNew ? goEnd() : (pvStop(), teardown(), setTimeout(idleSuspend, 900), logSession(), home());
@@ -2239,7 +2773,8 @@ function draw(ts) {
   if (v === 'rec') {       // a bundle of lines that swells with what the microphone hears
     const el = (performance.now() - S.recStart) / 1000, txt = clock(Math.min(REC_MAX, el));
     if (txt !== recShown) { recShown = txt; $('recCount').textContent = txt; }
-    const hint = (el > 1.5 && S.micRaw < .012) ? 'Suena suave. Sigue: lo amplificaré después.' : el < 4 ? 'Termina en cuanto tengas lo que querías.' : ''; if (hint !== recHintShown) { recHintShown = hint; $('recHint').textContent = hint; }
+    const kh = rec && el < 8 ? (rec.kind === 'objeto' ? 'Da un toque suave y deja que termine de sonar.' : rec.kind === 'tarareo' ? 'Tararea algo corto, como si recordaras una melodía.' : '') : '';
+    const hint = kh ? kh : (el > 1.5 && S.micRaw < .012) ? 'Suena suave. Sigue: lo amplificaré después.' : el < 4 ? 'Termina en cuanto tengas lo que querías.' : ''; if (hint !== recHintShown) { recHintShown = hint; $('recHint').textContent = hint; }
     if (ts - wavePush > 55) { wavePush = ts; wave.copyWithin(0, 1); const last = wave[wave.length - 2]; wave[wave.length - 1] = last + (clamp(S.micLevel, 0, 1) - last) * .45; }
     const n = wave.length, K = 8, amp = Math.min(rc.height * .46, 120); g.lineWidth = .9;
     for (let q = -K; q <= K; q++) {
@@ -2274,7 +2809,8 @@ function draw(ts) {
 requestAnimationFrame(draw);
 
 setView('home'); renderLib(); showTime(); syncOpts(); uiPlay(); pvUi(); fillRange($('rngVol'));
-window.__resona = { S, PV, T, AB, LAB, MV, CMP, TEST, cmpOpen, cmpSelect, mvNext, openTrim, applyMark, switchMode, startSession, endSession, goEnd, loadSound, openSound, dbAll, quality, play, pause, markOf, VX, masterRms, hnAnalyze, distOf, onFile, diagText, getAB, abSelect, abOpen, renderPad, analyze, trimNorm, prepare, DEMOS, MODES, getLog, get E() { return E; } };   // test hook
+if (EVAL) { evUi(); setView('eval'); }            // ?eval=1 opens the listening test directly
+window.__resona = { getFFT, shape, decide, renderOffline, bufLoud, EV, evBuild, evPlay, evStop, evReveal, evMix, evSynth, openRio, rioSheet, RS, rioUi, kindText, setView, home, startRec, stopRec, resAnalyze, renderObj, pitchTrack, humAnalyze, humMotif, renderMotif, humEvents, motifStep, rioGains, rioLoop, rioPack, rioUnpack, rioDemo, RIO, mulberry, renderFlow, S, PV, T, AB, LAB, MV, CMP, TEST, cmpOpen, cmpSelect, mvNext, openTrim, applyMark, switchMode, startSession, endSession, goEnd, loadSound, openSound, dbAll, quality, play, pause, markOf, VX, masterRms, hnAnalyze, distOf, onFile, diagText, getAB, abSelect, abOpen, renderPad, analyze, trimNorm, prepare, DEMOS, MODES, getLog, get E() { return E; } };   // test hook
 })();
 </script>
 
