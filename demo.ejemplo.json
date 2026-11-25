@@ -1,0 +1,7 @@
+{
+  "place": "Llavorsí, Pallars Sobirà",
+  "takes": [
+    { "title": "El río", "file": "demo/rio.m4a" },
+    { "title": "Una botella", "file": "demo/botella.m4a" }
+  ]
+}

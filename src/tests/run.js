@@ -120,5 +120,16 @@ const lvlAt = (sp, f) => { let m = 0; const k = Math.round(f * sp.N / sr); for (
     ok(sm.secondSource && sm.captureDays.join() === '2026-11-26,2026-11-28' && sm.relistenDays.join() === '2026-11-27', 'segunda fuente el día 28: días con capturas (26 y 28) separados de días con reescucha (27)');
     R.pilotEvent(P, T(27, 21), { k: 'listen', id: 101, born: T(26, 18, 1), dt: 200 }); ok(R.pilotSummary(P).relistenDays.join() === '2026-11-27', 'volver a la misma fecha no la cuenta dos veces');
     const off = R.pilotEvent({ on: false, days: {}, born: {} }, T(26, 18), { k: 'cap', id: 1 }); ok(Object.keys(off.days).length === 0, 'sin participar no se anota nada'); }
+  console.log('\n6 · POSTAL SONORA (montaje y archivo; el paisaje aquí es el colchón del motor, sin la cadena en vivo)');
+  { const g = got.A, frag = g.x.slice(Math.floor(Math.max(0, g.ra.t0 - .015) * sr), Math.floor((g.ra.t0 + 3) * sr)), land = { L: pads.A.L, R: pads.A.R }, m = R.postalMix(frag, land, sr), by = R.wavBytes(m.L, m.R, sr);
+    ok(Math.abs(m.dur - 15) < .01 && by.length === 44 + m.L.length * 4, 'dura ' + m.dur.toFixed(2) + ' s y pesa ' + (by.length / 1048576).toFixed(2) + ' MB');
+    let pk = 0; for (let i = 0; i < m.L.length; i++) pk = Math.max(pk, Math.abs(m.L[i]), Math.abs(m.R[i])); ok(pk <= .8901 && pk > .3, 'pico ' + pk.toFixed(2) + ' (margen de 1 dB)');
+    const e = (a, b) => { let q = 0; for (let i = Math.floor(a * sr); i < b * sr; i++) q += m.L[i] * m.L[i]; return Math.sqrt(q / ((b - a) * sr)); };
+    ok(e(.02, .5) > .02 && e(13, 14) > .01 && e(14.95, 15) < .2 * e(13, 14) && Math.abs(m.L[0]) < .01, 'hay sonido al principio (' + e(.02, .5).toFixed(3) + ') y cerca del final (' + e(13, 14).toFixed(3) + '), con entrada y salida suaves');
+    const sp0 = H.bands(R, m.L.subarray(0, Math.floor(1.2 * sr)), sr), spT = H.bands(R, m.L.subarray(Math.floor(m.trans[0] * sr), Math.floor(m.trans[1] * sr)), sr), spE = H.bands(R, m.L.subarray(Math.floor(8 * sr), Math.floor(13 * sr)), sr);
+    ok(Math.abs(H.peaks(sp0, sr, 1)[0].f - 520) < 6 && Math.abs(H.peaks(spT, sr, 1)[0].f - 520) < 8 && Math.abs(H.peaks(spE, sr, 1)[0].f - 520) < 8, 'la identidad de la toma (520 Hz) se oye en el original, durante la transición y en el paisaje');
+    const tag = (o) => String.fromCharCode(by[o], by[o + 1], by[o + 2], by[o + 3]), dv = new DataView(by.buffer); ok(tag(0) === 'RIFF' && tag(8) === 'WAVE' && tag(12) === 'fmt ' && tag(36) === 'data' && dv.getUint32(40, true) === by.length - 44 && dv.getUint16(22, true) === 2 && dv.getUint32(24, true) === sr, 'WAV estéreo de 16 bits con solo las partes «fmt» y «data»: ningún metadato');
+    const short = R.postalMix(g.x.slice(0, Math.floor(.4 * sr)), land, sr); ok(short.on >= .79 && short.on <= .81 && Math.abs(short.dur - 15) < .01, 'una fuente de 0,4 s acorta el arranque a ' + short.on.toFixed(1) + ' s y deja el resto al paisaje');
+    ok(R.safeName('Río de Llavorsí / casa de la àvia!') === 'postal-rio-de-llavorsi-casa-de-la-avia.wav' && R.safeName('../../etc') === 'postal-etc.wav' && R.safeName('') === 'postal-sonora.wav', 'nombre de archivo seguro: ' + R.safeName('Río de Llavorsí / casa de la àvia!')); }
   console.log('\n' + (fails ? fails + ' FALLOS' : 'TODO EN VERDE') + ' · señales sintéticas; no sustituye a la escucha'); process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

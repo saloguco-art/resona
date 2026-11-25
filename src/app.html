@@ -163,6 +163,14 @@ html.dim #top,html.dim #vSession{opacity:.22}
 #btnListen small{font-size:13.5px;opacity:.85;font-weight:400;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #lgTakes{justify-content:center}
 #lgTakes small{opacity:.75}
+#btnListen small{order:-1}
+#btnListen #listenName{font-family:var(--display);font-size:22px;line-height:1.15;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#btnListen #listenTxt{font-size:15px}
+.outline{min-height:54px;border:1.5px solid var(--accent);border-radius:16px;color:var(--accent);font-size:17px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;cursor:pointer}
+.outline svg{width:20px;height:20px}
+.two{display:flex;flex-direction:column;gap:8px}
+#vLand.demo .nodemo{display:none}
+#demoBox .fine{text-align:center;font-size:14.5px;color:var(--dim)}
 @media (prefers-reduced-motion:reduce){#top,#vSession{transition:none}}
 </style>
 
@@ -179,7 +187,8 @@ html.dim #top,html.dim #vSession{opacity:.22}
   <section class="view" id="vHome">
     <div class="col grow" id="homeFirst">
       <svg class="mark" viewBox="0 0 46 18" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" aria-hidden="true"><path d="M3 4c5-3 8 3 13 0s8-3 13 0 8 3 14 0M7 9c4-3 7 3 11 0s7-3 11 0 6 3 10 0M12 14c3-2 5 2 8 0s5-2 8 0 4 2 6 0"/></svg>
-      <h1 class="center">¿Qué te gustaría volver a escuchar?</h1>
+      <h1 class="center">Vuelve a un lugar que te hace bien</h1>
+      <p class="sub center" style="margin-top:-4px">Un sonido tuyo, convertido en un paisaje para meditar.</p>
       <div class="stage" data-stage></div>
     </div>
     <div class="col grow" id="homeBack" hidden>
@@ -194,12 +203,11 @@ html.dim #top,html.dim #vSession{opacity:.22}
     </div>
     <div class="foot">
       <p class="note" id="micNote" hidden></p>
-      <button class="primary" id="btnListen" hidden><span id="listenTxt">Escuchar</span><small id="listenSub"></small></button>
-      <button class="primary" id="btnRec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg><span id="btnRecTxt">Grabar un sonido</span></button>
-      <label class="text btn" id="lblFile">Importar audio o vídeo<input class="sr" type="file" id="file" accept="audio/*,video/*"></label>
-      <p class="links" id="kindLinks">Con guía: <button data-kind="objeto">objeto</button> <button data-kind="tarareo">tarareo</button> <button data-kind="rio">río a dos tomas</button></p>
+      <button class="primary" id="btnListen" hidden><small id="listenSub"></small><span id="listenName"></span><span id="listenTxt">Escuchar</span></button>
+      <button class="primary" id="btnDemoHome"><svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:currentColor"><path d="M8 5v14l11-7z"/></svg>Escuchar cómo funciona</button>
+      <button class="outline" id="btnCreate">Crear con mi sonido</button>
       <p class="fine" id="homeFine">Tu sonido se queda en este dispositivo.</p>
-      <p class="links"><span id="demoLinks">Sin micrófono: <button data-demo="madera">madera</button> <button data-demo="agua">agua</button> <button data-demo="voz">voz</button> <button data-demo="pajaro">pájaro</button><br></span><button id="lnkLugar" hidden>El mismo lugar, otro día</button><button data-go="eval" id="lnkEval" hidden>Prueba de escucha</button><button data-go="stats">Tu práctica</button> · <button data-go="guide">Guía</button></p>
+      <p class="links"><button id="lnkLugar" hidden>El mismo lugar, otro día</button><button data-go="eval" id="lnkEval" hidden>Prueba de escucha</button><button data-go="stats">Tu práctica</button> · <button data-go="guide">Guía</button></p>
     </div>
   </section>
 
@@ -223,7 +231,7 @@ html.dim #top,html.dim #vSession{opacity:.22}
 
   <!-- COMPARE: original against landscape, before configuring anything -->
   <section class="view" id="vLand" hidden>
-    <div class="center"><h1>Tu paisaje</h1></div>
+    <div class="center"><h1 id="landTitle">Tu paisaje</h1></div>
     <div class="stage" data-stage></div>
     <div class="seg2" id="segSrc" role="group" aria-label="Qué escuchar">
       <button data-v="orig" aria-pressed="false">Original</button>
@@ -231,19 +239,21 @@ html.dim #top,html.dim #vSession{opacity:.22}
     </div>
     <div class="center"><button class="round" id="pvPlay" aria-label="Reproducir"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
       <p class="fine" id="pvHint" style="min-height:1.5em;margin-top:6px"></p></div>
-    <div><label class="lbl" for="rngPres">Presencia del original</label>
+    <div id="demoBox" hidden><p class="fine" id="demoNote"></p><div class="seg" id="demoTakes" role="group" aria-label="Qué toma escuchar" hidden style="justify-content:center;margin-top:6px"></div>
+      <div class="center"><button class="text small" id="btnAgain">Repetir la comparación</button></div></div>
+    <div class="nodemo"><label class="lbl" for="rngPres">Presencia del original</label>
       <input type="range" id="rngPres" min="0" max="100" value="45"></div>
     <div id="resRow" class="center">
       <div class="row" style="justify-content:center;gap:10px"><span class="hz" id="hzFig"></span><button class="pill" id="btnDemo" aria-pressed="true"></button></div>
       <div class="seg" id="segRes" role="group" aria-label="Qué resonancia escuchar" hidden style="justify-content:center;margin-top:6px"></div>
       <p class="fine"><span id="hzNote"></span><span id="kindInfo"></span></p>
     </div>
-    <div class="row" style="justify-content:center;gap:2px;margin-top:-8px"><button class="text small" id="btnKeepHere">Volver aquí</button><button class="text small" id="btnKeep">Conservar este instante</button><button class="text small" id="btnRedo" hidden>Repetir la toma</button><button class="text small" id="btnCmp" hidden>Comparar a ciegas</button></div>
+    <div class="row nodemo" style="justify-content:center;gap:2px;margin-top:-8px"><button class="text small" id="btnKeepHere">Volver aquí</button><button class="text small" id="btnKeep">Conservar este instante</button><button class="text small" id="btnPostal">Postal sonora</button><button class="text small" id="btnRedo" hidden>Repetir la toma</button><button class="text small" id="btnCmp" hidden>Comparar a ciegas</button></div>
     <div id="labRow" hidden><p class="fine" id="labInfo"></p>
       <div class="row" style="justify-content:center;gap:2px"><button class="text small" id="labAB">A/B del laboratorio</button><button class="text small" id="labDiag">Diagnóstico</button></div></div>
     <div class="foot">
       <button class="primary serif" id="btnStart">Empezar sesión</button>
-      <div class="row between">
+      <div class="row between nodemo">
         <button class="text small" id="btnSummary" aria-label="Cambiar intención y duración"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 8h9M19 8h1M4 16h1M11 16h9"/><circle cx="16" cy="8" r="2.5"/><circle cx="8" cy="16" r="2.5"/></svg><span id="sumTxt">Calma · 5 min</span></button>
         <button class="text small" id="btnTrim">Elegir otro fragmento</button>
       </div>
@@ -326,6 +336,7 @@ html.dim #top,html.dim #vSession{opacity:.22}
       <input class="field" type="text" id="endName" maxlength="40" autocomplete="off"></div>
     <div class="foot" style="margin-top:6px">
       <button class="primary" id="endSave">Volver aquí</button>
+      <button class="text small" id="endPostal">Crear postal sonora</button>
       <button class="text under" id="endDrop">Salir sin guardar</button>
     </div>
   </section>
@@ -344,6 +355,15 @@ html.dim #top,html.dim #vSession{opacity:.22}
       </div>
       <div id="evRun" class="col" hidden style="gap:8px"></div>
     </div>
+  </section>
+
+  <!-- START POINT of a file too large to hold in memory -->
+  <section class="view" id="vPick" hidden>
+    <div class="center"><h1>Elige el tramo</h1><p class="sub">Tu archivo es largo. Elige desde dónde tomar hasta 30 segundos; puedes escucharlos antes.</p></div>
+    <div class="stage" data-stage></div>
+    <div><input type="range" id="rngPick" min="0" max="0" step="1" value="0" aria-label="Desde qué segundo"><p class="fine" id="pickInfo" style="margin-top:6px;font-variant-numeric:tabular-nums" aria-live="polite">&nbsp;</p></div>
+    <div class="center"><button class="round" id="pickPlay" aria-label="Escuchar desde aquí"></button></div>
+    <div class="foot"><button class="primary" id="pickUse">Crear con este tramo</button></div>
   </section>
 
   <!-- THE SAME PLACE ON OTHER DAYS (only when lugar.json exists, or ?lugar=dev) -->
@@ -453,6 +473,25 @@ html.dim #top,html.dim #vSession{opacity:.22}
   <div class="row" style="justify-content:flex-end"><button class="pill" id="optsDone" aria-pressed="true">Hecho</button></div>
 </div>
 
+<div class="sheet" id="createSheet" role="dialog" aria-label="Crear con mi sonido" hidden>
+  <p class="rate-q">Crear con mi sonido</p>
+  <p class="fine" style="font-size:15px;color:var(--dim)">Elige un vídeo de un lugar al que volverías, o graba lo que suena ahora. Todo se queda en este dispositivo.</p>
+  <div class="two">
+    <label class="outline" id="lblFile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3"/></svg>Elegir un vídeo o audio<input class="sr" type="file" id="file" accept="video/*,audio/*"></label>
+    <button class="outline" id="btnRec"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg><span id="btnRecTxt">Grabar ahora</span></button>
+  </div>
+  <p class="links" id="kindLinks">Con guía: <button data-kind="objeto">objeto</button> <button data-kind="tarareo">tarareo</button> <button data-kind="rio">río a dos tomas</button></p>
+  <p class="links" id="demoLinks">Ejemplos sintéticos: <button data-demo="madera">madera</button> <button data-demo="agua">agua</button> <button data-demo="voz">voz</button> <button data-demo="pajaro">pájaro</button></p>
+  <div class="row" style="justify-content:center"><button class="text small" id="createCancel">Cancelar</button></div>
+</div>
+<div class="sheet" id="postalSheet" role="dialog" aria-label="Postal sonora" hidden>
+  <p class="rate-q">Postal sonora</p>
+  <p class="fine" id="postalInfo" aria-live="polite">Preparando 15 segundos…</p>
+  <div><label class="lbl" for="postalName">Título (viaja con el archivo)</label><input class="field" type="text" id="postalName" maxlength="40" autocomplete="off" style="font-size:16px;padding:10px 12px"></div>
+  <p class="fine" style="text-align:left">Solo salen estos 15 segundos de audio: ni tu vídeo, ni la grabación completa, ni dónde se hizo. Cambia el título si nombra un lugar o a una persona. Nada se envía hasta que tú lo decidas.</p>
+  <div class="center"><button class="round sm" id="postalPlay" aria-label="Escuchar la postal"></button></div>
+  <div class="row between"><button class="text small" id="postalClose">Cerrar</button><span class="row"><button class="pill" id="postalSave">Guardar audio</button><button class="pill" id="postalShare" aria-pressed="true" hidden>Compartir</button></span></div>
+</div>
 <div class="sheet" id="keepSheet" role="dialog" aria-label="Cuándo volver" hidden>
   <p class="rate-q">Guardado. Te espera en Inicio.</p>
   <p class="fine">Si quieres, asócialo a un momento del día. Es solo un atajo tuyo: sin avisos ni alarmas.</p>
@@ -2003,10 +2042,10 @@ function pvApply() {
 function pvTouch() { clearTimeout(PV.auto); PV.auto = 0; $('pvHint').textContent = ''; demoStop(); }      // any other gesture on the preview ends a demo still sounding
 function pvStop() { pvTouch(); PV.on = false; origStop(.2); if (S.playing) pause(); pvUi(); }
 function enterLand(auto) {
-  S.preview = true; pvTouch(); syncOpts(); setView('land'); labUi(); $('btnCmp').hidden = !TEST; { const kt = kindText(); $('kindInfo').textContent = kt && S.hz.kind === 'none' ? kt : ''; $('btnRedo').hidden = !(S.sound.kind && S.sound.isNew); demoUi(); }
+  S.preview = true; pvTouch(); syncOpts(); setView('land'); labUi(); $('btnCmp').hidden = !TEST; { const kt = kindText(); $('kindInfo').textContent = kt && S.hz.kind === 'none' ? kt : ''; $('btnRedo').hidden = !(S.sound.kind && S.sound.isNew); demoUi(); demoLand(); }
   if (!auto) { PV.on = false; PV.which = 'land'; pvUi(); return; }
   // Make the transformation audible before asking anything: the sound as it is, then what it became.
-  PV.which = 'orig'; PV.on = true; pvApply(); $('pvHint').textContent = 'Primero, tu sonido tal cual…';
+  PV.which = 'orig'; PV.on = true; pvApply(); $('pvHint').textContent = S.sound.demo ? 'Primero, el sonido tal cual…' : 'Primero, tu sonido tal cual…';
   PV.auto = setTimeout(() => {
     PV.auto = 0; if (S.view !== 'land' || !PV.on) return;
     PV.which = 'land'; pvApply(); $('pvHint').textContent = '…y ahora, su paisaje.';
@@ -2023,22 +2062,22 @@ const ICON = {
   back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></svg>'
 };
-const VIEWS = ['Home', 'Rec', 'Proc', 'Land', 'Trim', 'AB', 'Cmp', 'Eval', 'Lugar', 'Session', 'End', 'Stats', 'Guide'];
+const VIEWS = ['Home', 'Rec', 'Proc', 'Land', 'Trim', 'AB', 'Cmp', 'Eval', 'Lugar', 'Pick', 'Session', 'End', 'Stats', 'Guide'];
 function setView(v) {
   S.view = v;
   for (const id of VIEWS) $('v' + id).hidden = id.toLowerCase() !== v;
   const dark = v === 'session'; document.documentElement.classList.toggle('dark', dark);
   const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = dark ? '#0e1b18' : '#f3efe6';
-  const back = v === 'rec' || v === 'land' || v === 'trim' || v === 'ab' || v === 'cmp' || v === 'eval' || v === 'lugar' || v === 'session' || v === 'stats' || v === 'guide', bb = $('btnBack');
+  const back = v === 'rec' || v === 'land' || v === 'trim' || v === 'ab' || v === 'cmp' || v === 'eval' || v === 'lugar' || v === 'pick' || v === 'session' || v === 'stats' || v === 'guide', bb = $('btnBack');
   bb.style.visibility = back ? 'visible' : 'hidden'; bb.innerHTML = dark ? ICON.down : ICON.back; bb.setAttribute('aria-label', dark ? 'Volver a tu paisaje' : 'Atrás');
   $('btnOpts').style.visibility = dark ? 'visible' : 'hidden';
   const mid = $('topMid'), title = v === 'rec' ? 'Grabación' : (v === 'land' || v === 'trim' || v === 'ab' || v === 'cmp' || dark) ? '' : 'arrullo';
   mid.textContent = title; mid.classList.toggle('brand', title === 'arrullo');
   $('top').classList.toggle('left', v === 'home' && !!S.hasLib);
   if (!dark && v !== 'land') $('opts').hidden = true;
-  if (v !== 'home') { $('edit').hidden = true; $('kindSheet').hidden = true; if (v !== 'session') $('rioSheet').hidden = true; }
+  if (v !== 'home') { $('edit').hidden = true; $('kindSheet').hidden = true; $('createSheet').hidden = true; if (v !== 'session') $('rioSheet').hidden = true; }
   if (v !== 'eval' && EV.node) evStop();
-  if (v !== 'lugar' && LG.src) lgStop(.2); if (v !== 'land') { demoStop(); $('keepSheet').hidden = true; }
+  if (v !== 'lugar' && LG.src) lgStop(.2); if (v !== 'land') { demoStop(); $('keepSheet').hidden = true; } if (v !== 'land' && v !== 'end') postalClose(); if (v !== 'pick' && v !== 'proc') mediaDrop();
   if (!dark) { S.dimNow = false; document.documentElement.classList.remove('dim'); }
   if (v !== 'land' && v !== 'ab') $('diag').hidden = true;
   if (v === 'home' && typeof applyUpdate === 'function') setTimeout(applyUpdate, 50);
@@ -2065,7 +2104,7 @@ function syncOpts() {
   $('optMov').hidden = S.mode !== 'calma' || rio; $('optHint').hidden = S.mode !== 'calma'; $('optPres').hidden = rio; rioUi(); $('optQuiet').hidden = !(S.mode === 'foco' && VX().grain === 'mark'); $('optDim').hidden = S.mode !== 'sueno';
   $('sHint').hidden = !(S.mode === 'calma' && hintOn());
   $('btnKeep').textContent = S.mark ? 'Instante conservado · cambiar' : 'Conservar este instante';
-  $('sumTxt').textContent = setLabel(curSet());
+  $('sumTxt').textContent = setLabel(curSet()); if (S.sound && S.view === 'land') demoLand(); $('btnPostal').hidden = !!(S.sound && S.sound.rio);
   if (S.sound) $('sSub').textContent = MODE_NAMES[S.mode] + ' · ' + (S.sound.rio ? 'solo el agua' : hzText(S.hz).replace('Sin tono', 'sin tono'));
 }
 function applySet(s) {
@@ -2098,8 +2137,8 @@ async function loadSound(raw, sr, name, o) {
       return;
     }
     const an = analyze(x, sr), sat = quality(sel ? raw.subarray(sel[0], sel[1]) : raw) > .002, unsure = sat ? 'saturada' : pr.boost >= 40 ? 'apenas se oía' : '';
-    applySet(o.set); if (!o.id) { S.mov = unsure ? 'estable' : 'suave'; S.quiet = true; } else if (!o.set && !o.resel) { S.mov = 'estable'; S.quiet = true; S.dim = false; }   // saved before these settings existed
-    S.sound = { x, sr, name, an, src: o.src || '', boost: pr.boost, cleaned: pr.cleaned, id: o.id || 0, isNew: o.id ? !!o.isNew : true, logged: !!(o.resel && prev && prev.logged), before: 0, unsure, kind: o.kind || '' };
+    applySet(o.set); if (!o.id) { S.mov = unsure ? 'estable' : 'suave'; S.quiet = true; if (!o.resel) { S.mode = 'calma'; S.dur = 5; S.remain = 300; } } else if (!o.set && !o.resel) { S.mov = 'estable'; S.quiet = true; S.dim = false; }   // saved before these settings existed
+    S.sound = { x, sr, name, an, src: o.src || '', boost: pr.boost, cleaned: pr.cleaned, id: o.id || 0, isNew: o.id ? !!o.isNew : true, logged: !!(o.resel && prev && prev.logged), before: 0, unsure, kind: o.kind || '', demo: !!o.demo }; if (o.demo) S.sound.isNew = false;
     S.raw = { x: raw, sr }; S.sel = sel; S.pads = {}; S.hue = an.hue; S.padRms = 0; S.procOk = true;
     S.var = { key: 'A', profile: 'actual', pads: S.pads, fx: FX0, seed: 0, why: [] }; S.vars = { A: S.var }; S.diag = null;
     S.mark = o.resel ? null : clampMark(o.mark, x.length / sr); S.ra = S.hm = null; S.motifBuf = null; S.hz = null; S.detail = false;      // nothing measured in the previous take may survive into this one
@@ -2114,14 +2153,14 @@ async function loadSound(raw, sr, name, o) {
     const meta = { sel, note: an.note, hue: an.hue, sig: Array.from(an.sig, v => Math.round(v * 100) / 100), sym: an.sym, mark: S.mark, lab: labMeta(), kind: o.kind || '', hz: S.hz.kind === 'none' ? '' : hzText(S.hz) };
     S.diag.listenMs = Math.round(performance.now() - tLoad);
     // Saved at once so a recording is never lost by accident; the person decides at the end whether to keep it.
-    if (!o.id) { S.sound.id = Date.now(); dbErr = null; pilotMark({ k: 'cap', id: S.sound.id, src: o.src || '' }); await saveSound(Object.assign({ id: S.sound.id, name, sr, data: toPCM(raw), set: curSet(), src: o.src || '' }, meta)); }
-    if (!o.id && dbErr) { S.sound.id = 0; toast('No se ha podido guardar en este dispositivo (almacenamiento lleno o navegación privada). Puedes escucharlo ahora; tus otros sonidos siguen intactos.', 8000); }
+    if (!o.id && !o.demo) { S.sound.id = Date.now(); dbErr = null; pilotMark({ k: 'cap', id: S.sound.id, src: o.src || '' }); await saveSound(Object.assign({ id: S.sound.id, name, sr, data: toPCM(raw), set: curSet(), src: o.src || '' }, meta)); }
+    if (!o.id && !o.demo && dbErr) { S.sound.id = 0; toast('No se ha podido guardar en este dispositivo (almacenamiento lleno o navegación privada). Puedes escucharlo ahora; tus otros sonidos siguen intactos.', 8000); }
     else if (o.id && (o.resel || !o.hasSig)) updateSound(o.id, meta);
     if (!o.id && o.kind === 'objeto' && S.var.profile === 'seco') toast('No he encontrado una resonancia clara: conservo el golpe tal cual. Si el objeto resuena, repite con un toque suave y deja que termine de sonar.', 7500);
     else if (!o.id && o.kind === 'tarareo' && S.var.profile !== 'tarareo') toast('No he encontrado una melodía clara, así que he hecho un paisaje de textura. Puedes repetir el tarareo.', 7500);
     else if (unsure && !o.id) toast(sat ? 'La grabación está saturada: he dejado el paisaje estable y sin notas añadidas. Si no te convence, graba de nuevo un poco más lejos.' : 'Apenas se oía nada: he dejado el paisaje estable. Si no es lo que buscabas, graba de nuevo más cerca.', 7500);
     else if (pr.boost >= 12) toast('Sonido suave: lo he amplificado +' + Math.round(pr.boost) + ' dB' + (pr.cleaned ? ' y he reducido el ruido de fondo.' : '.'), 5500);
-    next = o.direct ? () => startSession(o.auto) : () => enterLand(false);      // the preview waits for the person: nothing plays until they ask
+    next = o.direct ? () => startSession(o.auto) : () => enterLand(!!(o.demo && o.auto));      // the preview waits for the person; only the demo they asked for plays by itself      // the preview waits for the person: nothing plays until they ask
   } catch (err) {
     console.error(err); toast('No he podido transformar ese sonido. Prueba con otro.'); setView('home');
   } finally { S.busy = false; }
@@ -2166,7 +2205,7 @@ function goEnd() {
 /* recording */
 let rec = null;
 async function startRec(kind) {
-  kind = typeof kind === 'string' ? kind : ''; const c = ensureCtx(); if (!c) return;
+  kind = typeof kind === 'string' ? kind : ''; const c = ensureCtx(); if (!c) return; IMP.seq++; $('createSheet').hidden = true;
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !c.createScriptProcessor) return micUnavailable();
   pvStop(); teardown();
   try {
@@ -2206,32 +2245,22 @@ function micUnavailable(err) {
 
 /* file import */
 function decode(c, ab) { return new Promise((res, rej) => { const p = c.decodeAudioData(ab, res, rej); if (p && p.catch) p.catch(rej); }); }
-async function onFile(file, kind) {
-  const c = ensureCtx(); if (!c || !file) return;
-  try {
-    pvStop(); setView('proc'); S.procOk = false; $('procTitle').textContent = 'Abriendo el audio…'; $('procSub').textContent = file.name; S.progress = 0;
-    const buf = await decode(c, await file.arrayBuffer());
-    const n = Math.min(buf.length, Math.floor(buf.sampleRate * 90)), x = new Float32Array(n);
-    for (let ch = 0; ch < buf.numberOfChannels; ch++) { const d = buf.getChannelData(ch); for (let i = 0; i < n; i++) x[i] += d[i] / buf.numberOfChannels; }
-    // long files: keep the first 90 s and start on their loudest 30 s; the person can move the fragment afterwards
-    let sel = null; const win = Math.floor(buf.sampleRate * REC_MAX);
-    if (n > win) { const st = Math.floor(buf.sampleRate * .25); let best = -1, start = 0; for (let s = 0; s + win <= n; s += st) { let e = 0; for (let i = s; i < s + win; i += 16) e += x[i] * x[i]; if (e > best) { best = e; start = s; } } sel = [start, start + win]; }
-    await loadSound(x, buf.sampleRate, file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'Audio', { src: 'archivo', sel, kind: typeof kind === 'string' ? kind : '' });
-  } catch (e) { console.error(e); pilotMark({ k: 'fail', why: 'imp' }); toast('No he podido leer ese archivo. Prueba con m4a, mp3, wav o un vídeo corto.'); setView('home'); }
-}
 
 /* ───────────── Fragment: keep the part worth returning to ───────────── */
 const T = { a: 0, b: 1, env: null, drag: null, src: null };
 function trimMin() { return Math.min(.5, Math.max((T.mode === 'mark' ? .15 : .5) / (T.x.length / T.sr), T.mode === 'mark' ? .004 : .02)); }
 function openTrim(mode) {
-  mode = mode === 'mark' ? 'mark' : 'frag';
-  if (S.busy || !S.sound || (mode === 'frag' && !S.raw)) return; pvStop();
+  mode = mode === 'mark' ? 'mark' : mode === 'pick' && T.pend ? 'pick' : 'frag';
+  if (S.busy || (mode !== 'pick' && !S.sound) || (mode === 'frag' && !S.raw)) return; pvStop();
   T.mode = mode; T.buf = null; T.env = null;
   if (mode === 'mark') { const d = S.sound.x.length / S.sound.sr, m = markOf(S.var) || autoMark(S.net, S.sound); T.x = S.sound.x; T.sr = S.sound.sr; T.a = clamp(m[0] / d, 0, 1); T.b = clamp(m[1] / d, T.a, 1); }
+  else if (mode === 'pick') { const x = T.pend.x, sr = T.pend.sr, n = x.length, win = Math.floor(sr * REC_MAX), st = Math.floor(sr * .25); let best = -1, start = 0; T.x = x; T.sr = sr;
+    for (let q = 0; q + win <= n; q += st) { let e = 0; for (let i = q; i < q + win; i += 16) e += x[i] * x[i]; if (e > best) { best = e; start = q; } } T.a = start / n; T.b = (start + win) / n; }      // starts on its loudest 30 s
   else { const n = S.raw.x.length; T.x = S.raw.x; T.sr = S.raw.sr; T.a = S.sel ? S.sel[0] / n : 0; T.b = S.sel ? S.sel[1] / n : 1; }
   $('trimTitle').textContent = mode === 'mark' ? 'Conservar este instante' : 'Elige el fragmento';
   $('trimSub').textContent = mode === 'mark' ? 'Una frase, una risa o un golpe. Volverá tal cual de vez en cuando; el fondo se hace con el resto.' : 'Arrastra los bordes y quédate con la parte que quieres volver a escuchar.';
-  $('trimUse').textContent = mode === 'mark' ? 'Conservar este instante' : 'Usar este fragmento'; $('trimClear').hidden = !(mode === 'mark' && S.mark);
+  $('trimUse').textContent = mode === 'mark' ? 'Conservar este instante' : mode === 'pick' ? 'Crear con este tramo' : 'Usar este fragmento';
+  if (mode === 'pick') { $('trimTitle').textContent = 'Elige el tramo'; $('trimSub').textContent = 'Tu archivo es largo. Quédate con hasta 30 segundos; puedes escucharlos antes de crear nada.'; } $('trimClear').hidden = !(mode === 'mark' && S.mark);
   setView('trim'); requestAnimationFrame(trimDraw);
 }
 function trimDraw() {
@@ -2294,6 +2323,7 @@ $('trimNudge').onclick = e => {
 $('trimClear').onclick = () => applyMark(true);
 $('trimUse').onclick = () => {
   if (T.mode === 'mark') return applyMark();
+  if (T.mode === 'pick') { const pd = T.pend; if (!pd) return home(); const n = pd.x.length, a = Math.floor(T.a * n), b = Math.floor(T.b * n); if ((b - a) / pd.sr > REC_MAX + 1) return toast('Como mucho 30 segundos: acerca los bordes.', 3000); trimStop(); T.pend = null; return loadSound(pd.x, pd.sr, pd.name, { src: 'archivo', sel: [a, b], kind: pd.kind }); }
   if (!S.raw || !S.sound) return; trimStop();
   const n = S.raw.x.length, a = Math.floor(T.a * n), b = Math.floor(T.b * n), s = S.sound;
   loadSound(S.raw.x, S.raw.sr, s.name, { id: s.id, isNew: s.isNew, sel: a <= 0 && b >= n ? null : [a, b], src: s.src, kind: s.kind, resel: true, lab: Object.assign(labMeta(), { mark: null }) });
@@ -2315,7 +2345,7 @@ async function openSound(it, auto) {
   if (!ensureCtx()) return;
   const gone = it.kind === 'rio' ? !(it.tk && it.tk[0] && it.tk[0].d && it.tk[0].d.length) : !(it.data && it.data.length);
   if (gone) { await delSound(it.id); toast('La grabación de «' + it.name + '» ya no está en este dispositivo, así que he retirado su acceso. Tus otros sonidos siguen aquí; ese habría que grabarlo de nuevo.', 8000); return renderLib(); }
-  if (it.moment) updateSound(it.id, { mt: Date.now() });
+  if (it.moment) updateSound(it.id, { mt: Date.now() }); if (auto === true && (it.moment || it.keep)) pilotMark({ k: 'ritual', id: it.id });
   if (it.kind === 'rio' && it.tk) return openRio(it, false, auto === true); const d = it.data, f = new Float32Array(d.length);
   if (d instanceof Int16Array) for (let i = 0; i < d.length; i++) f[i] = d[i] / 32767; else f.set(d);
   loadSound(f, it.sr, it.name, { id: it.id, sel: it.sel, src: it.src || 'biblioteca', set: it.set, lab: it.lab, mark: it.mark, kind: it.kind || '', direct: true, auto: auto === true, hasSig: !!it.sig });
@@ -2335,13 +2365,13 @@ function thumb(it) {
 async function renderLib() {
   const all = (await dbAll()).sort((a, b) => (b.t || b.id) - (a.t || a.id)), lib = $('lib');
   S.hasLib = all.length > 0; $('homeFirst').hidden = S.hasLib; $('homeBack').hidden = !S.hasLib;
-  $('btnRecTxt').textContent = S.hasLib ? 'Grabar otro sonido' : 'Grabar un sonido'; $('btnListen').hidden = !S.hasLib; $('btnRec').className = S.hasLib ? 'text' : 'primary'; $('homeFine').hidden = S.hasLib; $('demoLinks').hidden = S.hasLib;
+  $('btnListen').hidden = !S.hasLib; $('btnDemoHome').hidden = S.hasLib; $('btnCreate').textContent = S.hasLib ? 'Crear otro paisaje' : 'Crear con mi sonido'; $('btnCreate').className = S.hasLib ? 'text' : 'outline'; $('homeFine').hidden = S.hasLib;
   $('top').classList.toggle('left', S.view === 'home' && S.hasLib);
   lib.textContent = ''; S.hero = null; if (!S.hasLib) return;
   // the landscape tied to the moment used most recently comes first; without moments, the last one used
   const wm = all.filter(i => i.moment && MOMENTS[i.moment]), h = (wm.length ? wm : all)[0], hs = sigOf(h), dur = h.set && h.set.dur != null ? +h.set.dur : 5; S.hero = { H: harmonics(hs.sig, hs.sym), hue: hs.hue, it: h };
   $('heroName').textContent = h.name; $('heroMeta').textContent = setLabel(h.set) + (MOMENTS[h.moment] ? ' · ' + MOMENTS[h.moment] : '');
-  $('listenTxt').textContent = '▶ Escuchar ' + (dur > 0 ? dur + ' min' : 'sin límite'); $('listenSub').textContent = h.name + (MOMENTS[h.moment] ? ' · ' + MOMENTS[h.moment] : '');
+  $('listenTxt').textContent = '▶ Escuchar ' + (dur > 0 ? dur + ' min' : 'sin límite'); $('listenName').textContent = h.name; $('listenSub').textContent = MOMENTS[h.moment] || ''; $('listenSub').hidden = !MOMENTS[h.moment];
   $('btnListen').setAttribute('aria-label', 'Escuchar ' + (dur > 0 ? dur + ' minutos' : 'sin límite') + ' de ' + h.name + (MOMENTS[h.moment] ? ', ' + MOMENTS[h.moment] : ''));
   for (const it of all.filter(i => i !== h)) {
     const row = el('div', 'li'), open = el('button', 'open', it.name), dots = el('button', 'dots', '···'), tri = el('button', 'tri');
@@ -2614,7 +2644,7 @@ $('evDemo').onclick = () => { const c = ensureCtx(); if (!c) return; $('evMsg').
 const KIND = { objeto: ['Un objeto que resuena', 'Da un toque suave y deja que termine de sonar. Sirve una botella, un cuenco, una taza: lo que suene un momento después del golpe.'],
   tarareo: ['Tararear una melodía', 'Tararea algo corto, como si recordaras una melodía. Con 3 a 8 segundos basta; la meditación heredará sus subidas, sus pausas y su vuelta.'] };
 let kindSel = '';
-document.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => { const k = b.dataset.kind; ensureCtx(); if (k === 'rio') return rioSheet(false); kindSel = k; $('kindTitle').textContent = KIND[k][0]; $('kindHint').textContent = KIND[k][1]; $('kindSheet').hidden = false; });
+document.querySelectorAll('[data-kind]').forEach(b => b.onclick = () => { const k = b.dataset.kind; ensureCtx(); $('createSheet').hidden = true; if (k === 'rio') return rioSheet(false); kindSel = k; $('kindTitle').textContent = KIND[k][0]; $('kindHint').textContent = KIND[k][1]; $('kindSheet').hidden = false; });
 $('kindCancel').onclick = () => { $('kindSheet').hidden = true; };
 $('kindRec').onclick = () => { $('kindSheet').hidden = true; startRec(kindSel); };
 $('fileKind').onchange = e => { const f = e.target.files[0]; e.target.value = ''; $('kindSheet').hidden = true; onFile(f, kindSel); };
@@ -2866,6 +2896,8 @@ function pilotEvent(P, now, ev) {
   if (!P || !P.on) return P; const k = dayOf(now), d = P.days[k] || (P.days[k] = { cap: [], fail: { sil: 0, perm: 0, imp: 0 }, re: {} });
   if (ev.k === 'cap') { if (!d.cap.some(c => c.id === ev.id)) d.cap.push({ id: ev.id, src: ev.src || '' }); if (!P.born[ev.id]) P.born[ev.id] = k; }
   else if (ev.k === 'fail') d.fail[ev.why] = (d.fail[ev.why] || 0) + 1;
+  else if (ev.k === 'demo') d.demo = 1;
+  else if (ev.k === 'ritual') { d.rit = d.rit || []; if (d.rit.indexOf(ev.id) < 0) d.rit.push(ev.id); }
   else if (ev.k === 'listen' && ev.dt > 0) { d.re[ev.id] = (d.re[ev.id] || 0) + ev.dt; if (!P.born[ev.id]) P.born[ev.id] = dayOf(ev.born || now); }
   return P;
 }
@@ -2873,7 +2905,7 @@ function pilotSummary(P) {
   const days = Object.keys(P.days).sort(), ids = new Set(), own = new Set(), capDays = [], reDays = [], fail = { sil: 0, perm: 0, imp: 0 };
   for (const k of days) { const d = P.days[k]; if (d.cap.length) capDays.push(k); for (const c of d.cap) { ids.add(c.id); if (c.src !== 'ejemplo' && c.src !== 'muestras sintéticas') own.add(c.id); } for (const w in fail) fail[w] += d.fail[w] || 0;
     if (Object.keys(d.re).some(id => d.re[id] >= 120 && P.born[id] && P.born[id] < k)) reDays.push(k); }      // a later local date, and at least 120 s actually played that day
-  return { start: P.start, days: days.length, sources: ids.size, ownSources: own.size, secondSource: ids.size >= 2, captureDays: capDays, relistenDays: reDays, returned: reDays.length > 0, retries: fail };
+  return { demoDays: days.filter(k => P.days[k].demo).length, ritualDays: days.filter(k => (P.days[k].rit || []).length).length, start: P.start, days: days.length, sources: ids.size, ownSources: own.size, secondSource: ids.size >= 2, captureDays: capDays, relistenDays: reDays, returned: reDays.length > 0, retries: fail };
 }
 function pilotGet() { try { return JSON.parse(localStorage.getItem(PKEY) || 'null'); } catch (e) { return null; } }
 function pilotPut(P) { try { localStorage.setItem(PKEY, JSON.stringify(P)); } catch (e) {} }
@@ -2889,6 +2921,7 @@ const PILOT_Q = 'La última vez que abriste la app, ¿qué estaba pasando justo 
 function pilotText() { const P = pilotGet(); if (!P) return ''; const s = pilotSummary(P);
   return 'Arrullo · piloto local de 7 días (desde ' + s.start + ')\nDías con actividad: ' + s.days + '\nFuentes distintas probadas: ' + s.sources + ' (propias: ' + s.ownSources + ') · ¿probó una segunda?: ' + (s.secondSource ? 'sí' : 'no') +
     '\nDías con capturas nuevas: ' + (s.captureDays.join(', ') || '—') + '\nDías con reescucha de 120 s o más de un paisaje de otro día: ' + (s.relistenDays.join(', ') || '—') +
+    '\nDías en que escuchó la demostración: ' + s.demoDays + ' · días en que recuperó un paisaje guardado con un toque: ' + s.ritualDays +
     '\nReintentos: silencio ' + s.retries.sil + ' · permiso ' + s.retries.perm + ' · importación ' + s.retries.imp +
     '\n\nPara la entrevista:\n· ' + PILOT_Q + '\n· Si probaste un segundo sonido, ¿fue por curiosidad o porque el primero no sonó bien?\n(Respuestas de la persona: pendientes.)'; }
 function pilotUi(body) {
@@ -2899,6 +2932,160 @@ function pilotUi(body) {
   row.append(tg); if (P) { const cp = el('button', 'pill', 'Copiar resumen del piloto'); cp.onclick = () => { pilotFlush(); shareText(pilotText(), 'Enviado.'); }; row.append(cp); }
   box.append(row); body.append(box);
 }
+
+/* ═════════════ «Escuchar cómo funciona»: the demo is the real preview, on a take that is not the person's ═════════════
+   Same engine, same Original / Paisaje comparison as with one's own sound; nothing is saved and no microphone is asked.
+   With demo.json next to the page (real, authorised takes of one place) it becomes the linkable public demo (?demo=1);
+   without it, a locally synthesised glass resonance, always labelled as such. */
+const DEMO = { data: null, sel: 0, cache: {}, ready: null };
+const DEMO_URL = /[?&]demo(=1)?(&|$)/.test(location.search) || location.hash === '#demo';
+DEMO.ready = (async () => { try { const r = await fetch('demo.json', { cache: 'no-store' }); if (!r.ok) return; const j = await r.json(), tk = (j && Array.isArray(j.takes) ? j.takes : []).filter(t => t && typeof t.file === 'string' && !/^([a-z]+:)?\/\//i.test(t.file)).slice(0, 2);
+    if (tk.length && j.place) DEMO.data = { place: String(j.place).slice(0, 60), takes: tk.map(t => ({ title: String(t.title || 'Toma').slice(0, 30), file: t.file })) }; } catch (e) {} })();
+async function demoOpen(i, auto) {
+  const c = ensureCtx(); if (!c || S.busy) return; await DEMO.ready; DEMO.sel = i || 0; $('createSheet').hidden = true;
+  try {
+    if (!DEMO.data) { if (auto) pilotMark({ k: 'demo' }); return loadSound(evSynth(0, c.sampleRate), c.sampleRate, 'Resonancia de vidrio simulada', { src: 'ejemplo', demo: true, kind: 'objeto', auto }); }
+    const t = DEMO.data.takes[DEMO.sel] || DEMO.data.takes[0]; let tk = DEMO.cache[t.file];
+    if (!tk) { pvStop(); setView('proc'); S.procOk = false; S.progress = 0; $('procTitle').textContent = 'Abriendo la toma…'; $('procSub').textContent = t.title; const r = await fetch(t.file); if (!r.ok) throw new Error('no está'); const buf = await decode(c, await r.arrayBuffer()), n = Math.min(buf.length, Math.floor(buf.sampleRate * REC_MAX)), x = new Float32Array(n);
+      for (let ch = 0; ch < buf.numberOfChannels; ch++) { const d = buf.getChannelData(ch); for (let k = 0; k < n; k++) x[k] += d[k] / buf.numberOfChannels; } tk = DEMO.cache[t.file] = { x, sr: buf.sampleRate }; }
+    if (auto) pilotMark({ k: 'demo' });
+    return loadSound(tk.x, tk.sr, t.title, { src: 'demo', demo: true, auto });
+  } catch (e) { console.error(e); toast('No he podido abrir la demostración.'); setView('home'); }
+}
+function demoLand() {                // dresses the preview as a demo, or undresses it
+  const s = S.sound, on = !!(s && s.demo), real = on && s.src === 'demo'; $('vLand').classList.toggle('demo', on);
+  $('landTitle').textContent = !on ? 'Tu paisaje' : real ? DEMO.data.place : 'Así funciona'; $('demoBox').hidden = !on;
+  $('btnStart').textContent = !on ? 'Empezar ' + (S.dur > 0 ? S.dur + ' min de ' : '') + MODE_NAMES[S.mode] + (S.dur > 0 ? '' : ' sin límite') : real ? 'Crear con un vídeo de mi viaje' : 'Crear con mi sonido';
+  if (!on) return;
+  $('demoNote').textContent = real ? 'Una grabación de ' + DEMO.data.place + ' y la meditación que nace de ella. Alterna entre «Original» y «Paisaje».' : 'Esto es un ejemplo sintetizado en tu dispositivo (una resonancia de vidrio simulada, no una grabación real). Alterna «Original» y «Paisaje»; después podrás hacerlo con un sonido tuyo.';
+  const box = $('demoTakes'); box.hidden = !(real && DEMO.data.takes.length > 1); if (!box.hidden) { box.textContent = ''; DEMO.data.takes.forEach((t, i) => { const b = el('button', 'pill', t.title); b.dataset.v = i; b.setAttribute('aria-pressed', String(i === DEMO.sel)); box.append(b); }); }
+}
+$('demoTakes').onclick = e => { const b = e.target.closest('button'); if (b && +b.dataset.v !== DEMO.sel) demoOpen(+b.dataset.v, true); };
+$('btnAgain').onclick = () => enterLand(true);
+$('btnDemoHome').onclick = () => demoOpen(0, true);
+function createOpen() { demoStop(); pvStop(); $('micNote').hidden = true; $('createSheet').hidden = false; }
+$('btnCreate').onclick = () => { ensureCtx(); createOpen(); };
+$('createCancel').onclick = () => { $('createSheet').hidden = true; };
+
+/* ═════════════ Importing a video or a long file without holding all of it in memory ═════════════
+   A short file is decoded directly. A large or very long one is opened as a media element (the browser streams it from
+   disk): the person picks where to start and up to 30 s are listened to in real time. The newest file chosen always
+   wins: an older import that is still decoding is dropped. */
+const IMP = { seq: 0, big: 48 * 1048576, maxSecs: 300 }, MP = { v: null, url: '', name: '', kind: '', dur: 0, on: false };
+function impFail(why, isVid) {
+  pilotMark({ k: 'fail', why: 'imp' }); setView('home'); createOpen();
+  toast(why === 'sinaudio' ? 'Ese vídeo no tiene sonido. Elige otro vídeo o graba ahora lo que suena.' : why === 'silencio' ? 'En ese tramo no se oye nada. Elige otro tramo u otro archivo.' : 'Este navegador no puede abrir ese archivo. Prueba con un vídeo grabado con la cámara del móvil, o con un audio m4a, mp3 o wav.', 7500);
+}
+function mediaDrop() { if (MP.v) { try { MP.v.pause(); MP.v.removeAttribute('src'); MP.v.load(); } catch (e) {} } if (MP.url) URL.revokeObjectURL(MP.url); MP.v = null; MP.url = ''; MP.on = false; }
+async function mediaProbe(file, isVid) {      // metadata only: how long it is, and (where the browser says so) whether it has sound at all
+  const url = URL.createObjectURL(file), v = document.createElement(isVid ? 'video' : 'audio'); v.preload = 'metadata'; v.playsInline = true; v.muted = true; v.src = url;
+  const ok = await new Promise(res => { const t = setTimeout(() => res(false), 8000); v.onloadedmetadata = () => { clearTimeout(t); res(true); }; v.onerror = () => { clearTimeout(t); res(false); }; });
+  let audio = null;
+  if (ok && isVid) { if (v.audioTracks && typeof v.audioTracks.length === 'number') audio = v.audioTracks.length > 0; else if (typeof v.mozHasAudio === 'boolean') audio = v.mozHasAudio;
+    else if ('webkitAudioDecodedByteCount' in v) { try { await v.play(); await sleep(450); v.pause(); audio = v.webkitAudioDecodedByteCount > 0; v.currentTime = 0; } catch (e) {} } }
+  return { ok, v, url, dur: ok && isFinite(v.duration) ? v.duration : 0, audio };
+}
+async function onFile(file, kind) {
+  const c = ensureCtx(); if (!c || !file) return; kind = typeof kind === 'string' ? kind : '';
+  const seq = ++IMP.seq, isVid = /^video\//.test(file.type) || /\.(mov|mp4|m4v|webm|mkv|avi|3gp)$/i.test(file.name), name = file.name.replace(/\.[^.]+$/, '').slice(0, 40) || (isVid ? 'Vídeo' : 'Audio');
+  try {
+    demoStop(); pvStop(); mediaDrop(); $('createSheet').hidden = true; setView('proc'); S.procOk = false; S.progress = 0; $('procTitle').textContent = isVid ? 'Sacando el sonido de tu vídeo…' : 'Abriendo el audio…'; $('procSub').textContent = name;
+    const pr = await mediaProbe(file, isVid); if (seq !== IMP.seq) { URL.revokeObjectURL(pr.url); return; }
+    const keep = () => { MP.v = pr.v; MP.url = pr.url; MP.name = name; MP.kind = kind; MP.dur = pr.dur; }, drop = () => { try { pr.v.removeAttribute('src'); pr.v.load(); } catch (e) {} URL.revokeObjectURL(pr.url); };
+    if (pr.ok && pr.audio === false) { drop(); return impFail('sinaudio', isVid); }
+    let buf = null;
+    if (file.size <= IMP.big && !(pr.dur > IMP.maxSecs)) { try { buf = await decode(c, await file.arrayBuffer()); } catch (e) { buf = null; } if (seq !== IMP.seq) { drop(); return; } }
+    if (!buf) {                                  // too large or too long to decode whole, or only readable as media
+      if (!pr.ok || !(pr.dur > 0)) { drop(); return impFail('formato', isVid); }
+      keep(); while (S.busy) await sleep(60); if (seq !== IMP.seq) return; return pickOpen('media');
+    }
+    drop();
+    const n = Math.min(buf.length, Math.floor(buf.sampleRate * 90)), x = new Float32Array(n);
+    for (let ch = 0; ch < buf.numberOfChannels; ch++) { const d = buf.getChannelData(ch); for (let i = 0; i < n; i++) x[i] += d[i] / buf.numberOfChannels; }
+    while (S.busy) await sleep(60); if (seq !== IMP.seq) return;          // whatever was loading belongs to an older choice: this one replaces it
+    if (n > buf.sampleRate * (REC_MAX + 1)) { T.pend = { x, sr: buf.sampleRate, name, kind }; return openTrim('pick'); }      // long: choose the stretch before anything is generated
+    await loadSound(x, buf.sampleRate, name, { src: 'archivo', kind });
+  } catch (e) { console.error(e); if (seq === IMP.seq) impFail('formato', isVid); }
+}
+// Start point for a file that is only streamed: a slider over its length, a listen button, then up to 30 s captured in real time
+function pickOpen() { const d = MP.dur, r = $('rngPick'); r.max = Math.max(0, Math.floor(d - Math.min(REC_MAX, d))); r.value = 0; r.disabled = d <= REC_MAX + 1; fillRange(r); setView('pick'); pickUi(); }
+function pickUi() { const a = +$('rngPick').value, b = Math.min(MP.dur, a + REC_MAX); $('pickInfo').textContent = 'De ' + clock(a) + ' a ' + clock(b) + ' · tu archivo dura ' + clock(MP.dur); $('pickPlay').innerHTML = MP.on ? ICON.pause : ICON.play; $('pickPlay').setAttribute('aria-label', MP.on ? 'Parar' : 'Escuchar desde aquí'); }
+$('rngPick').oninput = e => { fillRange(e.target); if (MP.on) { MP.v.pause(); MP.on = false; } pickUi(); };
+$('pickPlay').onclick = () => { const v = MP.v; if (!v) return; if (MP.on) { v.pause(); MP.on = false; } else { v.muted = false; v.currentTime = +$('rngPick').value; v.play().then(() => { MP.on = true; pickUi(); }).catch(() => toast('No se pudo reproducir aquí.')); } pickUi(); };
+$('pickUse').onclick = () => {
+  const c = ensureCtx(), v = MP.v; if (!c || !v) return; const seq = IMP.seq, start = +$('rngPick').value, len = Math.min(REC_MAX, MP.dur - start), need = Math.floor(len * c.sampleRate), chunks = []; let got = 0, done = false;
+  v.pause(); MP.on = false; v.muted = false; v.currentTime = start;
+  const src = c.createMediaElementSource(v), proc = c.createScriptProcessor(4096, 2, 1), mute = c.createGain(), mon = c.createGain(); mute.gain.value = 0; mon.gain.value = .5 * S.vol;
+  const finish = async () => { if (done) return; done = true; try { v.pause(); proc.onaudioprocess = null; src.disconnect(); proc.disconnect(); mute.disconnect(); mon.disconnect(); } catch (e) {} const name = MP.name, kind = MP.kind; mediaDrop();
+    if (seq !== IMP.seq) return; const x = new Float32Array(got); let o = 0, nz = false; for (const ch of chunks) { x.set(ch, o); o += ch.length; } for (let i = 0; i < x.length; i += 97) if (x[i] !== 0) { nz = true; break; }
+    if (got < c.sampleRate * .5 || !nz) return impFail(nz ? 'formato' : 'sinaudio', true);
+    await loadSound(x, c.sampleRate, name, { src: 'archivo', kind }); };
+  proc.onaudioprocess = e => { if (done) return; const a = e.inputBuffer.getChannelData(0), b = e.inputBuffer.numberOfChannels > 1 ? e.inputBuffer.getChannelData(1) : a, m = new Float32Array(a.length); for (let i = 0; i < a.length; i++) m[i] = (a[i] + b[i]) / 2;
+    if (v.paused && !got) return; chunks.push(m); got += m.length; S.progress = Math.min(1, got / need); if (got >= need) finish(); };
+  src.connect(proc); proc.connect(mute); mute.connect(c.destination); src.connect(mon); mon.connect(c.destination);
+  setView('proc'); S.procOk = false; S.progress = 0; $('procTitle').textContent = 'Escuchando tu vídeo…'; $('procSub').textContent = 'Unos ' + Math.round(len) + ' segundos, a su velocidad';
+  v.onended = finish; v.play().catch(() => { finish(); }); c.resume().catch(() => {}); setTimeout(finish, (len + 4) * 1000);
+};
+
+/* ═════════════ Postal sonora: about 15 s that explain themselves outside the app ═════════════
+   A few seconds of the recording as it is, a crossfade in which it is still heard, and the landscape rendered by the
+   session engine with the settings on screen. Built once; the preview plays the very bytes that will be shared or saved.
+   Only this audio leaves the device, and only when the person says so: no source video, no full recording, no location. */
+function wavBytes(L, R, sr) {
+  const n = L.length, b = new ArrayBuffer(44 + n * 4), v = new DataView(b), w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n * 4, true); w(8, 'WAVEfmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 2, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 4, true); v.setUint16(32, 4, true); v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, n * 4, true);
+  for (let i = 0; i < n; i++) { v.setInt16(44 + i * 4, Math.round(clamp(L[i], -1, 1) * 32767), true); v.setInt16(46 + i * 4, Math.round(clamp(R[i], -1, 1) * 32767), true); }
+  return new Uint8Array(b);
+}
+function safeName(t) { const s = String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40); return 'postal-' + (s || 'sonora') + '.wav'; }
+// frag: the stretch of the recording (mono, at sr); land: the engine's render (stereo, at sr), already past its own fade-in
+function postalMix(frag, land, sr, o) {
+  o = o || {}; const total = Math.floor(sr * (o.total || 15)), tr = Math.floor(sr * 2), fl = frag.length, on = Math.min(Math.floor(sr * 3), Math.max(Math.floor(sr * .8), fl)), L = new Float32Array(total), R = new Float32Array(total);
+  const rms = (y, a, b) => { let q = 0, n = 0; for (let i = a; i < b; i += 3) { q += y[i] * y[i]; n++; } return Math.sqrt(q / Math.max(1, n)); };
+  let fpk = 1e-9; for (let i = 0; i < fl; i++) fpk = Math.max(fpk, Math.abs(frag[i]));
+  const gl = rms(land.L, 0, Math.min(land.L.length, total)), gf = Math.min(4, .8 / fpk, 1.15 * gl / (rms(frag, 0, Math.min(fl, on)) || 1e-9));      // the recording about as loud as the landscape, never boosted past its own headroom
+  for (let i = 0; i < on && i < fl; i++) { const e = Math.min(1, i / (sr * .03)) * (i > fl - sr * .05 ? Math.max(0, (fl - i) / (sr * .05)) : 1); L[i] = R[i] = frag[i] * gf * e; }
+  // transition: the recording once more, fading under the landscape that rises (equal power), so what it is stays audible
+  for (let i = 0; i < total - on; i++) { const u = Math.min(1, i / tr), fi = Math.sin(u * Math.PI / 2), fo = Math.cos(u * Math.PI / 2), j = i < land.L.length ? i : land.L.length - 1, f = i < fl && i < tr ? frag[i] * gf * fo * Math.min(1, i / (sr * .03)) : 0;
+    L[on + i] = land.L[j] * fi + f; R[on + i] = land.R[j] * fi + f; }
+  const out = Math.floor(sr * 1.6); let pk = 1e-9; for (let i = 0; i < total; i++) { const e = i > total - out ? Math.pow((total - i) / out, 1.5) : 1; L[i] *= e; R[i] *= e; pk = Math.max(pk, Math.abs(L[i]), Math.abs(R[i])); }
+  const g = Math.min(2.5, .89 / pk); for (let i = 0; i < total; i++) { L[i] *= g; R[i] *= g; }
+  return { L, R, sr, on: on / sr, trans: [on / sr, (on + tr) / sr], dur: total / sr };
+}
+function postalFrag() { const s = S.sound, D = s.x.length / s.sr; let a = 0, b = Math.min(D, 3);
+  if (S.mark) { a = S.mark[0]; b = Math.min(S.mark[1], a + 3); } else if (S.ra && S.var.profile === 'objeto') { a = Math.max(0, S.ra.t0 - .015); b = Math.min(D, a + 3); }
+  else if (D > 3.2) { const fr = Math.floor(s.sr * .05); let best = 0, bv = -1; for (let i = 0; i + fr * 60 <= s.x.length; i += fr * 4) { let q = 0; for (let j = i; j < i + fr * 60; j += 8) q += s.x[j] * s.x[j]; if (q > bv) { bv = q; best = i; } } a = best / s.sr; b = a + 3; }
+  return s.x.slice(Math.floor(a * s.sr), Math.floor(b * s.sr)); }
+let POSTAL = null;
+async function postalBuild() {
+  const s = S.sound, c = S.ctx, sr = c.sampleRate, warm = 2.6, buf = await renderOffline(S.var, warm + 12.5, { mode: S.mode, pres: S.pres, mov: S.mov, seed: (s.seed || 1) ^ 0x9057 });
+  const a = Math.floor(warm * sr), land = { L: buf.getChannelData(0).subarray(a), R: buf.getChannelData(1).subarray(a) }; let frag = postalFrag();
+  if (s.sr !== sr) { const n = Math.floor(frag.length * sr / s.sr), y = new Float32Array(n); for (let i = 0; i < n; i++) { const p = i * s.sr / sr, k = Math.floor(p); y[i] = frag[k] + ((frag[k + 1] || 0) - frag[k]) * (p - k); } frag = y; }
+  const m = postalMix(frag, land, sr), bytes = wavBytes(m.L, m.R, sr); for (let i = 0; i < m.L.length; i += 11) if (m.L[i] !== m.L[i]) throw new Error('nan');
+  return { bytes, info: m };
+}
+function postalFile() { if (POSTAL) { POSTAL.title = $('postalName').value.trim() || 'Postal sonora'; POSTAL.file = new File([POSTAL.blob], safeName(POSTAL.title), { type: 'audio/wav' }); let can = false; try { can = !!(navigator.canShare && navigator.canShare({ files: [POSTAL.file] })); } catch (e) {} POSTAL.can = can; $('postalShare').hidden = !can; } }
+function postalClose() { $('postalSheet').hidden = true; if (POSTAL) { try { POSTAL.audio.pause(); POSTAL.audio.removeAttribute('src'); POSTAL.audio.load(); } catch (e) {} URL.revokeObjectURL(POSTAL.url); POSTAL = null; } }
+function postalUi() { const on = !!(POSTAL && !POSTAL.audio.paused); $('postalPlay').innerHTML = on ? ICON.pause : ICON.play; $('postalPlay').setAttribute('aria-label', on ? 'Parar la postal' : 'Escuchar la postal'); $('postalPlay').disabled = !POSTAL; $('postalSave').disabled = !POSTAL; }
+async function postalOpen() {
+  const s = S.sound; if (!s || s.rio || S.busy || !S.pads[S.mode] || !ensureCtx()) return; demoStop(); pvStop(); if (S.playing) pause(); postalClose();
+  $('postalName').value = s.demo ? 'Ejemplo sintetizado' : s.name; $('postalInfo').textContent = 'Preparando 15 segundos…'; $('postalShare').hidden = true; $('postalSheet').hidden = false; postalUi(); S.busy = true;
+  try { await sleep(40); const r = await postalBuild(), blob = new Blob([r.bytes], { type: 'audio/wav' }), url = URL.createObjectURL(blob), audio = new Audio(url);
+    if ($('postalSheet').hidden || S.sound !== s) { URL.revokeObjectURL(url); return; }       // closed, or another sound, while it rendered
+    audio.onended = audio.onpause = audio.onplay = postalUi; POSTAL = { blob, url, audio, info: r.info, bytes: r.bytes.length }; postalFile();
+    $('postalInfo').textContent = Math.round(r.info.dur) + ' segundos · ' + num(r.info.on, 0) + ' de tu grabación, 2 de paso y el resto de paisaje · ' + num(r.bytes.length / 1048576, 1) + ' MB (WAV)';
+  } catch (e) { console.error(e); $('postalInfo').textContent = 'No se ha podido preparar la postal. Cierra y vuelve a intentarlo.'; }
+  finally { S.busy = false; postalUi(); }
+}
+$('postalName').oninput = postalFile;
+$('postalPlay').onclick = () => { if (!POSTAL) return; const a = POSTAL.audio; if (a.paused) { pvStop(); a.currentTime = 0; a.volume = clamp(S.vol * 1.1, 0, 1); a.play().catch(() => toast('No se pudo reproducir aquí.')); } else a.pause(); postalUi(); };
+$('postalClose').onclick = postalClose;
+$('postalSave').onclick = () => { if (!POSTAL) return; const a = document.createElement('a'); a.href = POSTAL.url; a.download = POSTAL.file.name; document.body.append(a); a.click(); a.remove(); toast('Guardada como ' + POSTAL.file.name + '. Sigue en este dispositivo hasta que tú la envíes.', 5000); };
+$('postalShare').onclick = () => {             // the file is ready before this touch; the system sheet opens from the touch itself
+  if (!POSTAL || !POSTAL.can) return; POSTAL.audio.pause();
+  navigator.share({ files: [POSTAL.file], title: POSTAL.title }).then(() => toast('Entregada al menú de compartir.', 3500)).catch(e => toast(e && e.name === 'AbortError' ? 'No se ha enviado nada. La postal sigue aquí.' : 'No se pudo compartir desde aquí. Puedes guardar el audio.', 4500));
+};
+$('btnPostal').onclick = $('endPostal').onclick = postalOpen;
 
 /* ───────────── Keep the screen still: block pinch, double-tap zoom and page drag ───────────── */
 for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) document.addEventListener(ev, e => e.preventDefault(), { passive: false });
@@ -2919,7 +3106,7 @@ const BUILD = '__BUILD__'; let pendingBuild = '';
 function applyUpdate() {
   if (!pendingBuild || S.view !== 'home' || S.busy || rec || rateCtx || !$('edit').hidden) return;      // never interrupt a session
   try { if (sessionStorage.getItem('resona.tried') === pendingBuild) return; sessionStorage.setItem('resona.tried', pendingBuild); } catch (e) {}
-  location.replace(location.pathname + '?v=' + pendingBuild);
+  const q = new URLSearchParams(location.search); q.set('v', pendingBuild); location.replace(location.pathname + '?' + q.toString() + location.hash);
 }
 function checkUpdate() {
   if (BUILD.charAt(0) === '_') return;
@@ -2936,7 +3123,7 @@ $('btnRec').onclick = startRec;
 $('btnStop').onclick = () => stopRec();
 $('lblFile').addEventListener('click', () => ensureCtx());
 $('file').onchange = e => { const f = e.target.files[0]; e.target.value = ''; onFile(f); };
-document.querySelectorAll('[data-demo]').forEach(b => b.onclick = () => { const c = ensureCtx(); if (!c) return; const k = b.dataset.demo; loadSound(DEMOS[k](c.sampleRate), c.sampleRate, DEMO_NAMES[k], { src: 'ejemplo' }); });
+document.querySelectorAll('[data-demo]').forEach(b => b.onclick = () => { const c = ensureCtx(); if (!c) return; $('createSheet').hidden = true; const k = b.dataset.demo; loadSound(DEMOS[k](c.sampleRate), c.sampleRate, DEMO_NAMES[k], { src: 'ejemplo' }); });
 $('btnBack').onclick = () => {
   const v = S.view;
   if (v === 'rec') return stopRec(true);
@@ -2944,6 +3131,9 @@ $('btnBack').onclick = () => {
   if (v === 'cmp') return cmpLeave();
   if (v === 'eval') { evStop(); return home(); }
   if (v === 'lugar') { lgStop(.2); return home(); }
+  if (v === 'pick') { IMP.seq++; mediaDrop(); return home(); }
+  if (v === 'trim' && T.mode === 'pick') { trimStop(); T.pend = null; return home(); }
+  if (v === 'land' && S.sound && S.sound.demo) { pvStop(); teardown(); S.sound = null; S.raw = null; setTimeout(idleSuspend, 900); return home(); }
   if (v === 'session' && S.sound && S.sound.rio) { hidePre(); return goEnd(); }
   if (v === 'trim') { trimStop(); return enterLand(false); }
   if (v === 'session') { hidePre(); if (S.playing) pause(); return enterLand(false); }
@@ -2952,7 +3142,7 @@ $('btnBack').onclick = () => {
 };
 $('segSrc').onclick = e => { const b = e.target.closest('button'); if (!b) return; pvTouch(); PV.which = b.dataset.v; PV.on = true; pvApply(); };
 $('pvPlay').onclick = () => { pvTouch(); PV.on = !PV.on; pvApply(); };
-$('btnStart').onclick = () => { if (!S.busy) startSession(); };
+$('btnStart').onclick = () => { if (S.busy) return; if (S.sound && S.sound.demo) return createOpen(); startSession(); };
 $('btnSummary').onclick = $('btnOpts').onclick = () => { $('opts').hidden = !$('opts').hidden; };
 $('optsDone').onclick = () => { $('opts').hidden = true; };
 $('btnTrim').onclick = () => openTrim('frag');
@@ -3077,7 +3267,8 @@ requestAnimationFrame(draw);
 
 setView('home'); renderLib(); showTime(); syncOpts(); uiPlay(); pvUi(); fillRange($('rngVol'));
 if (EVAL) { evUi(); setView('eval'); }
+if (DEMO_URL && !EVAL) demoOpen(0, false);          // a shared link opens the demo ready to play; nothing sounds until it is touched
 lugarLoad(); $('lnkLugar').onclick = () => { ensureCtx(); pvStop(); teardown(); setView('lugar'); lugarUi(); };            // ?eval=1 opens the listening test directly
-window.__resona = { getFFT, shape, measureTone, hzOf, hzText, liveHz, demoBuild, bandpass, DM, demoStart, demoStop, keepHere, keepDone, MOMENTS, LG, lugarUi, lgPlay, dayOf, pilotNew, pilotEvent, pilotSummary, pilotGet, pilotText, PKEY, renderLib, set dbFail(v) { DBFAIL = !!v; }, decide, renderOffline, bufLoud, EV, evBuild, evPlay, evStop, evReveal, evMix, evSynth, openRio, rioSheet, RS, rioUi, kindText, setView, home, startRec, stopRec, resAnalyze, renderObj, pitchTrack, humAnalyze, humMotif, renderMotif, humEvents, motifStep, rioGains, rioLoop, rioPack, rioUnpack, rioDemo, RIO, mulberry, renderFlow, S, PV, T, AB, LAB, MV, CMP, TEST, cmpOpen, cmpSelect, mvNext, openTrim, applyMark, switchMode, startSession, endSession, goEnd, loadSound, openSound, dbAll, quality, play, pause, markOf, VX, masterRms, hnAnalyze, distOf, onFile, diagText, getAB, abSelect, abOpen, renderPad, analyze, trimNorm, prepare, DEMOS, MODES, getLog, get E() { return E; } };   // test hook
+window.__resona = { getFFT, shape, DEMO, demoOpen, demoLand, createOpen, IMP, MP, mediaProbe, pickOpen, wavBytes, safeName, postalMix, postalOpen, postalClose, get POSTAL() { return POSTAL; }, measureTone, hzOf, hzText, liveHz, demoBuild, bandpass, DM, demoStart, demoStop, keepHere, keepDone, MOMENTS, LG, lugarUi, lgPlay, dayOf, pilotNew, pilotEvent, pilotSummary, pilotGet, pilotText, PKEY, renderLib, set dbFail(v) { DBFAIL = !!v; }, decide, renderOffline, bufLoud, EV, evBuild, evPlay, evStop, evReveal, evMix, evSynth, openRio, rioSheet, RS, rioUi, kindText, setView, home, startRec, stopRec, resAnalyze, renderObj, pitchTrack, humAnalyze, humMotif, renderMotif, humEvents, motifStep, rioGains, rioLoop, rioPack, rioUnpack, rioDemo, RIO, mulberry, renderFlow, S, PV, T, AB, LAB, MV, CMP, TEST, cmpOpen, cmpSelect, mvNext, openTrim, applyMark, switchMode, startSession, endSession, goEnd, loadSound, openSound, dbAll, quality, play, pause, markOf, VX, masterRms, hnAnalyze, distOf, onFile, diagText, getAB, abSelect, abOpen, renderPad, analyze, trimNorm, prepare, DEMOS, MODES, getLog, get E() { return E; } };   // test hook
 })();
 </script>
