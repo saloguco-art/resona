@@ -81,5 +81,44 @@ const lvlAt = (sp, f) => { let m = 0; const k = Math.round(f * sp.N / sr); for (
   ok(Math.abs(20 * Math.log10(rms(lp[0]) / rms(lp[1]))) < 1.5 && pkOf(lp[0]) <= .851 && pkOf(lp[1]) <= .851, 'niveles igualados (' + (20 * Math.log10(rms(lp[0]))).toFixed(1) + ' y ' + (20 * Math.log10(rms(lp[1]))).toFixed(1) + ' dB) aunque una llegó 34 dB más baja; picos ≤ 0,85');
   for (const l of lp) { const c = l.chs[0], n = c.length; let step = 0, typ = 0; for (let i = 1; i < 2000; i++) typ += Math.abs(c[i] - c[i - 1]); step = Math.abs(c[0] - c[n - 1]); ok(step < 12 * typ / 2000 + 1e-4, 'el bucle cierra sin salto (' + step.toFixed(4) + ' frente a ' + (typ / 2000).toFixed(4) + ' de paso típico)'); }
   ok(R.rioLoop([new Float32Array(sr * 3)], sr) === null, 'una toma muda se rechaza en vez de amplificarse');
+  console.log('\n4 · LECTURA EN Hz Y DEMOSTRACIÓN (señales sintéticas)');
+  const tone = (f, d, nz) => { const y = new Float32Array(Math.floor(sr * d)), q = H.mulberry(11); for (let i = 0; i < y.length; i++) { const e = Math.min(1, i / (sr * .03), (y.length - i) / (sr * .05)); y[i] = e * .3 * (Math.sin(2 * Math.PI * f * i / sr) + .3 * Math.sin(4 * Math.PI * f * i / sr)) + (q() * 2 - 1) * (nz || .002); } return y; };
+  const m230 = R.measureTone(R.prepare(tone(230, 3), sr).x, sr), m234 = R.measureTone(R.prepare(tone(234, 3), sr).x, sr);
+  ok(m230 && m234 && Math.abs(m230.hz - 230) < .5 && Math.abs(m234.hz - 234) < .5, '230 y 234 Hz (la misma nota, La♯, si se redondeara): lecturas ' + (m230 && m230.hz.toFixed(2)) + ' y ' + (m234 && m234.hz.toFixed(2)) + ' Hz');
+  ok(R.hzText({ kind: 'tono', hz: m230.hz }) !== R.hzText({ kind: 'tono', hz: m234.hz }), 'y se muestran distintas: «' + R.hzText({ kind: 'tono', hz: m230.hz }) + '» y «' + R.hzText({ kind: 'tono', hz: m234.hz }) + '»');
+  const mNoisy = R.measureTone(R.prepare(tone(230, 3, .05), sr).x, sr); ok(mNoisy && Math.abs(mNoisy.hz - 230) < 1, 'con ruido a −16 dB del tono sigue leyendo ' + (mNoisy && mNoisy.hz.toFixed(2)) + ' Hz');
+  const mHigh = R.measureTone(R.prepare(tone(1500, 3), sr).x, sr); ok(mHigh && Math.abs(mHigh.hz - 1500) < 3, 'un tono de 1500 Hz no se confunde con un submúltiplo (' + (mHigh && mHigh.hz.toFixed(1)) + ' Hz)');
+  { const q = H.mulberry(9), nzz = new Float32Array(sr * 3); for (let i = 0; i < nzz.length; i++) nzz[i] = (q() * 2 - 1) * .2; ok(R.measureTone(R.prepare(nzz, sr).x, sr) === null, 'ruido: sin lectura («' + R.hzText({ kind: 'none' }) + '»)'); }
+  ok(R.measureTone(R.prepare(H.hum(sr, [[0, .7], [4, .7], [7, .8]]), sr).x, sr) === null, 'una melodía que cambia no da una cifra única');
+  { const st = { r: [], hz: 0, hold: 0 }, y = tone(234, 2); let last = 0, shown = 0; for (let o = 0; o + 4096 <= y.length; o += 4096) { last = R.liveHz(y.subarray(o, o + 4096), sr, st); if (last) shown++; }
+    ok(Math.abs(last - 234) < 1 && shown >= 15, 'lectura en vivo durante la grabación: ' + last.toFixed(1) + ' Hz, estable en ' + shown + ' bloques seguidos');
+    const st2 = { r: [], hz: 0, hold: 0 }, q = H.mulberry(2), z = new Float32Array(4096); let any = 0; for (let k = 0; k < 20; k++) { for (let i = 0; i < 4096; i++) z[i] = (q() * 2 - 1) * .1; if (R.liveHz(z, sr, st2)) any++; } ok(any === 0, 'lectura en vivo con ruido: no muestra ninguna cifra'); }
+  // the «Resonancia» stretch of the demo, without the hit and without the original playing: its content must change with the object
+  const dm = {}, pkAt = (y, a, b) => { const sp = H.bands(R, y.subarray(Math.floor(a * sr), Math.floor(b * sr)), sr); return H.peaks(sp, sr, 1)[0].f; };
+  for (const k of ['A', 'B']) { const g = got[k], rs = g.ra.res.slice().sort((p, q) => q.lvl * q.rel - p.lvl * p.rel), h = { kind: 'res', hz: rs[0].f, list: rs.slice(0, 2) };
+    dm[k] = { one: R.demoBuild(g.x, sr, h, { ra: g.ra, sel: '0' }), two: R.demoBuild(g.x, sr, h, { ra: g.ra, sel: '1' }), both: R.demoBuild(g.x, sr, h, { ra: g.ra, sel: 'both' }), h }; }
+  for (const [k, f1, f2] of [['A', 520, 1432], ['B', 388, 1127]]) { const d = dm[k], p1 = pkAt(d.one.buf, d.one.resAt[0] + .05, d.one.resAt[1]), p2 = pkAt(d.two.buf, d.two.resAt[0] + .05, d.two.resAt[1]);
+    ok(Math.abs(p1 - f1) < 6 && Math.abs(p2 - f2) < 8, k + ': tramo «Resonancia» (' + d.one.how + '): pico en ' + p1.toFixed(0) + ' Hz al elegir la primera y en ' + p2.toFixed(0) + ' Hz al elegir la segunda');
+    const sp = H.bands(R, d.both.buf.subarray(Math.floor(d.both.resAt[0] * sr), Math.floor(d.both.resAt[1] * sr)), sr), pk2 = H.peaks(sp, sr, 2).map(p => p.f).sort((a, b) => a - b); ok(Math.abs(pk2[0] - f1) < 6 && Math.abs(pk2[1] - f2) < 8, k + ': «Juntas» contiene las dos (' + pk2.map(Math.round).join(' y ') + ' Hz)');
+    let pk = 0; for (const v of d.both.buf) { if (v !== v) pk = NaN; pk = Math.max(pk, Math.abs(v)); } ok(pk <= .95, k + ': demostración finita y con margen (pico ' + pk.toFixed(2) + ', ' + d.one.dur.toFixed(1) + ' s antes del paisaje)'); }
+  { const e = (y, a, b) => { let q = 0; for (let i = Math.floor(a * sr); i < b * sr; i++) q += y[i] * y[i]; return Math.sqrt(q / ((b - a) * sr)); }, dA = dm.A.one, dB = dm.B.one;
+    ok(Math.abs(20 * Math.log10(e(dA.buf, dA.resAt[0], dA.resAt[0] + .5) / e(dB.buf, dB.resAt[0], dB.resAt[0] + .5))) < 3, 'los tramos «Resonancia» de A y B suenan a nivel parecido: se distinguen por la frecuencia, no por el volumen'); }
+  { const shortTail = R.prepare(H.hit(sr, [[640, 1, .08]], { dur: .5 }), sr), rsh = R.resAnalyze(shortTail.x, sr); if (rsh.res.length) { const d = R.demoBuild(shortTail.x, sr, { kind: 'res', hz: rsh.res[0].f, list: [rsh.res[0]] }, { ra: rsh, sel: '0' }); ok(/filtrada|recreada/.test(d.how) && Math.abs(pkAt(d.buf, d.resAt[0] + .02, d.resAt[1]) - 640) < 12, 'cola muy corta: «' + d.cues[1].label + '»'); } else ok(true, 'cola muy corta: sin resonancia fiable, no se inventa'); }
+  { const d = R.demoBuild(R.prepare(H.hit(sr, [], { click: 1.2, dur: 1.2 }), sr).x, sr, { kind: 'none' }, {}); ok(d.cues.length === 1 && !d.resAt, 'sin tono estable: la demostración no añade ningún tramo de «resonancia»'); }
+
+  console.log('\n5 · PILOTO LOCAL (reloj controlado, datos temporales)');
+  { const T = (d, h, m, s2) => new Date(2026, 10, d, h, m || 0, s2 || 0).getTime(); let P = R.pilotNew(T(26, 18));
+    R.pilotEvent(P, T(26, 18, 1), { k: 'cap', id: 101, src: 'grabación' }); R.pilotEvent(P, T(26, 18, 1), { k: 'cap', id: 101, src: 'grabación' }); R.pilotEvent(P, T(26, 18, 2), { k: 'fail', why: 'sil' }); R.pilotEvent(P, T(26, 18, 3), { k: 'fail', why: 'perm' }); R.pilotEvent(P, T(26, 18, 4), { k: 'fail', why: 'imp' });
+    let sm = R.pilotSummary(P); ok(sm.sources === 1 && !sm.secondSource && sm.retries.sil === 1 && sm.retries.perm === 1 && sm.retries.imp === 1, 'una captura repetida cuenta una vez; silencio, permiso e importación fallida se anotan aparte y no cuentan como segunda fuente');
+    R.pilotEvent(P, T(26, 18, 10), { k: 'listen', id: 101, born: T(26, 18, 1), dt: 300 }); ok(!R.pilotSummary(P).returned, 'escuchar 300 s el mismo día de la captura no es volver');
+    for (let i = 0; i < 119; i++) R.pilotEvent(P, T(27, 19, 0, i), { k: 'listen', id: 101, born: T(26, 18, 1), dt: 1 }); ok(!R.pilotSummary(P).returned, '119 s al día siguiente: todavía no cuenta');
+    // a pause: time passes, nothing is added
+    R.pilotEvent(P, T(27, 19, 30), { k: 'listen', id: 101, born: T(26, 18, 1), dt: 0 }); ok(!R.pilotSummary(P).returned, 'una pausa de media hora no suma nada');
+    R.pilotEvent(P, T(27, 19, 31), { k: 'listen', id: 101, born: T(26, 18, 1), dt: 1 }); sm = R.pilotSummary(P); ok(sm.returned && sm.relistenDays.length === 1 && sm.relistenDays[0] === '2026-11-27', '120 s: cuenta como reescucha el 2026-11-27');
+    R.pilotEvent(P, T(27, 23, 59, 30), { k: 'listen', id: 101, born: T(26, 18, 1), dt: 60 }); R.pilotEvent(P, T(28, 0, 0, 30), { k: 'listen', id: 101, born: T(26, 18, 1), dt: 60 }); sm = R.pilotSummary(P); ok(sm.relistenDays.join() === '2026-11-27', 'una sesión que cruza la medianoche reparte sus segundos: 60 s del día 28 no bastan');
+    R.pilotEvent(P, T(28, 8), { k: 'cap', id: 202, src: 'grabación' }); R.pilotEvent(P, T(28, 8, 5), { k: 'listen', id: 202, born: T(28, 8), dt: 400 }); sm = R.pilotSummary(P);
+    ok(sm.secondSource && sm.captureDays.join() === '2026-11-26,2026-11-28' && sm.relistenDays.join() === '2026-11-27', 'segunda fuente el día 28: días con capturas (26 y 28) separados de días con reescucha (27)');
+    R.pilotEvent(P, T(27, 21), { k: 'listen', id: 101, born: T(26, 18, 1), dt: 200 }); ok(R.pilotSummary(P).relistenDays.join() === '2026-11-27', 'volver a la misma fecha no la cuenta dos veces');
+    const off = R.pilotEvent({ on: false, days: {}, born: {} }, T(26, 18), { k: 'cap', id: 1 }); ok(Object.keys(off.days).length === 0, 'sin participar no se anota nada'); }
   console.log('\n' + (fails ? fails + ' FALLOS' : 'TODO EN VERDE') + ' · señales sintéticas; no sustituye a la escucha'); process.exit(fails ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(2); });

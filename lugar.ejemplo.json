@@ -1,0 +1,8 @@
+{
+  "title": "El río de Llavorsí",
+  "takes": [
+    { "title": "Primer día", "file": "lugar/dia-1.m4a", "date": "" },
+    { "title": "Segundo día", "file": "lugar/dia-2.m4a", "date": "" },
+    { "title": "Tercer día", "file": "lugar/dia-3.m4a", "date": "" }
+  ]
+}
