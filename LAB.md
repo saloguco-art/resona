@@ -56,6 +56,20 @@ sh src/build.sh
 
 No es separación de fuentes y no reconoce personas ni emociones.
 
+## Qué se ha aplicado del artículo DDSP (Engel et al., ICLR 2020)
+
+Leído completo. Su tesis: no generar la onda muestra a muestra, sino dejar que unos pocos controles interpretables gobiernen un sintetizador clásico. Tres cosas se han llevado a la app, sin entrenar ninguna red:
+
+- **Modelo armónico + ruido (§3.1–3.5).** Para una voz sola, el fondo ya no es un estirado espectral: se mide la altura de la voz cuadro a cuadro, el reparto de energía entre sus 30 primeros armónicos y el ruido que queda entre ellos, y se vuelve a sintetizar con un banco de osciladores más ruido filtrado. Altura, volumen y timbre quedan separados (ec. 3), así que la voz se sostiene medio minuto a su propia altura. Los controles cambian cada 64 muestras y se interpolan, como en §3.3, para que no haya escalones.
+- **La altura como control libre (§5.2).** Una voz aguda se baja una octava, y otra más en Sueño, igual que el artículo transporta un violín fuera de su registro.
+- **Medidas (§4.2.1 y B.1).** La comparación a ciegas iguala las dos versiones por sonoridad con ponderación A, no por RMS. El diagnóstico muestra una distancia espectral multi-escala al original (seis tamaños de ventana, lineal y logarítmica), adaptada a espectros medios porque un paisaje no está alineado en el tiempo con su fuente.
+
+Lo que no se ha aplicado, y por qué: el decodificador neuronal que predice esos controles, la de-reverberación y la transferencia de timbre exigen entrenar con un conjunto de datos. Aquí los controles se miden de la propia grabación, que es justo el enfoque «análisis/síntesis» clásico que el artículo toma como punto de partida.
+
+Hay una tercera comparación a ciegas, **armónico / estirado**: la misma voz y la misma marca, con el fondo nuevo y con el anterior. Si la voz no tiene altura estable en al menos un 20 % del tiempo, o va mezclada con agua, se usa el fondo anterior y el diagnóstico lo dice.
+
+Probado con la voz sintetizada: altura mediana 180 Hz, 74 % sonoro, 0,5 s hasta poder escuchar, sin errores; distancia al original 0,96 frente a 1,04 del estirado. Esa cifra mide parecido de color, no si suena mejor.
+
 ## Pruebas ejecutadas
 
 Todas en un único entorno: navegador integrado de la app de Claude (Chromium 156) en macOS, ventana a 375 × 812, servidor local. Ninguna en iPhone.

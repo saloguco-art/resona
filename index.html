@@ -760,7 +760,7 @@ function startVoices(pad, fade) {
   S.group = { gain: gg, nodes };
   // drone: grounds the texture on the sound's own note
   stopDrone();
-  const r = S.sound.an.rootHz, t = c.currentTime;
+  const r = VX().root || S.sound.an.rootHz, t = c.currentTime;
   for (const [f, g] of [[r, .085], [r + .37, .06], [r * 2, .04], [r * 3, .014]]) {
     const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f; const og = c.createGain(); og.gain.value = g; o.connect(og); og.connect(E.drone); o.start(); E.oscs.push(o);
   }
@@ -793,7 +793,7 @@ function playGrain() {
 function playBell(level, oct) {
   const c = S.ctx, cfg = MODES[S.mode], t = c.currentTime + .05;
   const d = cfg.deg[Math.floor(Math.random() * cfg.deg.length)][0];
-  const f = S.sound.an.rootHz * R[d] * (oct || (Math.random() < .5 ? 4 : 8));
+  const f = (VX().root || S.sound.an.rootHz) * R[d] * (oct || (Math.random() < .5 ? 4 : 8));
   for (const [m, a, dec] of [[1, 1, 5.5], [2.01, .22, 3], [3.02, .08, 1.6]]) {
     const o = c.createOscillator(); o.frequency.value = f * m; const g = c.createGain();
     g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(level * a, t + .02); g.gain.exponentialRampToValueAtTime(1e-4, t + dec);
@@ -1063,7 +1063,14 @@ async function renderVariant(v, mode, onProgress) {
     if (v.profile === 'agua') return toBuf(await renderFlow(s.x, s.sr, onProgress));
     if (v.profile === 'golpe') return toBuf(await renderPad(tailOf(s, S.shape.attackT), s.sr, s.an.rootHz, cfg, onProgress));
     const rest = restOf(s, v.mark);
-    return toBuf(v.mix ? await renderFlow(rest, s.sr, onProgress) : await renderPad(rest, s.sr, s.an.rootHz, cfg, onProgress));
+    if (v.mix) return toBuf(await renderFlow(rest, s.sr, onProgress));
+    if (!v.noHN) {                    // a voice alone: hold it at its own pitch with the harmonic + noise model
+      const hn = await renderHN(rest, s.sr, mode, onProgress);
+      if (!hn.fail) { v.hn = hn.info; v.hnFail = ''; let r = hn.info.med * hn.info.shift; while (r >= 130.81) r /= 2; while (r < 65.4) r *= 2;
+        v.fx = Object.assign({}, v.fx, { root: r, drone: 0 }); return toBuf(hn); }      // bells and guide note follow the voice's pitch; no fixed bass under it
+      v.hn = null; v.hnFail = hn.fail;
+    }
+    return toBuf(await renderPad(rest, s.sr, s.an.rootHz, cfg, onProgress));
   } catch (e) { console.warn('lab render', e); v.profile = 'actual'; v.fx = FX0; v.why = (v.why || []).concat('la síntesis nueva falló: motor actual'); rnd = Math.random; return toBuf(await renderPad(s.x, s.sr, s.an.rootHz, cfg, onProgress)); }
   finally { rnd = Math.random; }
 }
@@ -1077,6 +1084,131 @@ function playIntact(fx) {
   s.start(t, a, len + .02); grainEnd = t + len;
 }
 
+/* ── Harmonic + noise resynthesis. This is the synthesiser DDSP is built on (Serra & Smith's spectral modelling,
+   Engel et al. 2020, §3): a bank of oscillators at whole multiples of the voice's own pitch, plus noise shaped by what
+   is left over. Pitch, loudness and timbre are separate controls, so a voice can be held for half a minute at its own
+   pitch instead of being smeared. Here the controls are measured from the recording, not predicted by a trained network. ── */
+function aWeight(f) { const f2 = f * f; return 1.2589 * 148693636 * f2 * f2 / ((f2 + 424.36) * Math.sqrt((f2 + 11599.29) * (f2 + 544496.41)) * (f2 + 148693636)); }
+function medianOf(a) { if (!a.length) return 0; const s = Float32Array.from(a).sort(); return s[s.length >> 1]; }
+function boxSmooth(a, F, W, half) {          // moving average over time for F frames of W values each
+  const out = new Float32Array(a.length);
+  for (let k = 0; k < W; k++) { let q = 0, c = 0;
+    for (let f = 0; f < Math.min(F, half + 1); f++) { q += a[f * W + k]; c++; }
+    for (let f = 0; f < F; f++) { out[f * W + k] = q / c; const add = f + half + 1, sub = f - half; if (add < F) { q += a[add * W + k]; c++; } if (sub >= 0) { q -= a[sub * W + k]; c--; } } }
+  return out;
+}
+async function hnAnalyze(x, sr) {
+  const N = 2048, hop = Math.floor(sr * .01), half = N / 2, fft = getFFT(N), w = hann(N), binHz = sr / N, K = 30, NB = 24;
+  const F = Math.floor((x.length - N) / hop) + 1; if (F < 20) return null;
+  const re = new Float32Array(N), im = new Float32Array(N), pw = new Float32Array(half + 1), hb = new Uint8Array(half + 1);
+  const f0 = new Float32Array(F), conf = new Float32Array(F), en = new Float32Array(F), amp = new Float32Array(F * K), nz = new Float32Array(F * NB);
+  const lagMin = Math.max(2, Math.floor(sr / 480)), lagMax = Math.min(half - 2, Math.ceil(sr / 70)), edges = [];
+  for (let b = 0; b <= NB; b++) edges.push(Math.min(half, Math.max(1, Math.round(60 * Math.pow(8000 / 60, b / NB) / binHz))));
+  let last = performance.now(), eH = 0, eN = 0;
+  for (let f = 0; f < F; f++) {
+    const o = f * hop; let e = 0;
+    for (let n = 0; n < N; n++) { const s = x[o + n]; re[n] = s * w[n]; im[n] = 0; e += s * s; }
+    en[f] = Math.sqrt(e / N); fft(re, im);
+    for (let k = 0; k <= half; k++) pw[k] = re[k] * re[k] + im[k] * im[k];
+    // pitch: the autocorrelation is the transform of the power spectrum
+    re[0] = pw[0]; im[0] = 0; for (let k = 1; k <= half; k++) { re[k] = pw[k]; im[k] = 0; if (k < half) { re[N - k] = pw[k]; im[N - k] = 0; } }
+    fft(re, im);
+    const r0 = re[0] || 1e-20, val = l => re[l] / r0 / (1 - l / N), isPk = l => re[l] >= re[l - 1] && re[l] >= re[l + 1]; let bl = 0, bv = 0;
+    for (let l = lagMin; l <= lagMax; l++) if (isPk(l)) { const v = val(l); if (v > bv) { bv = v; bl = l; } }
+    if (bl) for (let l = lagMin; l < bl; l++) if (isPk(l) && val(l) > .88 * bv) { bl = l; break; }      // the shortest period that is nearly as good: avoids dropping an octave
+    if (bl) { const a = re[bl - 1], b = re[bl], c = re[bl + 1], d = a - 2 * b + c; f0[f] = sr / (bl + (d ? .5 * (a - c) / d : 0)); conf[f] = Math.min(1, val(bl)); }
+    hb.fill(0);
+    if (f0[f] > 0 && conf[f] > .4) for (let k = 1; k <= 160; k++) { const kb = Math.round(k * f0[f] / binHz); if (kb + 2 > half) break; let m = 0;
+      for (let j = kb - 2; j <= kb + 2; j++) if (j > 0) { hb[j] = 1; if (pw[j] > m) m = pw[j]; } if (k <= K) amp[f * K + k - 1] = Math.sqrt(m); }
+    for (let b = 0; b < NB; b++) { let q = 0, c = 0; for (let k = edges[b]; k < Math.max(edges[b] + 1, edges[b + 1]) && k <= half; k++) if (!hb[k]) { q += pw[k]; c++; } nz[f * NB + b] = c ? Math.sqrt(q / c) : 0; }
+    for (let k = edges[0]; k < edges[NB]; k++) { if (hb[k]) eH += pw[k]; else eN += pw[k]; }
+    if (performance.now() - last > 40) { await sleep(0); last = performance.now(); }
+  }
+  const eS = Float32Array.from(en).sort(), eMed = eS[F >> 1], ePk = eS[F - 1], vo = new Float32Array(F), vf = []; let nv = 0;
+  for (let f = 0; f < F; f++) if (conf[f] > .4 && f0[f] > 0 && en[f] > .08 * ePk) { vo[f] = 1; nv++; vf.push(f0[f]); }
+  if (nv < 15 || nv / F < .2) return { ok: false, voiced: nv / F };
+  const med = medianOf(vf);
+  for (let f = 0; f < F; f++) if (vo[f]) { while (f0[f] > med * 1.9) f0[f] /= 2; while (f0[f] < med / 1.9) f0[f] *= 2; }
+  // a calm pitch line: the median of the voiced neighbours within ±0,4 s; silent stretches borrow the nearest one
+  const fs = new Float32Array(F), tmp = [];
+  for (let f = 0; f < F; f++) { tmp.length = 0; for (let j = Math.max(0, f - 40); j <= Math.min(F - 1, f + 40); j++) if (vo[j]) tmp.push(f0[j]); fs[f] = tmp.length ? medianOf(tmp) : 0; }
+  let lastV = 0; for (let f = 0; f < F; f++) { if (fs[f]) lastV = fs[f]; else fs[f] = lastV; }
+  lastV = 0; for (let f = F - 1; f >= 0; f--) { if (fs[f]) lastV = fs[f]; else fs[f] = lastV || med; }
+  // global loudness A(t) and the spread over the harmonics c_k(t), kept apart as in the paper (eq. 3)
+  const A = new Float32Array(F), c = new Float32Array(F * K), eh = [];
+  for (let f = 0; f < F; f++) { let q = 0; for (let k = 0; k < K; k++) q += amp[f * K + k] * amp[f * K + k]; A[f] = vo[f] ? Math.sqrt(q) : 0; if (A[f] > 0) { eh.push(A[f]); for (let k = 0; k < K; k++) c[f * K + k] = amp[f * K + k] / A[f]; } }
+  const mEh = medianOf(eh) || 1; for (let f = 0; f < F; f++) A[f] = A[f] > 0 ? Math.pow(A[f] / mEh, .4) : 0;      // loudness follows the voice, gently
+  // unvoiced frames borrow the nearest voiced timbre so the spread never jumps to nothing
+  let lv = -1; for (let f = 0; f < F; f++) { if (A[f] > 0) lv = f; else if (lv >= 0) for (let k = 0; k < K; k++) c[f * K + k] = c[lv * K + k]; }
+  lv = -1; for (let f = F - 1; f >= 0; f--) { if (A[f] > 0) lv = f; else if (lv >= 0) { let z = 0; for (let k = 0; k < K; k++) z += c[f * K + k]; if (!z) for (let k = 0; k < K; k++) c[f * K + k] = c[lv * K + k]; } }
+  let keep = []; for (let f = 0; f < F; f++) if (en[f] > .1 * eMed) keep.push(f); if (keep.length < 20) { keep = []; for (let f = 0; f < F; f++) keep.push(f); }
+  return { ok: true, F, K, NB, f0: fs, A: boxSmooth(A, F, 1, 4), c: boxSmooth(c, F, K, 3), nz: boxSmooth(nz, F, NB, 15), keep, med, voiced: nv / F, ratio: clamp(Math.sqrt(eN / (eH || 1e-20)), .05, 1.2) };
+}
+async function renderHN(x, sr, mode, onProgress) {
+  const an = await hnAnalyze(x, sr);
+  if (!an || !an.ok) return { fail: an ? 'solo un ' + Math.round(an.voiced * 100) + ' % del sonido tiene altura estable' : 'demasiado corto para medir su altura' };
+  const SR = sr / 2, dur = x.length / sr, L = Math.floor(SR * clamp(dur * 2.5, 28, 40)), X = Math.floor(SR * 4), T = L + X, K = an.K, NB = an.NB, keep = an.keep, nk = keep.length;
+  // the pitch is a free control: fold a high voice down an octave, and one more for sleep (the paper's "extrapolation")
+  const shift = (an.med > 300 ? .5 : 1) * (mode === 'sueno' && an.med > 140 ? .5 : 1);
+  const yL = new Float32Array(T + 4096), yR = new Float32Array(T + 4096), at = n => { const p = clamp(n / T, 0, 1) * (nk - 1), i = Math.min(nk - 2, Math.floor(p)); return [keep[i], keep[i + 1], p - i]; };
+  const B = 64, C = [new Float32Array(K), new Float32Array(K)], Sn = [new Float32Array(K), new Float32Array(K)], pa = new Float32Array(K), ca = new Float32Array(K), det = [1, Math.pow(2, 5 / 1200)], fmax = Math.min(4500, SR * .45);
+  for (let ch = 0; ch < 2; ch++) for (let k = 0; k < K; k++) { const ph = rnd() * TAU; C[ch][k] = Math.cos(ph); Sn[ch][k] = Math.sin(ph); }
+  let last = performance.now();
+  for (let n0 = 0; n0 < T; n0 += B) {                 // controls change every 64 samples and glide in between: no steps, no clicks
+    const [i, j, u] = at(n0 + B), f = (an.f0[i] * (1 - u) + an.f0[j] * u) * shift, Ag = an.A[i] * (1 - u) + an.A[j] * u;
+    for (let k = 0; k < K; k++) ca[k] = (k + 1) * f < fmax ? Ag * (an.c[i * K + k] * (1 - u) + an.c[j * K + k] * u) : 0;
+    for (let ch = 0; ch < 2; ch++) { const y = ch ? yR : yL, Cc = C[ch], Ss = Sn[ch];
+      for (let k = 0; k < K; k++) { const a0 = pa[k], a1 = ca[k]; if (a0 < 1e-7 && a1 < 1e-7) continue;
+        const th = TAU * (k + 1) * f * det[ch] / SR, dc = Math.cos(th), ds = Math.sin(th), da = (a1 - a0) / B; let c = Cc[k], s = Ss[k];
+        for (let m = 0; m < B; m++) { const c2 = c * dc - s * ds; s = s * dc + c * ds; c = c2; y[n0 + m] += (a0 + da * m) * s; }
+        const g = 1 / Math.sqrt(c * c + s * s); Cc[k] = c * g; Ss[k] = s * g; } }
+    pa.set(ca);
+    if (performance.now() - last > 40) { onProgress && onProgress(.2 + .5 * n0 / T); await sleep(0); last = performance.now(); }
+  }
+  let hq = 0; for (let n = 0; n < T; n += 2) hq += yL[n] * yL[n]; const hr = Math.sqrt(hq / (T / 2)); if (!(hr > 0)) return { fail: 'la parte armónica salió vacía' };
+  // filtered noise: random-phase frames shaped by the leftover's band envelope
+  const NF = 1024, hopN = 256, wN = hann(NF), fftN = getFFT(NF), re = new Float32Array(NF), im = new Float32Array(NF), nL = new Float32Array(T + NF * 2), nR = new Float32Array(T + NF * 2), bandOf = new Int8Array(NF / 2);
+  for (let k = 0; k < NF / 2; k++) { const fq = k * SR / NF; bandOf[k] = fq < 60 || fq > 8000 ? -1 : Math.min(NB - 1, Math.floor(NB * Math.log(fq / 60) / Math.log(8000 / 60))); }
+  for (let o = 0; o < T; o += hopN) {
+    const [i, j, u] = at(o + NF / 2); re.fill(0); im.fill(0);
+    for (let k = 1; k < NF / 2; k++) { const b = bandOf[k]; if (b < 0) continue; const m = an.nz[i * NB + b] * (1 - u) + an.nz[j * NB + b] * u; if (!m) continue;
+      const p1 = rnd() * TAU, p2 = rnd() * TAU, c1 = m * Math.cos(p1), s1 = m * Math.sin(p1), c2 = m * Math.cos(p2), s2 = m * Math.sin(p2);
+      re[k] = c1 - s2; im[k] = s1 + c2; re[NF - k] = c1 + s2; im[NF - k] = c2 - s1; }
+    fftN(im, re);
+    for (let n = 0; n < NF; n++) { nL[o + n] += re[n] * wN[n]; nR[o + n] += im[n] * wN[n]; }
+    if (performance.now() - last > 40) { onProgress && onProgress(.7 + .3 * o / T); await sleep(0); last = performance.now(); }
+  }
+  let nq = 0; for (let n = 0; n < T; n += 2) nq += nL[n] * nL[n]; const nr = Math.sqrt(nq / (T / 2)), gN = nr > 0 ? hr * an.ratio * .8 / nr : 0;   // as much breath, relative to the tone, as the recording had
+  for (let n = 0; n < T; n++) { yL[n] += nL[n] * gN; yR[n] += nR[n] * gN; }
+  const out = evenLoop(yL, yR, T, L, X, SR, .5); out.info = { med: an.med, shift, voiced: an.voiced, ratio: an.ratio }; return out;
+}
+
+/* ── Measures borrowed from the same paper ── */
+// A-weighted loudness of what is sounding (appendix B.1), so two versions are matched by how loud they are heard
+function masterLoud() {
+  const an = E.an; if (!E.fd) { E.fd = new Float32Array(an.frequencyBinCount); E.aw = new Float32Array(an.frequencyBinCount); for (let k = 0; k < E.aw.length; k++) { const a = aWeight(k * S.ctx.sampleRate / an.fftSize); E.aw[k] = a * a; } }
+  an.getFloatFrequencyData(E.fd); let q = 0; for (let k = 1; k < E.fd.length; k++) { const d = E.fd[k]; if (d > -140) q += Math.pow(10, d / 10) * E.aw[k]; } return Math.sqrt(q);
+}
+// Multi-scale spectral distance (eq. 4), adapted: a landscape is not time-aligned with its source, so the average
+// spectra are compared, at six window sizes, in linear and in log magnitude. Lower = closer in colour to the original.
+function avgSpec(x, sr, N, lo, pts) {
+  if (x.length < N * 2) return null;
+  const fft = getFFT(N), w = hann(N), re = new Float32Array(N), im = new Float32Array(N), acc = new Float64Array(N / 2), frames = Math.min(120, Math.floor((x.length - N) / (N / 4))), step = Math.floor((x.length - N) / frames);
+  for (let f = 0; f < frames; f++) { const o = f * step; for (let n = 0; n < N; n++) { re[n] = x[o + n] * w[n]; im[n] = 0; } fft(re, im); for (let k = 0; k < N / 2; k++) acc[k] += Math.sqrt(re[k] * re[k] + im[k] * im[k]); }
+  const out = []; let s = 0;
+  for (let i = 0; i < pts; i++) { const p = lo * Math.pow(4000 / lo, i / (pts - 1)) / (sr / N), k = Math.min(N / 2 - 2, Math.floor(p)), u = p - k, v = acc[k] * (1 - u) + acc[k + 1] * u + 1e-12; out.push(v); s += v; }
+  return out.map(v => v / s);
+}
+function msDist(x, sr, buf) {
+  const n = Math.min(buf.length, Math.floor(buf.sampleRate * 14)), a = buf.getChannelData(0), b = buf.getChannelData(1), y = new Float32Array(n); for (let i = 0; i < n; i++) y[i] = (a[i] + b[i]) / 2;
+  let tot = 0, k = 0;
+  for (const N of [2048, 1024, 512, 256, 128, 64]) { const lo = Math.max(100, 2 * Math.max(sr, buf.sampleRate) / N); if (lo > 2500) continue;
+    const p = avgSpec(x, sr, N, lo, 16), q = avgSpec(y, buf.sampleRate, N, lo, 16); if (!p || !q) continue;
+    let d = 0; for (let i = 0; i < 16; i++) d += Math.abs(p[i] - q[i]) + Math.abs(Math.log(p[i]) - Math.log(q[i])) / 16; tot += d; k++; }
+  return k ? tot / k : null;
+}
+function distOf(key) { const v = S.vars && S.vars[key], b = v && v.pads[S.mode]; if (!b) return null; if (!v.dist) v.dist = {}; if (v.dist[S.mode] == null) v.dist[S.mode] = msDist(S.sound.x, S.sound.sr, b); return v.dist[S.mode]; }
+
 async function labSetup(st) {
   const s = S.sound, D = S.diag = { net: false, t0: performance.now() }; S.shape = shape(s.x, s.sr); S.net = null;
   $('procTitle').textContent = 'Reconociendo qué suena…'; $('procSub').textContent = 'En tu dispositivo, sin enviar nada';
@@ -1087,6 +1219,7 @@ async function labSetup(st) {
   const B = mk('B', decide(S.net, s.an, S.shape)), C = mk('C', decide(null, s.an, S.shape));
   if (st && st.profile) { B.profile = st.profile; B.mix = !!st.mix; B.mark = st.mark || null; B.why = B.why.concat('perfil, marca y semilla recuperados de la biblioteca'); }
   S.vars.B = B; S.vars.C = C; setupVar(B); setupVar(C);
+  if (B.profile === 'voz' && !B.mix) S.vars.D = Object.assign({}, B, { key: 'D', pads: {}, noHN: true, fx: Object.assign({}, B.fx) });      // same voice, previous background: isolates what harmonic + noise adds
   S.var = st && st.use === 'A' ? S.vars.A : B; S.pads = S.var.pads;
 }
 function labMeta() { const B = S.vars && S.vars.B; return B ? { profile: B.profile, mix: B.mix, mark: B.mark, seed: B.seed, use: S.var && S.var.key === 'A' ? 'A' : 'B' } : undefined; }
@@ -1110,6 +1243,8 @@ function diagText() {
   L.push('Analizador actual: tonal ' + an.tonal.toFixed(2) + ' · sostén ' + an.sustain.toFixed(2) + ' · ' + sh.onsets + ' ataque/s · tipo «' + an.kind + '» · ' + an.dur.toFixed(1) + ' s');
   L.push('DECISIÓN (B): ' + B.profile + (B.mix ? ' + fondo sin afinar' : '') + (B.mark ? ' · marca ' + B.mark[0].toFixed(2) + '–' + B.mark[1].toFixed(2) + ' s' : '') + ' · semilla ' + B.seed);
   for (const w of B.why) L.push('  · ' + w);
+  if (B.profile === 'voz' && !B.mix) L.push(B.hn ? 'Fondo: armónico + ruido — altura mediana ' + Math.round(B.hn.med) + ' Hz' + (B.hn.shift < 1 ? ' (bajada ' + (B.hn.shift === .25 ? 'dos octavas' : 'una octava') + ')' : '') + ' · ' + Math.round(B.hn.voiced * 100) + ' % sonoro · ruido/tono ' + B.hn.ratio.toFixed(2) : 'Fondo: estirado espectral (el armónico no se pudo usar: ' + (B.hnFail || 'sin generar') + ')');
+  const ds = ['A', 'B', 'C', 'D'].map(k => [k, distOf(k)]).filter(e => e[1] != null); if (ds.length) L.push('Distancia espectral multi-escala al original (menor = color más parecido): ' + ds.map(e => e[0] + ' ' + e[1].toFixed(2)).join(' · '));
   L.push('Sin la red (C): ' + C.profile + ' — ' + C.why.join('; '));
   if (D.listenMs) L.push('Tiempo hasta poder escuchar: ' + D.listenMs + ' ms');
   const ab = getAB(); L.push('Comparaciones guardadas en este dispositivo: ' + ab.length);
@@ -1125,15 +1260,18 @@ function abUi() {
   pressSeg('abSrc', AB.sel); pressSeg('abPref', AB.pref); pressSeg('abRec', AB.rec);
   const on = S.playing || origPlaying; $('abPlay').innerHTML = on ? ICON.pause : ICON.play; $('abPlay').setAttribute('aria-label', on ? 'Pausar' : 'Reproducir');
   $('abForm').hidden = !!AB.same || AB.done; $('abSave').textContent = AB.done || AB.same ? 'Volver a tu paisaje' : 'Guardar respuesta';
-  $('abKind').textContent = AB.kind === 'ab' ? 'Comparar sin la red' : 'Comparar con el motor actual';
+  $('abKind').textContent = 'Otra: ' + AB_KINDS[abNext()];
 }
+const AB_KINDS = { ab: 'actual / experimental', diag: 'con red / sin red', hn: 'armónico / estirado' };
+function abNext() { const ks = ['ab', 'diag'].concat(S.vars && S.vars.D ? ['hn'] : []); return ks[(ks.indexOf(AB.kind) + 1) % ks.length]; }
 function abOpen(kind) {
   if (!S.vars || !S.vars.B || S.busy) return; pvStop(); teardown();
-  AB.kind = kind || 'ab'; const B = S.vars.B, other = S.vars[AB.kind === 'ab' ? 'A' : 'C'];
-  AB.order = Math.random() < .5 ? [other.key, 'B'] : ['B', other.key]; AB.sel = 0; AB.on = false; AB.heard = { A: 0, B: 0, C: 0, orig: 0 }; AB.pref = AB.rec = ''; AB.done = false; $('abWhy').value = '';
+  AB.kind = kind || 'ab'; const B = S.vars.B, other = S.vars[{ ab: 'A', diag: 'C', hn: 'D' }[AB.kind]];
+  AB.order = Math.random() < .5 ? [other.key, 'B'] : ['B', other.key]; AB.sel = 0; AB.on = false; AB.heard = { A: 0, B: 0, C: 0, D: 0, orig: 0 }; AB.pref = AB.rec = ''; AB.done = false; $('abWhy').value = '';
   AB.same = AB.kind === 'ab' ? (B.profile === 'actual' ? 'Con este sonido no hay confianza suficiente y la versión experimental usa el motor actual: las dos versiones serían la misma.' : '')
-    : (B.profile === other.profile && B.mix === other.mix ? 'Con este sonido las reglas, sin la red, eligen lo mismo (' + B.profile + '): aquí la red no cambia nada audible.' : '');
-  $('abSub').textContent = AB.same || (AB.kind === 'ab' ? 'Dos versiones del mismo sonido, con la misma intención y duración. No sabrás cuál es cuál hasta responder.' : 'Diagnóstico: la misma síntesis nueva, con la red y sin ella. Orden oculto.');
+    : AB.kind === 'diag' ? (B.profile === other.profile && B.mix === other.mix ? 'Con este sonido las reglas, sin la red, eligen lo mismo (' + B.profile + '): aquí la red no cambia nada audible.' : '')
+    : (B.pads[S.mode] && !B.hn ? 'En este sonido no se pudo usar el modelo armónico (' + (B.hnFail || 'sin datos') + '): las dos versiones serían la misma.' : '');
+  $('abSub').textContent = AB.same || (AB.kind === 'ab' ? 'Dos versiones del mismo sonido, con la misma intención y duración. No sabrás cuál es cuál hasta responder.' : AB.kind === 'diag' ? 'Diagnóstico: la misma síntesis nueva, con la red y sin ella. Orden oculto.' : 'La misma voz con dos fondos: armónico más ruido, y el estirado espectral anterior. Orden oculto.');
   for (const k in S.vars) { S.vars[k].n = 0; }
   S.preview = true; setView('ab'); abUi();
 }
@@ -1146,11 +1284,12 @@ async function abSelect(w) {
   if (S.group) startVoices(S.pads[S.mode], 1.5);
   play(); nextGrain = c.currentTime + 2.5; AB.on = true; abUi();
 }
-function abLevel(t) {            // slow trim so both versions reach the same loudness; measured, then held
+function abLevel(t) {            // A-weighted loudness of each version, measured while it plays; both are trimmed towards their common level
   const v = S.var; if (!v || S.view !== 'ab') return;
   if (v.skip > 0) { v.skip--; return; }
-  const r = masterRms(); v.n = (v.n || 0) + 1; v.rms = v.n === 1 ? r : v.rms + (r - v.rms) / Math.min(v.n, 300);
-  if (v.n > 40) E.trim.gain.setTargetAtTime(clamp(.09 / (v.rms || .09), .5, 2), t, .8);
+  const r = masterLoud(); v.n = (v.n || 0) + 1; v.rms = v.n === 1 ? r : v.rms + (r - v.rms) / Math.min(v.n, 300);
+  const p = S.vars[AB.order[0]], q = S.vars[AB.order[1]];
+  if (p.n > 40 && q.n > 40 && v.rms > 0) E.trim.gain.setTargetAtTime(clamp(Math.sqrt(p.rms * q.rms) / v.rms, .5, 2), t, .8);
 }
 function abLeave() {
   pvStop(); teardown(); if (E) E.trim.gain.setTargetAtTime(1, S.ctx.currentTime, .2);
@@ -1161,16 +1300,16 @@ $('abSrc').onclick = e => { const b = e.target.closest('button'); if (b && !AB.s
 $('abPlay').onclick = () => { if (S.playing || origPlaying) { PV.on = false; pvApply(); AB.on = false; abUi(); } else abSelect(AB.same ? 'orig' : AB.sel); };
 $('abPref').onclick = e => { const b = e.target.closest('button'); if (b) { AB.pref = b.dataset.v; abUi(); } };
 $('abRec').onclick = e => { const b = e.target.closest('button'); if (b) { AB.rec = b.dataset.v; abUi(); } };
-$('abKind').onclick = () => abOpen(AB.kind === 'ab' ? 'diag' : 'ab');
+$('abKind').onclick = () => abOpen(abNext());
 $('abSave').onclick = () => {
   if (AB.done || AB.same) return abLeave();
   if (AB.heard[AB.order[0]] < 3 || AB.heard[AB.order[1]] < 3) return toast('Escucha las dos versiones al menos unos segundos.', 3000);
   if (!AB.pref) return toast('Elige 1, 2 o «Sin preferencia».', 2500);
   const key = w => w === 'none' || w === 'both' || w === 'neither' || w === '' ? w : AB.order[+w], B = S.vars.B, pref = key(AB.pref), rec = key(AB.rec);
   const log = getAB(); log.push({ t: Date.now(), d: new Date().toISOString().slice(0, 16), kind: AB.kind, order: AB.order.slice(), pref, rec, why: $('abWhy').value.trim().slice(0, 200), heard: AB.heard,
-    profile: B.profile + (B.mix ? '+mix' : ''), other: S.vars[AB.order.find(k => k !== 'B')].profile, net: S.diag.net ? 1 : 0, scores: S.net ? S.net.clip : null, mode: S.mode, dur: S.dur, src: S.sound.src, len: Math.round(S.sound.an.dur), seed: B.seed });
+    profile: B.profile + (B.mix ? '+mix' : ''), other: S.vars[AB.order.find(k => k !== 'B')].profile, net: S.diag.net ? 1 : 0, scores: S.net ? S.net.pres : null, dist: { [AB.order[0]]: distOf(AB.order[0]), [AB.order[1]]: distOf(AB.order[1]) }, hn: B.hn ? 1 : 0, mode: S.mode, dur: S.dur, src: S.sound.src, len: Math.round(S.sound.an.dur), seed: B.seed });
   try { localStorage.setItem(ABKEY, JSON.stringify(log.slice(-300))); } catch (e) {}
-  const names = { A: 'el motor actual', B: 'el experimental' + (S.diag.net ? ' con red' : ' (solo reglas)'), C: 'la síntesis nueva sin red' };
+  const names = { A: 'el motor actual', B: 'el experimental' + (S.diag.net ? ' con red' : ' (solo reglas)') + (B.hn ? ', armónico + ruido' : ''), C: 'la síntesis nueva sin red', D: 'la misma voz con el estirado espectral' };
   AB.done = true; PV.on = false; pvApply();
   $('abSub').textContent = '1 era ' + names[AB.order[0]] + ' y 2 era ' + names[AB.order[1]] + '. Respuesta guardada en este dispositivo.' + (pref === 'A' || pref === 'B' ? ' Tu paisaje seguirá con la que preferiste.' : '');
   if (pref === 'A' || pref === 'B') { S.var = S.vars[pref]; S.pads = S.var.pads; }
@@ -1187,7 +1326,8 @@ setInterval(() => { if (S.view !== 'ab') return; if (origPlaying) AB.heard.orig 
 async function applyMark() {
   trimStop(); const B = S.vars.B, d = T.x.length / T.sr, a = T.a * d, b = T.b * d;
   if (b - a > 4) return toast('Marca algo breve: como mucho 4 segundos.', 3000);
-  B.mark = [a, b]; B.pads = {}; setupVar(B); S.var = B; S.pads = B.pads; teardown();
+  B.mark = [a, b]; B.pads = {}; B.dist = null; setupVar(B); S.var = B; S.pads = B.pads; teardown();
+  if (S.vars.D) Object.assign(S.vars.D, { mark: B.mark, pads: {}, dist: null, fx: Object.assign({}, B.fx) });
   S.busy = true; setView('proc'); S.progress = 0; $('procTitle').textContent = 'Rehaciendo el fondo…'; $('procSub').textContent = 'Con todo menos lo que has marcado';
   try { await sleep(30); S.pads[S.mode] = await renderVariant(B, S.mode, p => { S.progress = p; }); } catch (e) { console.error(e); } finally { S.busy = false; }
   if (S.sound.id) updateSound(S.sound.id, { lab: labMeta() });
@@ -1674,7 +1814,7 @@ if (window.visualViewport) {
 }
 
 /* ───────────── Self-update: load the newest version without the person reloading ───────────── */
-const BUILD = '20261125181705'; let pendingBuild = '';
+const BUILD = '20261125190901'; let pendingBuild = '';
 function applyUpdate() {
   if (!pendingBuild || S.view !== 'home' || S.busy || rec || rateCtx || !$('edit').hidden) return;      // never interrupt a session
   try { if (sessionStorage.getItem('resona.tried') === pendingBuild) return; sessionStorage.setItem('resona.tried', pendingBuild); } catch (e) {}
@@ -1811,7 +1951,7 @@ function draw(ts) {
 requestAnimationFrame(draw);
 
 setView('home'); renderLib(); showTime(); syncOpts(); uiPlay(); pvUi(); fillRange($('rngVol'));
-window.__resona = { S, PV, T, AB, LAB, onFile, diagText, getAB, abSelect, abOpen, renderPad, analyze, trimNorm, prepare, DEMOS, MODES, getLog, get E() { return E; } };   // test hook
+window.__resona = { S, PV, T, AB, LAB, hnAnalyze, distOf, onFile, diagText, getAB, abSelect, abOpen, renderPad, analyze, trimNorm, prepare, DEMOS, MODES, getLog, get E() { return E; } };   // test hook
 })();
 </script>
 
