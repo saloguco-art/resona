@@ -135,6 +135,8 @@ html:not(.dark) #optPres{display:none}
 .guide h3{font-family:var(--display);font-weight:400;font-size:23px;margin:8px 0 0}
 .guide p{margin:0;color:var(--dim)}
 .guide b{color:var(--ink);font-weight:600}
+#vAB .stage{min-height:70px}
+#diagTxt{white-space:pre-wrap;font:12px/1.5 ui-monospace,Menlo,monospace;color:var(--dim);margin:0;-webkit-user-select:text;user-select:text}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 @media (max-height:640px){ h1{font-size:29px} .count{font-size:46px} .round.xl{width:70px;height:70px} .primary{min-height:50px} .view{gap:8px} .hero .iname{font-size:25px} }
 @media (prefers-reduced-motion: reduce){ html,body{transition:none} }
@@ -205,6 +207,8 @@ html:not(.dark) #optPres{display:none}
       <p class="fine" id="pvHint" style="min-height:1.5em;margin-top:6px"></p></div>
     <div><label class="lbl" for="rngPres">Presencia del original</label>
       <input type="range" id="rngPres" min="0" max="100" value="45"></div>
+    <div id="labRow" hidden><p class="fine" id="labInfo"></p>
+      <div class="row" style="justify-content:center;gap:2px"><button class="text small" id="labAB">Comparar a ciegas</button><button class="text small" id="labMark" hidden>Marcar lo que reaparece</button><button class="text small" id="labDiag">Diagnóstico</button></div></div>
     <div class="foot">
       <button class="primary serif" id="btnStart">Empezar sesión</button>
       <div class="row between">
@@ -216,7 +220,7 @@ html:not(.dark) #optPres{display:none}
 
   <!-- FRAGMENT -->
   <section class="view" id="vTrim" hidden>
-    <div class="center"><h1>Elige el fragmento</h1><p class="sub">Arrastra los bordes y quédate con la parte que quieres volver a escuchar.</p></div>
+    <div class="center"><h1 id="trimTitle">Elige el fragmento</h1><p class="sub" id="trimSub">Arrastra los bordes y quédate con la parte que quieres volver a escuchar.</p></div>
     <div class="trim" id="trim"><canvas id="trimCv"></canvas><div class="trim-sel" id="trimSel"><i class="l"></i><i class="r"></i></div><div class="trim-head" id="trimHead" hidden></div></div>
     <p class="fine" id="trimInfo" style="font-variant-numeric:tabular-nums">&nbsp;</p>
     <div class="center"><button class="round" id="trimPlay" aria-label="Escuchar el fragmento"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
@@ -225,6 +229,23 @@ html:not(.dark) #optPres{display:none}
     <div class="foot">
       <button class="primary" id="trimUse">Usar este fragmento</button>
     </div>
+  </section>
+
+  <!-- LAB: blind comparison of two versions of the same sound (only with ?lab=1) -->
+  <section class="view" id="vAB" hidden>
+    <div class="center"><h1>Escucha a ciegas</h1><p class="sub" id="abSub"></p></div>
+    <div class="stage" data-stage></div>
+    <div class="seg2" id="abSrc" role="group" aria-label="Qué escuchar"><button data-v="0" aria-pressed="true">1</button><button data-v="1" aria-pressed="false">2</button><button data-v="orig" aria-pressed="false">Original</button></div>
+    <div class="center"><button class="round sm" id="abPlay" aria-label="Reproducir"></button></div>
+    <div id="abForm" class="col" style="gap:6px">
+      <p class="lbl" style="margin:0">¿Cuál prefieres?</p>
+      <div class="seg" id="abPref"><button class="pill" data-v="0">La 1</button><button class="pill" data-v="1">La 2</button><button class="pill" data-v="none">Sin preferencia</button></div>
+      <p class="lbl" style="margin:4px 0 0">¿En cuál reconoces mejor tu sonido?</p>
+      <div class="seg" id="abRec"><button class="pill" data-v="0">La 1</button><button class="pill" data-v="1">La 2</button><button class="pill" data-v="both">En las dos</button><button class="pill" data-v="neither">En ninguna</button></div>
+      <input class="field" type="text" id="abWhy" maxlength="200" placeholder="¿Por qué? (opcional)" aria-label="Motivo opcional" style="font-size:16px;padding:10px 12px">
+    </div>
+    <div class="foot"><button class="primary" id="abSave">Guardar respuesta</button>
+      <div class="row between"><button class="text small" id="abDiag">Diagnóstico</button><button class="text small" id="abKind">Comparar sin la red</button></div></div>
   </section>
 
   <!-- SESSION -->
@@ -317,6 +338,12 @@ html:not(.dark) #optPres{display:none}
   <div class="opt"><label class="lbl" for="rngVol">Volumen</label>
     <input type="range" id="rngVol" min="0" max="100" value="80" style="--p:80%"></div>
   <div class="row" style="justify-content:flex-end"><button class="pill" id="optsDone" aria-pressed="true">Hecho</button></div>
+</div>
+
+<div class="sheet" id="diag" role="dialog" aria-label="Diagnóstico local" hidden>
+  <p class="rate-q">Diagnóstico local</p>
+  <pre id="diagTxt"></pre>
+  <div class="row between"><button class="text small" id="diagCopy">Copiar resultados</button><button class="pill" id="diagClose" aria-pressed="true">Cerrar</button></div>
 </div>
 
 <div class="sheet" id="edit" role="dialog" aria-label="Editar sonido" hidden>
@@ -587,7 +614,7 @@ async function renderPad(x, sr, rootHz, cfg, onProgress) {
     // two independent random-phase signals from one inverse FFT (Z = A + iB)
     for (let k = 1; k <= kMax; k++) {
       const m = mag[k]; if (m === 0) continue;
-      const p1 = Math.random() * TAU, p2 = Math.random() * TAU;
+      const p1 = rnd() * TAU, p2 = rnd() * TAU;
       const c1_ = m * Math.cos(p1), s1 = m * Math.sin(p1), c2 = m * Math.cos(p2), s2 = m * Math.sin(p2);
       re[k] = c1_ - s2; im[k] = s1 + c2; re[N - k] = c1_ + s2; im[N - k] = c2 - s1;
     }
@@ -688,7 +715,7 @@ function buildEngine() {
   e.comp = c.createDynamicsCompressor(); e.comp.threshold.value = -16; e.comp.ratio.value = 3; e.comp.attack.value = .05; e.comp.release.value = .4;
   e.out = c.createGain(); e.out.gain.value = S.vol * MAKEUP;
   e.an = c.createAnalyser(); e.an.fftSize = 2048; e.an.smoothingTimeConstant = .86;
-  e.master.connect(e.comp); e.comp.connect(e.out); e.out.connect(c.destination); e.master.connect(e.an);
+  e.trim = c.createGain(); e.master.connect(e.trim); e.trim.connect(e.comp); e.comp.connect(e.out); e.out.connect(c.destination); e.master.connect(e.an);
   e.rev = c.createConvolver(); e.rev.buffer = makeIR(c);
   e.wet = c.createGain(); e.wet.gain.value = .75; e.rev.connect(e.wet); e.wet.connect(e.master);
   e.padF = c.createBiquadFilter(); e.padF.type = 'lowpass'; e.padF.frequency.value = 1800; e.padF.Q.value = .4;
@@ -702,6 +729,8 @@ function buildEngine() {
   e.grainDry = c.createGain(); e.grainDry.gain.value = .5;
   e.grain.connect(e.grainF); e.grainF.connect(e.grainDry); e.grainDry.connect(e.master);
   e.grainF.connect(e.delay); e.delay.connect(e.fb); e.fb.connect(e.delay); e.delay.connect(e.rev); e.grainF.connect(e.rev);
+  e.mark = c.createGain(); e.mark.gain.value = Math.min(1, S.pres * 1.6); e.markDry = c.createGain(); e.markDry.gain.value = .9; e.markWet = c.createGain(); e.markWet.gain.value = .3;   // intact voice or hit: dry and a little room, no echoes
+  e.mark.connect(e.markDry); e.markDry.connect(e.master); e.mark.connect(e.markWet); e.markWet.connect(e.rev);
   e.guide = c.createGain(); e.guide.gain.value = 0; e.guide.connect(e.master); e.guide.connect(e.rev);   // breath / humming guide note
   e.bell = c.createGain(); e.bell.gain.value = 1; e.bell.connect(e.rev); e.bellDry = c.createGain(); e.bellDry.gain.value = .5; e.bell.connect(e.bellDry); e.bellDry.connect(e.master);
   e.orig = c.createGain(); e.orig.connect(e.comp); e.orig.connect(e.an);   // the untouched recording, for comparing
@@ -735,7 +764,7 @@ function startVoices(pad, fade) {
   for (const [f, g] of [[r, .085], [r + .37, .06], [r * 2, .04], [r * 3, .014]]) {
     const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f; const og = c.createGain(); og.gain.value = g; o.connect(og); og.connect(E.drone); o.start(); E.oscs.push(o);
   }
-  E.drone.gain.setTargetAtTime(cfg.drone, t, 2);
+  E.drone.gain.setTargetAtTime(cfg.drone * VX().drone, t, 2);
   // guide note in a comfortable humming register, in two octaves so any voice can match one
   let h = r; while (h < 98) h *= 2; while (h >= 196) h /= 2;
   for (const [f, g] of [[h, .6], [h * 2, .4]]) { const o = c.createOscillator(); o.type = 'sine'; o.frequency.value = f; const og = c.createGain(); og.gain.value = g; o.connect(og); og.connect(E.guide); o.start(); E.oscs.push(o); }
@@ -748,8 +777,9 @@ function srcBuffer() {
 }
 
 function playGrain() {
+  const fx = VX(); if (fx.grain !== 'std') return playIntact(fx);
   const c = S.ctx, cfg = MODES[S.mode], buf = srcBuffer(), t = c.currentTime + .05;
-  const rate = cfg.rates[Math.floor(Math.random() * cfg.rates.length)];
+  const rate = fx.rate1 ? 1 : cfg.rates[Math.floor(Math.random() * cfg.rates.length)];
   const seg = Math.min(buf.duration, rand(1.2, 2.6)), hot = S.sound.an.hot, off = buf.duration > seg ? clamp((hot.length ? hot[Math.floor(Math.random() * hot.length)] : rand(0, buf.duration)) + rand(-.2, .3), 0, buf.duration - seg) : 0, len = seg / rate;
   const s = c.createBufferSource(); s.buffer = buf; s.playbackRate.value = rate;
   const g = c.createGain(), at = Math.min(.35, len * .3), pk = rand(.35, .7);
@@ -785,9 +815,10 @@ let nextGrain = 0, nextBell = 0, lastTick = 0, curBreath = { v: .5, cue: '' };
 function tick() {
   const c = S.ctx; if (!c || !E) return;
   if (!S.playing || c.state !== 'running') { lastTick = 0; return; }
-  const t = c.currentTime, cfg = MODES[S.mode], dt = lastTick ? t - lastTick : 0;
+  const t = c.currentTime, cfg = MODES[S.mode], dt = lastTick ? t - lastTick : 0, fx = VX();
   if (!S.preview) S.listened += dt; S.elapsed += dt;
   if (S.elapsed > 5 && !origPlaying) { const r = masterRms(); S.padRms = S.padRms ? S.padRms + (r - S.padRms) * .012 : r; }
+  abLevel(t);
   // Session arc: arrival -> depth (darker, slower, fewer echoes) -> return. In "Sueño" it never returns: it keeps sinking.
   const p = S.dur > 0 ? clamp(1 - S.remain / (S.dur * 60), 0, 1) : -1, sleep = S.mode === 'sueno';
   let d, phase;
@@ -801,11 +832,11 @@ function tick() {
   const depth = cfg.depth, v = curBreath.v;
   E.breath.gain.setTargetAtTime(1 - depth + depth * v, t, .12);
   E.padF.frequency.setTargetAtTime(lo * Math.pow(hi / lo, v), t, .15);
-  E.drone.gain.setTargetAtTime(cfg.drone * (1 + .25 * d1), t, 1.5);
-  E.guide.gain.setTargetAtTime(S.hum ? (curBreath.ex ? .06 : .008) : (BREATH[S.breath] ? .02 * v : 0), t, .25);
+  E.drone.gain.setTargetAtTime(cfg.drone * fx.drone * (1 + .25 * d1), t, 1.5);
+  E.guide.gain.setTargetAtTime(S.hum ? (curBreath.ex ? .06 : .008) : (BREATH[S.breath] && fx.guide ? .02 * v : 0), t, .25);
   if (!S.ending) {
-    if (t >= nextGrain) { if (S.pres > .02 && !(sleep && p > .6)) playGrain(); nextGrain = t + rand(cfg.grain[0], cfg.grain[1]) * (1.5 - S.pres) * (1 + .8 * d1); }
-    if (cfg.bellGain && t >= nextBell) { if (!(sleep && p > .5)) playBell(cfg.bellGain); nextBell = t + rand(cfg.bell[0], cfg.bell[1]) * (1 + .5 * d1); }
+    if (t >= nextGrain) { if (S.pres > .02 && !(sleep && p > .6)) playGrain(); nextGrain = Math.max(t + rand(cfg.grain[0], cfg.grain[1]) * (1.5 - S.pres) * (1 + .8 * d1) * (fx.grain === 'mark' ? 2 : 1), grainEnd + 1.5); }
+    if (cfg.bellGain && fx.bells && t >= nextBell) { if (!(sleep && p > .5)) playBell(cfg.bellGain); nextBell = t + rand(cfg.bell[0], cfg.bell[1]) * (1 + .5 * d1); }
   }
   if (lastTick && S.dur > 0 && !S.ending && !S.preview) {
     S.remain -= dt;
@@ -849,6 +880,318 @@ function teardown() {
   const t = S.ctx.currentTime; E.master.gain.cancelScheduledValues(t); E.master.gain.setTargetAtTime(0, t, .1);
   stopVoices(.4); E.drone.gain.setTargetAtTime(0, t, .1);
   const old = E.oscs; E.oscs = []; setTimeout(() => old.forEach(o => { try { o.stop(); } catch (e) {} try { o.disconnect(); } catch (e) {} }), 500);
+}
+
+/* ═════════════ Laboratorio (only with ?lab=1): does a neural network improve the landscape? ═════════════
+   A  = the current engine, untouched.
+   B  = experimental: YAMNet (MediaPipe Tasks Audio, on device) + the analyser's own measures decide a profile
+        (voz / agua / golpe); each profile is synthesised differently. Low confidence falls back to A's engine.
+   C  = the same new synthesis with the classifier switched off (rules only), to tell what the network adds. */
+const LAB = (() => { try { const m = /[?&]lab=([01])/.exec(location.search); if (m) localStorage.setItem('resona.lab', m[1]); return localStorage.getItem('resona.lab') === '1'; } catch (e) { return /[?&]lab=1/.test(location.search); } })();
+const NOMODEL = /[?&]nomodel=1/.test(location.search);      // test switch: behaves as if the weights were missing
+const NN = { base: 'vendor/mediapipe-tasks-audio-1.2.3/', model: 'vendor/yamnet-float32-1/yamnet.tflite', name: 'YAMNet float32/1 · MediaPipe Tasks Audio 1.2.3 (wasm, CPU)' };
+const FX0 = { drone: 1, bells: true, guide: true, grain: 'std' };
+function VX() { return (S.var && S.var.fx) || FX0; }
+let rnd = Math.random, grainEnd = 0;
+function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const PROFILE_NAMES = { voz: 'voz', agua: 'agua o ambiente continuo', golpe: 'golpe breve', actual: 'sin confianza suficiente' };
+
+// AudioSet labels grouped by what the synthesis needs to know. Compared on the text before the first comma.
+const GROUPS = {
+  v: new Set(['speech', 'child speech', 'conversation', 'narration', 'babbling', 'shout', 'yell', 'children shouting', 'whispering', 'laughter', 'baby laughter', 'giggle', 'snicker', 'belly laugh', 'chuckle', 'crying', 'baby cry', 'whimper', 'sigh', 'singing', 'choir', 'chant', 'mantra', 'child singing', 'humming', 'male speech', 'female speech', 'male singing', 'female singing', 'hubbub', 'chatter', 'screaming', 'groan', 'wail', 'human voice']),
+  w: new Set(['water', 'rain', 'raindrop', 'rain on surface', 'stream', 'waterfall', 'ocean', 'waves', 'gurgling', 'trickle', 'pour', 'fill (with liquid)', 'spray', 'liquid', 'splash', 'slosh', 'drip', 'boiling', 'water tap', 'sink (filling or washing)', 'bathtub (filling or washing)', 'wind', 'rustling leaves', 'wind noise (microphone)', 'rustle', 'fire', 'crackle', 'steam', 'hiss', 'white noise', 'pink noise', 'static', 'noise', 'environmental noise', 'thunderstorm']),
+  p: new Set(['knock', 'tap', 'thump', 'thunk', 'wood', 'chop', 'crack', 'clapping', 'finger snapping', 'hammer', 'tick', 'tick-tock', 'clicking', 'bang', 'slap', 'whack', 'smash', 'slam', 'drum', 'snare drum', 'bass drum', 'tabla', 'wood block', 'percussion', 'drum kit', 'rimshot', 'bouncing', 'clatter', 'plop', 'burst', 'breaking', 'door', 'hands'])
+};
+
+async function to16k(x, sr) {       // mono 16 kHz copy for the analysis only; playback keeps the recording's own rate
+  const n = Math.max(1, Math.ceil(x.length * 16000 / sr));
+  try {
+    const OC = window.OfflineAudioContext || window.webkitOfflineAudioContext, oc = new OC(1, n, 16000);
+    const b = oc.createBuffer(1, x.length, sr); b.getChannelData(0).set(x); const s = oc.createBufferSource(); s.buffer = b; s.connect(oc.destination); s.start();
+    return (await oc.startRendering()).getChannelData(0);
+  } catch (e) {
+    const y = new Float32Array(n), r = sr / 16000, w = Math.max(1, Math.round(r));
+    for (let i = 0; i < n; i++) { const c = Math.floor(i * r); let q = 0, k = 0; for (let j = c; j < c + w && j < x.length; j++) { q += x[j]; k++; } y[i] = k ? q / k : 0; }
+    return y;
+  }
+}
+function resInfo(path) { try { const e = performance.getEntriesByName(new URL(path, location.href).href).pop(); return e ? { net: e.transferSize || 0, size: e.encodedBodySize || e.decodedBodySize || 0 } : null; } catch (e) { return null; } }
+
+// Real inference. Runs in short slices so the screen keeps responding; the model is released as soon as the clip is read.
+async function nnRun(x16, D) {
+  if (NOMODEL) throw new Error('pesos no disponibles (prueba de modelo ausente)');
+  const t0 = performance.now(), abs = p => new URL(p, location.href).href;
+  const probe = await fetch(abs(NN.model), { method: 'HEAD' }); if (!probe.ok) throw new Error('pesos no encontrados (' + probe.status + ')');
+  const mod = await import(abs(NN.base + 'audio_bundle.mjs'));
+  const fs = await mod.FilesetResolver.forAudioTasks(abs(NN.base + 'wasm'));
+  const cls = await mod.AudioClassifier.createFromOptions(fs, { baseOptions: { modelAssetPath: abs(NN.model), delegate: 'CPU' }, maxResults: -1 });
+  D.loadMs = Math.round(performance.now() - t0);
+  const W = 15600, wins = []; let longest = 0; const t1 = performance.now();
+  try {
+    for (const off of [0, W / 2]) {                                  // second pass half a window later: one estimate every ~0,49 s
+      for (let i = off; i < x16.length; i += W * 4) {
+        let chunk = x16.subarray(i, Math.min(x16.length, i + W * 4));
+        const rem = chunk.length % W, full = chunk.length - rem;
+        if (rem && (rem >= W * .4 || !full)) { if (!full && off) break; const pad = new Float32Array(full + W); pad.set(chunk); chunk = pad; } else if (rem) chunk = chunk.subarray(0, full);
+        if (!chunk.length) break;
+        const ta = performance.now(), res = cls.classify(chunk, 16000); longest = Math.max(longest, performance.now() - ta);
+        res.forEach((r, j) => {
+          const cats = (r.classifications && r.classifications[0] && r.classifications[0].categories) || [], w = { t: (i + (r.timestampMs != null ? r.timestampMs * 16 : j * W)) / 16000, v: 0, w: 0, p: 0, sil: 0, top: [] };
+          for (const c of cats) { const key = String(c.categoryName || c.displayName || '').toLowerCase().split(',')[0].trim();
+            if (key === 'silence') w.sil = c.score; for (const g of 'vwp') if (GROUPS[g].has(key) && c.score > w[g]) w[g] = c.score; }
+          w.top = cats.slice().sort((a, b) => b.score - a.score).slice(0, 3).map(c => c.categoryName + ' ' + c.score.toFixed(2));
+          const a = Math.floor(w.t * 16000), b = Math.min(x16.length, a + W); let e = 0; for (let k = a; k < b; k += 4) e += x16[k] * x16[k]; w.e = Math.sqrt(e / Math.max(1, (b - a) / 4));
+          wins.push(w);
+        });
+        await sleep(0);
+      }
+    }
+  } finally { try { cls.close(); } catch (e) {} }
+  if (!wins.length) throw new Error('el modelo no devolvió ventanas');
+  wins.sort((a, b) => a.t - b.t);
+  // smooth between neighbouring windows, then weigh each by how much is sounding in it
+  const sm = wins.map((w, i) => { const a = wins[Math.max(0, i - 1)], b = wins[Math.min(wins.length - 1, i + 1)]; return { t: w.t, e: w.e, top: w.top, sil: w.sil, v: .25 * a.v + .5 * w.v + .25 * b.v, w: .25 * a.w + .5 * w.w + .25 * b.w, p: Math.max(w.p, .5 * a.p, .5 * b.p) }; });
+  let es = 0; const clip = { v: 0, w: 0, p: 0 }, peak = { v: 0, w: 0, p: 0 };
+  for (const w of sm) { es += w.e; for (const g of 'vwp') { clip[g] += w[g] * w.e; if (w[g] > peak[g]) peak[g] = w[g]; } }
+  for (const g of 'vwp') clip[g] /= es || 1;
+  const pres = {}; for (const g of 'vwp') { const q = sm.map(w => w[g]).sort((a, b) => b - a), k = Math.min(q.length, Math.max(2, Math.ceil(q.length / 4))); pres[g] = q.slice(0, k).reduce((a, b) => a + b, 0) / k; }
+  D.inferMs = Math.round(performance.now() - t1); D.longestMs = Math.round(longest); D.windows = sm.length;
+  const rt = [resInfo(NN.base + 'audio_bundle.mjs'), resInfo(NN.base + 'wasm/audio_wasm_internal.js'), resInfo(NN.base + 'wasm/audio_wasm_internal.wasm')], md = resInfo(NN.model);
+  D.bytes = { runtime: rt.reduce((q, r) => q + (r ? r.size : 0), 0), runtimeNet: rt.reduce((q, r) => q + (r ? r.net : 0), 0), model: md ? md.size : 0, modelNet: md ? md.net : 0 };
+  return { wins: sm, clip, peak, pres };
+}
+
+// What the analyser already measures, without any network: where the hits are and how strong.
+function shape(x, sr) {
+  const fr = Math.floor(sr * .01), env = []; let pk = 1e-9, at = 0;
+  for (let i = 0; i + fr <= x.length; i += fr) { let s = 0; for (let j = 0; j < fr; j++) s += x[i + j] * x[i + j]; const r = Math.sqrt(s / fr); env.push(r); if (r > pk) { pk = r; at = env.length - 1; } }
+  const on = []; let lastOn = -99;
+  for (let i = 1; i < env.length; i++) { let pv = 0, k = 0; for (let j = Math.max(0, i - 6); j < i; j++) { pv += env[j]; k++; } pv /= k || 1;
+    if (env[i] > .25 * pk && env[i] > 3 * pv + .01 * pk && i - lastOn > 8) { on.push(i); lastOn = i; } }
+  let best = on.length ? on[0] : Math.max(0, at - 1), bv = -1;
+  for (const i of on) { let m = 0; for (let j = i; j < Math.min(env.length, i + 4); j++) m = Math.max(m, env[j]); if (m > bv) { bv = m; best = i; } }
+  return { env, peak: pk, onsets: on.length, rate: on.length / (x.length / sr), attackT: best * .01 };
+}
+
+// The decision. Each line of `why` says whether the network or a rule made that call; it is shown in the diagnostic.
+function decide(net, an, sh) {
+  const why = [], dur = an.dur;
+  const rGolpe = an.sustain < .3 && sh.onsets >= 1 && dur < 6, rAgua = an.tonal < .2 && an.sustain > .6;
+  if (!net) {
+    if (rGolpe) return { profile: 'golpe', mix: false, why: ['regla: sonido breve con ataque claro (sostén ' + an.sustain.toFixed(2) + ', ' + sh.onsets + ' ataque/s)'] };
+    if (rAgua) return { profile: 'agua', mix: false, why: ['regla: continuo y sin altura estable (tonal ' + an.tonal.toFixed(2) + ', sostén ' + an.sustain.toFixed(2) + ')'] };
+    return { profile: 'actual', mix: false, why: ['regla: sin indicios claros; las reglas no distinguen una voz'] };
+  }
+  // "presencia" = media del cuarto de ventanas más seguro: una voz que ocupa un tercio del clip cuenta igual
+  const c = net.pres, cv = c.v, cw = c.w * (1 - .6 * an.tonal), cp = Math.max(c.p, .8 * net.peak.p) * (an.sustain < .5 ? 1 : .6);
+  why.push('red (presencia): voz ' + cv.toFixed(2) + ' · agua/ambiente ' + c.w.toFixed(2) + ' · percusión ' + c.p.toFixed(2) + ' (pico ' + net.peak.p.toFixed(2) + ')');
+  why.push('reglas sobre la red: agua × confianza tonal ' + an.tonal.toFixed(2) + ' → ' + cw.toFixed(2) + ' · percusión × sostén ' + an.sustain.toFixed(2) + ' → ' + cp.toFixed(2));
+  if (cv >= .22) { const mix = cw >= .3 || (rAgua && c.v < .6); why.push('RED: hay voz' + (mix ? '; el fondo es agua o ambiente (' + (cw >= .3 ? 'red' : 'regla') + ') y no se afina' : '')); return { profile: 'voz', mix, why }; }
+  if (cp >= .3 && cp >= cw) { why.push('RED + reglas: golpe breve'); return { profile: 'golpe', mix: false, why }; }
+  if (cw >= .3) { why.push('RED + reglas: continuo sin altura estable'); return { profile: 'agua', mix: false, why }; }
+  // the network has no opinion: a clear rule may decide, as long as the network does not hear a voice
+  if (cv < .15 && rGolpe) { why.push('REGLA (la red no reconoce el sonido y no oye voz): breve con ataque claro'); return { profile: 'golpe', mix: false, why }; }
+  if (cv < .15 && rAgua) { why.push('REGLA (la red no reconoce el sonido y no oye voz): continuo y sin altura estable'); return { profile: 'agua', mix: false, why }; }
+  why.push('confianza insuficiente: se usa el motor actual'); return { profile: 'actual', mix: false, why };
+}
+
+// A first guess at what should come back intact: the loudest stretch around the window where the network is surest of a voice.
+function autoMark(net, s) {
+  const dur = s.x.length / s.sr, sh = S.shape; let tc = dur / 2;
+  if (net) { let bv = -1; for (const w of net.wins) if (w.v * (.3 + w.e) > bv) { bv = w.v * (.3 + w.e); tc = w.t + .49; } }
+  const env = sh.env, i0 = Math.max(0, Math.floor((tc - .7) * 100)), i1 = Math.min(env.length - 1, Math.ceil((tc + .7) * 100));
+  let c = i0, m = 0; for (let i = i0; i <= i1; i++) if (env[i] > m) { m = env[i]; c = i; }
+  let a = c, b = c, gap = 0;
+  while (a > 0 && c - a < 125) { if (env[a - 1] < .2 * m) { if (++gap > 8) break; } else gap = 0; a--; } a += gap; gap = 0;
+  while (b < env.length - 1 && b - c < 125) { if (env[b + 1] < .2 * m) { if (++gap > 8) break; } else gap = 0; b++; } b -= gap;
+  let t0 = Math.max(0, a * .01 - .03), t1 = Math.min(dur, (b + 1) * .01 + .06);
+  if (t1 - t0 < .25) { t0 = Math.max(0, tc - .4); t1 = Math.min(dur, tc + .4); }
+  return [t0, t1];
+}
+function setupVar(v) {
+  const s = S.sound, dur = s.x.length / s.sr, sh = S.shape;
+  if (v.profile === 'voz') { if (!v.mark) v.mark = autoMark(S.net, s); v.fx = { drone: v.mix ? 0 : .6, bells: !v.mix, guide: !v.mix, grain: 'mark', span: v.mark }; }
+  else if (v.profile === 'golpe') v.fx = { drone: .7, bells: true, guide: true, grain: 'attack', span: [Math.max(0, sh.attackT - .015), Math.min(dur, sh.attackT + 1.4)] };
+  else if (v.profile === 'agua') v.fx = { drone: 0, bells: false, guide: false, grain: 'std', rate1: true };
+  else v.fx = FX0;
+}
+
+// Level evening + seamless loop, as the current engine does at the end of its own render (kept separate so A stays untouched).
+function evenLoop(yL, yR, T, L, X, sr, amount) {
+  const B = Math.floor(sr * .25), nb = Math.ceil(T / B) + 1, rms = new Float32Array(nb);
+  for (let b = 0; b < nb; b++) { let s = 0; const o = b * B; for (let n = 0; n < B; n++) { const a = yL[o + n] || 0, c = yR[o + n] || 0; s += a * a + c * c; } rms[b] = Math.sqrt(s / (2 * B)); }
+  const med = Array.from(rms).sort((a, b) => a - b)[nb >> 1] || 0; if (!(med > 0)) throw new Error('silence');
+  const gain = new Float32Array(nb);
+  for (let b = 0; b < nb; b++) { const r = (rms[Math.max(0, b - 1)] + 2 * rms[b] + rms[Math.min(nb - 1, b + 1)]) / 4; gain[b] = Math.pow(clamp(med / (r + med * 1e-3), .4, 5), amount); }
+  for (let n = 0; n < T; n++) { const p = n / B - .5, b = clamp(Math.floor(p), 0, nb - 2), f = clamp(p - b, 0, 1), g = gain[b] * (1 - f) + gain[b + 1] * f; yL[n] *= g; yR[n] *= g; }
+  const oL = new Float32Array(L), oR = new Float32Array(L); let peak = 1e-9;
+  for (let n = 0; n < L; n++) { let a = yL[n], c = yR[n];
+    if (n < X) { const t = n / X, fi = Math.sin(t * Math.PI / 2), fo = Math.cos(t * Math.PI / 2); a = a * fi + yL[L + n] * fo; c = c * fi + yR[L + n] * fo; }
+    oL[n] = a; oR[n] = c; const m = Math.max(Math.abs(a), Math.abs(c)); if (m > peak) peak = m; }
+  // noise-like material has rare tall peaks: scale by its body, then tame the peaks, so it sits as loud as a tuned pad
+  let q = 0; for (let n = 0; n < L; n += 3) q += oL[n] * oL[n] + oR[n] * oR[n]; const body = Math.sqrt(q / (2 * Math.ceil(L / 3))), g = Math.min(.7 / peak * 1.8, .25 / (body || 1e-9));
+  for (let n = 0; n < L; n++) { oL[n] = softLimit(oL[n] * g); oR[n] = softLimit(oR[n] * g); if (oL[n] !== oL[n]) throw new Error('nan'); }
+  return { L: oL, R: oR, sr };
+}
+// Continuity without imposing a note: overlapping fragments of the recording itself, placed by the landscape's seed.
+async function renderFlow(x, sr, onProgress) {
+  const M = x.length, dur = M / sr, L = Math.floor(sr * clamp(dur * 2.5, 28, 48)), X = Math.floor(sr * 4), T = L + X;
+  const gl = Math.max(64, Math.min(M, Math.floor(sr * clamp(dur * .5, .25, 1.6)))), hop = gl >> 1, win = new Float32Array(gl);
+  for (let i = 0; i < gl; i++) win[i] = Math.sin(Math.PI * i / gl);        // equal-power overlap: no dips, no bumps
+  const yL = new Float32Array(T + gl * 2), yR = new Float32Array(T + gl * 2); let last = performance.now(), done = 0;
+  for (const y of [yL, yR]) { let prev = -1e9;
+    for (let o = 0; o < T + gl; o += hop) {
+      let p = 0; for (let k = 0; k < 6; k++) { p = Math.floor(rnd() * Math.max(1, M - gl)); if (M < gl * 3 || Math.abs(p - prev) > gl * .5) break; }
+      prev = p; for (let n = 0; n < gl && p + n < M; n++) y[o + n] += x[p + n] * win[n];
+      if (performance.now() - last > 40) { onProgress && onProgress((done + o / (T + gl)) / 2); await sleep(0); last = performance.now(); }
+    } done++; }
+  return evenLoop(yL, yR, T, L, X, sr, .5);
+}
+function restOf(s, mark) {          // the recording without the marked part: the background is made of everything else
+  const a = Math.floor(mark[0] * s.sr), b = Math.floor(mark[1] * s.sr), n = s.x.length, f = Math.floor(s.sr * .03);
+  if (n - (b - a) < s.sr) return s.x;
+  const y = new Float32Array(a + (n - b)); y.set(s.x.subarray(0, a)); y.set(s.x.subarray(b), a);
+  for (let i = 0; i < f; i++) { if (a - 1 - i >= 0) y[a - 1 - i] *= i / f; if (a + i < y.length) y[a + i] *= i / f; }
+  return y;
+}
+function tailOf(s, t) { const a = Math.floor((t + .05) * s.sr); return s.x.length - a < s.sr * .3 ? s.x : s.x.subarray(a); }
+async function renderVariant(v, mode, onProgress) {
+  const s = S.sound, cfg = MODES[mode];
+  if (!v || v.profile === 'actual') return toBuf(await renderPad(s.x, s.sr, s.an.rootHz, cfg, onProgress));
+  rnd = mulberry((v.seed ^ (mode.charCodeAt(0) * 7919)) | 0);
+  try {
+    if (v.profile === 'agua') return toBuf(await renderFlow(s.x, s.sr, onProgress));
+    if (v.profile === 'golpe') return toBuf(await renderPad(tailOf(s, S.shape.attackT), s.sr, s.an.rootHz, cfg, onProgress));
+    const rest = restOf(s, v.mark);
+    return toBuf(v.mix ? await renderFlow(rest, s.sr, onProgress) : await renderPad(rest, s.sr, s.an.rootHz, cfg, onProgress));
+  } catch (e) { console.warn('lab render', e); v.profile = 'actual'; v.fx = FX0; v.why = (v.why || []).concat('la síntesis nueva falló: motor actual'); rnd = Math.random; return toBuf(await renderPad(s.x, s.sr, s.an.rootHz, cfg, onProgress)); }
+  finally { rnd = Math.random; }
+}
+// A marked voice or a hit comes back whole, at its own pitch, one at a time.
+function playIntact(fx) {
+  const c = S.ctx, buf = srcBuffer(), t = c.currentTime + .05, a = clamp(fx.span[0], 0, Math.max(0, buf.duration - .05)), len = Math.min(fx.span[1] - a, buf.duration - a);
+  if (!(len > .04)) return;
+  const s = c.createBufferSource(), g = c.createGain(), fi = Math.min(.025, len / 4), fo = fx.grain === 'attack' ? Math.min(.25, len / 2) : Math.min(.06, len / 4), pk = rand(.6, .8);
+  s.buffer = buf; g.gain.setValueAtTime(fx.grain === 'attack' ? pk : 0, t); g.gain.linearRampToValueAtTime(pk, t + fi); g.gain.setValueAtTime(pk, t + len - fo); g.gain.linearRampToValueAtTime(0, t + len);
+  s.connect(g); g.connect(fx.grain === 'mark' ? E.mark : E.grain); s.onended = () => { try { g.disconnect(); } catch (e) {} };
+  s.start(t, a, len + .02); grainEnd = t + len;
+}
+
+async function labSetup(st) {
+  const s = S.sound, D = S.diag = { net: false, t0: performance.now() }; S.shape = shape(s.x, s.sr); S.net = null;
+  $('procTitle').textContent = 'Reconociendo qué suena…'; $('procSub').textContent = 'En tu dispositivo, sin enviar nada';
+  await sleep(20);
+  try { const x16 = await to16k(s.x, s.sr); D.dur16 = x16.length / 16000; S.net = await nnRun(x16, D); D.net = true; } catch (e) { D.err = String((e && e.message) || e); console.warn('lab: sin inferencia', e); }
+  const seed = (st && st.seed) || ((Date.now() ^ (s.x.length * 2654435761)) & 0x7fffffff);
+  const mk = (key, d) => ({ key, profile: d.profile, mix: d.mix, why: d.why, seed, pads: {}, mark: null, fx: null });
+  const B = mk('B', decide(S.net, s.an, S.shape)), C = mk('C', decide(null, s.an, S.shape));
+  if (st && st.profile) { B.profile = st.profile; B.mix = !!st.mix; B.mark = st.mark || null; B.why = B.why.concat('perfil, marca y semilla recuperados de la biblioteca'); }
+  S.vars.B = B; S.vars.C = C; setupVar(B); setupVar(C);
+  S.var = st && st.use === 'A' ? S.vars.A : B; S.pads = S.var.pads;
+}
+function labMeta() { const B = S.vars && S.vars.B; return B ? { profile: B.profile, mix: B.mix, mark: B.mark, seed: B.seed, use: S.var && S.var.key === 'A' ? 'A' : 'B' } : undefined; }
+function labUi() {
+  $('labRow').hidden = !LAB || !S.vars || !S.vars.B; if ($('labRow').hidden) return;
+  const B = S.vars.B, using = S.var.key === 'A' ? ' · usando el motor actual' : '';
+  $('labInfo').textContent = 'Experimental · ' + (B.profile === 'voz' && B.mix ? 'voz con agua o ambiente' : PROFILE_NAMES[B.profile]) + (S.diag.net ? ' (red neuronal + reglas)' : ' (solo reglas: el modelo no cargó)') + using;
+  $('labMark').hidden = B.profile !== 'voz' || S.var.key === 'A';
+}
+function diagText() {
+  const D = S.diag, B = S.vars.B, C = S.vars.C, an = S.sound.an, sh = S.shape, mb = v => (v / 1048576).toFixed(2) + ' MB', L = [];
+  L.push('INFERENCIA: ' + (D.net ? 'REAL — ' + NN.name : 'ALTERNATIVA por reglas — ' + (D.err || 'sin modelo')));
+  if (D.net) {
+    L.push('Carga del modelo: ' + D.loadMs + ' ms (' + (D.bytes.runtimeNet + D.bytes.modelNet > (D.bytes.runtime + D.bytes.model) / 2 ? 'fría, con descarga' : 'caliente, desde caché') + ') · inferencia: ' + D.inferMs + ' ms para ' + D.dur16.toFixed(1) + ' s (' + D.windows + ' ventanas) · bloqueo más largo: ' + D.longestMs + ' ms');
+    L.push('Tamaño: runtime ' + mb(D.bytes.runtime) + ' + pesos ' + mb(D.bytes.model) + ' · transferido ahora: ' + mb(D.bytes.runtimeNet + D.bytes.modelNet));
+    L.push('Línea temporal (cada ~0,49 s): ' + S.net.wins.map(w => { const m = Math.max(w.v, w.w, w.p); return m < .3 ? '·' : (w.v >= .3 ? 'V' : '') + (w.w >= .3 ? 'A' : '') + (w.p >= .3 ? 'P' : ''); }).join(' '));
+    const tops = {}; for (const w of S.net.wins) for (const t of w.top.slice(0, 1)) { const k = t.replace(/ [\d.]+$/, ''); tops[k] = (tops[k] || 0) + 1; }
+    L.push('Etiquetas más vistas: ' + Object.entries(tops).sort((a, b) => b[1] - a[1]).slice(0, 5).map(e => e[0] + ' ×' + e[1]).join(' · '));
+  }
+  if (D.net) L.push('Voz por ventana: ' + S.net.wins.map(w => w.v.toFixed(1)).join(' '));
+  L.push('Analizador actual: tonal ' + an.tonal.toFixed(2) + ' · sostén ' + an.sustain.toFixed(2) + ' · ' + sh.onsets + ' ataque/s · tipo «' + an.kind + '» · ' + an.dur.toFixed(1) + ' s');
+  L.push('DECISIÓN (B): ' + B.profile + (B.mix ? ' + fondo sin afinar' : '') + (B.mark ? ' · marca ' + B.mark[0].toFixed(2) + '–' + B.mark[1].toFixed(2) + ' s' : '') + ' · semilla ' + B.seed);
+  for (const w of B.why) L.push('  · ' + w);
+  L.push('Sin la red (C): ' + C.profile + ' — ' + C.why.join('; '));
+  if (D.listenMs) L.push('Tiempo hasta poder escuchar: ' + D.listenMs + ' ms');
+  const ab = getAB(); L.push('Comparaciones guardadas en este dispositivo: ' + ab.length);
+  for (const e of ab.slice(-6)) L.push('  · ' + e.d + ' ' + e.kind + ' [' + e.profile + '] prefiere ' + e.pref + ' · reconoce ' + e.rec + (e.why ? ' · «' + e.why + '»' : ''));
+  L.push('No es separación de fuentes ni reconoce personas o emociones: son estimaciones de qué tipo de sonido hay en cada tramo.');
+  return L.join('\n');
+}
+
+/* ── Blind listening: two versions of the same sound, same intention and length, hidden order ── */
+const ABKEY = 'resona.ab', AB = { kind: 'ab', order: [], sel: 0, on: false, heard: {}, pref: '', rec: '', done: false, same: '' };
+function getAB() { try { return JSON.parse(localStorage.getItem(ABKEY) || '[]'); } catch (e) { return []; } }
+function abUi() {
+  pressSeg('abSrc', AB.sel); pressSeg('abPref', AB.pref); pressSeg('abRec', AB.rec);
+  const on = S.playing || origPlaying; $('abPlay').innerHTML = on ? ICON.pause : ICON.play; $('abPlay').setAttribute('aria-label', on ? 'Pausar' : 'Reproducir');
+  $('abForm').hidden = !!AB.same || AB.done; $('abSave').textContent = AB.done || AB.same ? 'Volver a tu paisaje' : 'Guardar respuesta';
+  $('abKind').textContent = AB.kind === 'ab' ? 'Comparar sin la red' : 'Comparar con el motor actual';
+}
+function abOpen(kind) {
+  if (!S.vars || !S.vars.B || S.busy) return; pvStop(); teardown();
+  AB.kind = kind || 'ab'; const B = S.vars.B, other = S.vars[AB.kind === 'ab' ? 'A' : 'C'];
+  AB.order = Math.random() < .5 ? [other.key, 'B'] : ['B', other.key]; AB.sel = 0; AB.on = false; AB.heard = { A: 0, B: 0, C: 0, orig: 0 }; AB.pref = AB.rec = ''; AB.done = false; $('abWhy').value = '';
+  AB.same = AB.kind === 'ab' ? (B.profile === 'actual' ? 'Con este sonido no hay confianza suficiente y la versión experimental usa el motor actual: las dos versiones serían la misma.' : '')
+    : (B.profile === other.profile && B.mix === other.mix ? 'Con este sonido las reglas, sin la red, eligen lo mismo (' + B.profile + '): aquí la red no cambia nada audible.' : '');
+  $('abSub').textContent = AB.same || (AB.kind === 'ab' ? 'Dos versiones del mismo sonido, con la misma intención y duración. No sabrás cuál es cuál hasta responder.' : 'Diagnóstico: la misma síntesis nueva, con la red y sin ella. Orden oculto.');
+  for (const k in S.vars) { S.vars[k].n = 0; }
+  S.preview = true; setView('ab'); abUi();
+}
+async function abSelect(w) {
+  AB.sel = w; pvTouch(); const c = ensureCtx(); if (!c) return;
+  if (w === 'orig') { PV.which = 'orig'; PV.on = true; pvApply(); AB.on = true; return abUi(); }
+  const v = S.vars[AB.order[w]];
+  if (!v.pads[S.mode]) { if (S.busy) return; S.busy = true; toast('Preparando esa versión…', 2500); try { await sleep(30); v.pads[S.mode] = await renderVariant(v, S.mode); } catch (e) { console.error(e); } finally { S.busy = false; } if (AB.sel !== w || S.view !== 'ab' || !v.pads[S.mode]) return; }
+  S.var = v; S.pads = v.pads; v.skip = 14; origStop(1); S.preview = true; PV.on = true; PV.which = 'land';
+  if (S.group) startVoices(S.pads[S.mode], 1.5);
+  play(); nextGrain = c.currentTime + 2.5; AB.on = true; abUi();
+}
+function abLevel(t) {            // slow trim so both versions reach the same loudness; measured, then held
+  const v = S.var; if (!v || S.view !== 'ab') return;
+  if (v.skip > 0) { v.skip--; return; }
+  const r = masterRms(); v.n = (v.n || 0) + 1; v.rms = v.n === 1 ? r : v.rms + (r - v.rms) / Math.min(v.n, 300);
+  if (v.n > 40) E.trim.gain.setTargetAtTime(clamp(.09 / (v.rms || .09), .5, 2), t, .8);
+}
+function abLeave() {
+  pvStop(); teardown(); if (E) E.trim.gain.setTargetAtTime(1, S.ctx.currentTime, .2);
+  if (S.sound && S.sound.id) updateSound(S.sound.id, { lab: labMeta() });
+  enterLand(false); labUi();
+}
+$('abSrc').onclick = e => { const b = e.target.closest('button'); if (b && !AB.same) abSelect(b.dataset.v === 'orig' ? 'orig' : +b.dataset.v); else if (b && b.dataset.v === 'orig') abSelect('orig'); };
+$('abPlay').onclick = () => { if (S.playing || origPlaying) { PV.on = false; pvApply(); AB.on = false; abUi(); } else abSelect(AB.same ? 'orig' : AB.sel); };
+$('abPref').onclick = e => { const b = e.target.closest('button'); if (b) { AB.pref = b.dataset.v; abUi(); } };
+$('abRec').onclick = e => { const b = e.target.closest('button'); if (b) { AB.rec = b.dataset.v; abUi(); } };
+$('abKind').onclick = () => abOpen(AB.kind === 'ab' ? 'diag' : 'ab');
+$('abSave').onclick = () => {
+  if (AB.done || AB.same) return abLeave();
+  if (AB.heard[AB.order[0]] < 3 || AB.heard[AB.order[1]] < 3) return toast('Escucha las dos versiones al menos unos segundos.', 3000);
+  if (!AB.pref) return toast('Elige 1, 2 o «Sin preferencia».', 2500);
+  const key = w => w === 'none' || w === 'both' || w === 'neither' || w === '' ? w : AB.order[+w], B = S.vars.B, pref = key(AB.pref), rec = key(AB.rec);
+  const log = getAB(); log.push({ t: Date.now(), d: new Date().toISOString().slice(0, 16), kind: AB.kind, order: AB.order.slice(), pref, rec, why: $('abWhy').value.trim().slice(0, 200), heard: AB.heard,
+    profile: B.profile + (B.mix ? '+mix' : ''), other: S.vars[AB.order.find(k => k !== 'B')].profile, net: S.diag.net ? 1 : 0, scores: S.net ? S.net.clip : null, mode: S.mode, dur: S.dur, src: S.sound.src, len: Math.round(S.sound.an.dur), seed: B.seed });
+  try { localStorage.setItem(ABKEY, JSON.stringify(log.slice(-300))); } catch (e) {}
+  const names = { A: 'el motor actual', B: 'el experimental' + (S.diag.net ? ' con red' : ' (solo reglas)'), C: 'la síntesis nueva sin red' };
+  AB.done = true; PV.on = false; pvApply();
+  $('abSub').textContent = '1 era ' + names[AB.order[0]] + ' y 2 era ' + names[AB.order[1]] + '. Respuesta guardada en este dispositivo.' + (pref === 'A' || pref === 'B' ? ' Tu paisaje seguirá con la que preferiste.' : '');
+  if (pref === 'A' || pref === 'B') { S.var = S.vars[pref]; S.pads = S.var.pads; }
+  else { S.var = S.vars.B; S.pads = S.var.pads; }
+  abUi();
+};
+$('labAB').onclick = () => abOpen('ab');
+$('labDiag').onclick = $('abDiag').onclick = () => { $('diagTxt').textContent = diagText(); $('diag').hidden = false; };
+$('diagClose').onclick = () => { $('diag').hidden = true; };
+$('diagCopy').onclick = () => shareText(diagText() + '\n\nJSON: ' + JSON.stringify(getAB()), 'Enviado.');
+$('labMark').onclick = () => openTrim('mark');
+setInterval(() => { if (S.view !== 'ab') return; if (origPlaying) AB.heard.orig += .5; else if (S.playing && S.var) AB.heard[S.var.key] += .5; }, 500);
+
+async function applyMark() {
+  trimStop(); const B = S.vars.B, d = T.x.length / T.sr, a = T.a * d, b = T.b * d;
+  if (b - a > 4) return toast('Marca algo breve: como mucho 4 segundos.', 3000);
+  B.mark = [a, b]; B.pads = {}; setupVar(B); S.var = B; S.pads = B.pads; teardown();
+  S.busy = true; setView('proc'); S.progress = 0; $('procTitle').textContent = 'Rehaciendo el fondo…'; $('procSub').textContent = 'Con todo menos lo que has marcado';
+  try { await sleep(30); S.pads[S.mode] = await renderVariant(B, S.mode, p => { S.progress = p; }); } catch (e) { console.error(e); } finally { S.busy = false; }
+  if (S.sound.id) updateSound(S.sound.id, { lab: labMeta() });
+  enterLand(false);
 }
 
 /* ───────────── Original against landscape (the compare screen) ───────────── */
@@ -896,7 +1239,7 @@ function pvApply() {
 function pvTouch() { clearTimeout(PV.auto); PV.auto = 0; $('pvHint').textContent = ''; }
 function pvStop() { pvTouch(); PV.on = false; origStop(.2); if (S.playing) pause(); pvUi(); }
 function enterLand(auto) {
-  S.preview = true; pvTouch(); syncOpts(); setView('land');
+  S.preview = true; pvTouch(); syncOpts(); setView('land'); labUi();
   if (!auto) { PV.on = false; PV.which = 'land'; pvUi(); return; }
   // Make the transformation audible before asking anything: the sound as it is, then what it became.
   PV.which = 'orig'; PV.on = true; pvApply(); $('pvHint').textContent = 'Primero, tu sonido tal cual…';
@@ -916,20 +1259,21 @@ const ICON = {
   back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
   down: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></svg>'
 };
-const VIEWS = ['Home', 'Rec', 'Proc', 'Land', 'Trim', 'Session', 'End', 'Stats', 'Guide'];
+const VIEWS = ['Home', 'Rec', 'Proc', 'Land', 'Trim', 'AB', 'Session', 'End', 'Stats', 'Guide'];
 function setView(v) {
   S.view = v;
   for (const id of VIEWS) $('v' + id).hidden = id.toLowerCase() !== v;
   const dark = v === 'session'; document.documentElement.classList.toggle('dark', dark);
   const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = dark ? '#0e1b18' : '#f3efe6';
-  const back = v === 'rec' || v === 'land' || v === 'trim' || v === 'session' || v === 'stats' || v === 'guide', bb = $('btnBack');
+  const back = v === 'rec' || v === 'land' || v === 'trim' || v === 'ab' || v === 'session' || v === 'stats' || v === 'guide', bb = $('btnBack');
   bb.style.visibility = back ? 'visible' : 'hidden'; bb.innerHTML = dark ? ICON.down : ICON.back; bb.setAttribute('aria-label', dark ? 'Volver a tu paisaje' : 'Atrás');
   $('btnOpts').style.visibility = dark ? 'visible' : 'hidden';
-  const mid = $('topMid'), title = v === 'rec' ? 'Grabación' : (v === 'land' || v === 'trim' || dark) ? '' : 'arrullo';
+  const mid = $('topMid'), title = v === 'rec' ? 'Grabación' : (v === 'land' || v === 'trim' || v === 'ab' || dark) ? '' : 'arrullo';
   mid.textContent = title; mid.classList.toggle('brand', title === 'arrullo');
   $('top').classList.toggle('left', v === 'home' && !!S.hasLib);
   if (!dark && v !== 'land') $('opts').hidden = true;
   if (v !== 'home') $('edit').hidden = true;
+  if (v !== 'land' && v !== 'ab') $('diag').hidden = true;
   if (v === 'home' && typeof applyUpdate === 'function') setTimeout(applyUpdate, 50);
 }
 let toastT = 0;
@@ -945,7 +1289,7 @@ function fillRange(el) { el.style.setProperty('--p', el.value + '%'); }
 function syncOpts() {
   pressSeg('segMode', S.mode); pressSeg('segDur', S.dur); pressSeg('segBreath', S.breath); pressSeg('segHum', S.hum ? 1 : 0);
   for (const id of ['rngPres', 'rngPres2']) { $(id).value = Math.round(S.pres * 100); fillRange($(id)); }
-  if (E) E.grain.gain.setTargetAtTime(S.pres, S.ctx.currentTime, .1);
+  if (E) { E.grain.gain.setTargetAtTime(S.pres, S.ctx.currentTime, .1); E.mark.gain.setTargetAtTime(Math.min(1, S.pres * 1.6), S.ctx.currentTime, .1); }
   $('sumTxt').textContent = setLabel(curSet());
   if (S.sound) $('sSub').textContent = MODE_NAMES[S.mode] + ' · afinado a ' + S.sound.an.note;
 }
@@ -963,7 +1307,7 @@ function toPCM(x) {   // 16-bit copy of the whole recording, scaled to its peak 
 async function loadSound(raw, sr, name, o) {
   o = o || {};
   if (S.busy || !ensureCtx()) return; S.busy = true;
-  const prev = S.sound; let next = null;
+  const prev = S.sound, tLoad = performance.now(); let next = null;
   try {
     pvStop(); teardown();
     setView('proc'); S.progress = 0; S.procOk = false; $('procTitle').textContent = 'Escuchando tu sonido…'; $('procSub').textContent = name;
@@ -979,12 +1323,15 @@ async function loadSound(raw, sr, name, o) {
     applySet(o.set);
     S.sound = { x, sr, name, an, src: o.src || '', boost: pr.boost, cleaned: pr.cleaned, id: o.id || 0, isNew: o.id ? !!o.isNew : true, logged: !!(o.resel && prev && prev.logged), before: 0 };
     S.raw = { x: raw, sr }; S.sel = sel; S.pads = {}; S.hue = an.hue; S.padRms = 0; S.procOk = true;
+    S.var = { key: 'A', profile: 'actual', pads: S.pads, fx: FX0, seed: 0, why: [] }; S.vars = { A: S.var }; S.diag = null;
+    if (LAB) await labSetup(o.lab);
     if (!o.resel) { S.listened = 0; S.pvT = { o: 0, l: 0 }; }
     $('procTitle').textContent = 'Creando tu paisaje…'; $('procSub').textContent = 'Afinado a ' + an.note + ', la nota de tu sonido';
     await sleep(30);
-    S.pads[S.mode] = toBuf(await renderPad(x, sr, an.rootHz, MODES[S.mode], p => { S.progress = p; }));
+    S.pads[S.mode] = await renderVariant(S.var, S.mode, p => { S.progress = p; });
     S.progress = 1;
     const meta = { sel, note: an.note, hue: an.hue, sig: Array.from(an.sig, v => Math.round(v * 100) / 100), sym: an.sym };
+    if (LAB) { meta.lab = labMeta(); S.diag.listenMs = Math.round(performance.now() - tLoad); }
     // Saved at once so a recording is never lost by accident; the person decides at the end whether to keep it.
     if (!o.id) { S.sound.id = Date.now(); await saveSound(Object.assign({ id: S.sound.id, name, sr, data: toPCM(raw), set: curSet(), src: o.src || '' }, meta)); }
     else if (o.resel || !o.hasSig) updateSound(o.id, meta);
@@ -1000,7 +1347,7 @@ async function switchMode(m) {
   if (m === S.mode || S.busy || !S.sound) return;
   S.busy = true; S.mode = m; syncOpts();
   try {
-    if (!S.pads[m]) { toast('Reafinando el paisaje…', 2500); await sleep(30); S.pads[m] = toBuf(await renderPad(S.sound.x, S.sound.sr, S.sound.an.rootHz, MODES[m])); }
+    if (!S.pads[m]) { toast('Reafinando el paisaje…', 2500); await sleep(30); S.pads[m] = await renderVariant(S.var, m); }
     if (S.group) { startVoices(S.pads[m], 5); nextGrain = S.ctx.currentTime + 3; }
   } catch (e) { console.error(e); toast('No se pudo cambiar de intención.'); }
   S.busy = false;
@@ -1085,16 +1432,22 @@ async function onFile(file) {
 
 /* ───────────── Fragment: keep the part worth returning to ───────────── */
 const T = { a: 0, b: 1, env: null, drag: null, src: null };
-function openTrim() {
-  if (!S.raw || S.busy) return; pvStop();
-  const n = S.raw.x.length; T.a = S.sel ? S.sel[0] / n : 0; T.b = S.sel ? S.sel[1] / n : 1; T.env = null;
+function openTrim(mode) {
+  mode = mode === 'mark' ? 'mark' : 'frag';
+  if (S.busy || !S.sound || (mode === 'frag' && !S.raw)) return; pvStop();
+  T.mode = mode; T.buf = null; T.env = null;
+  if (mode === 'mark') { const B = S.vars.B, d = S.sound.x.length / S.sound.sr; T.x = S.sound.x; T.sr = S.sound.sr; T.a = B.mark[0] / d; T.b = B.mark[1] / d; }
+  else { const n = S.raw.x.length; T.x = S.raw.x; T.sr = S.raw.sr; T.a = S.sel ? S.sel[0] / n : 0; T.b = S.sel ? S.sel[1] / n : 1; }
+  $('trimTitle').textContent = mode === 'mark' ? 'Marca lo que reaparece' : 'Elige el fragmento';
+  $('trimSub').textContent = mode === 'mark' ? 'Una sílaba, una risa o una frase breve. Volverá intacta de vez en cuando; el fondo se hace con el resto.' : 'Arrastra los bordes y quédate con la parte que quieres volver a escuchar.';
+  $('trimUse').textContent = mode === 'mark' ? 'Usar esta marca' : 'Usar este fragmento';
   setView('trim'); requestAnimationFrame(trimDraw);
 }
 function trimDraw() {
   const box = $('trim'), cvs = $('trimCv'), w = box.clientWidth, h = box.clientHeight, d = Math.min(2, window.devicePixelRatio || 1);
-  if (!w || !S.raw) return;
+  if (!w || !T.x) return;
   if (cvs.width !== Math.round(w * d) || cvs.height !== Math.round(h * d)) { cvs.width = Math.round(w * d); cvs.height = Math.round(h * d); }
-  const x = S.raw.x, n = x.length, cols = Math.floor(w / 3);
+  const x = T.x, n = x.length, cols = Math.floor(w / 3);
   if (!T.env || T.env.length !== cols) {
     const env = new Float32Array(cols); let mx = 1e-9;
     for (let c = 0; c < cols; c++) { const i0 = Math.floor(c / cols * n), i1 = Math.floor((c + 1) / cols * n), st = Math.max(1, Math.floor((i1 - i0) / 160)); let m = 0;
@@ -1105,17 +1458,17 @@ function trimDraw() {
   for (let c = 0; c < cols; c++) { const u = (c + .5) / cols, hh = Math.max(1.5, T.env[c] * h * .44), px = c * 3 + 1.5;
     k.strokeStyle = u >= T.a && u <= T.b ? '#2f4526' : 'rgba(28,27,23,.26)'; k.beginPath(); k.moveTo(px, h / 2 - hh); k.lineTo(px, h / 2 + hh); k.stroke(); }
   const sel = $('trimSel'); sel.style.left = T.a * 100 + '%'; sel.style.width = (T.b - T.a) * 100 + '%';
-  const dur = n / S.raw.sr; $('trimInfo').textContent = 'De ' + num(T.a * dur, 1) + ' a ' + num(T.b * dur, 1) + ' s · ' + num((T.b - T.a) * dur, 1) + ' s de ' + num(dur, 1);
+  const dur = n / T.sr; $('trimInfo').textContent = 'De ' + num(T.a * dur, 1) + ' a ' + num(T.b * dur, 1) + ' s · ' + num((T.b - T.a) * dur, 1) + ' s de ' + num(dur, 1);
 }
 function trimUi() { const on = !!T.src; $('trimPlay').innerHTML = on ? ICON.pause : ICON.play; $('trimPlay').setAttribute('aria-label', on ? 'Parar' : 'Escuchar el fragmento'); if (!on) $('trimHead').hidden = true; }
 function trimStop() { if (T.src) { const s = T.src; T.src = null; try { s.stop(); } catch (e) {} } trimUi(); }
 // Plays the chosen part of the recording as it is, from u0 to u1 (fractions of the whole), with a line showing where it is.
 function trimPlay(u0, u1) {
-  const c = ensureCtx(); if (!c || !S.raw) return; trimStop();
-  const x = S.raw.x, n = x.length, sr = S.raw.sr, i0 = Math.floor(u0 * n), i1 = Math.floor(u1 * n), len = (i1 - i0) / sr; if (len < .05) return;
-  if (!S.raw.buf) { const b = c.createBuffer(1, n, sr); b.getChannelData(0).set(x); S.raw.buf = b; }
+  const c = ensureCtx(); if (!c || !T.x) return; trimStop();
+  const x = T.x, n = x.length, sr = T.sr, i0 = Math.floor(u0 * n), i1 = Math.floor(u1 * n), len = (i1 - i0) / sr; if (len < .05) return;
+  if (!T.x.buf) { const b = c.createBuffer(1, n, sr); b.getChannelData(0).set(x); T.buf = b; }
   let pk = 1e-6; const a0 = Math.floor(T.a * n), a1 = Math.floor(T.b * n); for (let i = a0; i < a1; i += 5) { const a = Math.abs(x[i]); if (a > pk) pk = a; }
-  const s = c.createBufferSource(), g = c.createGain(); s.buffer = S.raw.buf; g.gain.value = Math.min(80, .4 / pk); s.connect(g); g.connect(E.orig);
+  const s = c.createBufferSource(), g = c.createGain(); s.buffer = T.buf; g.gain.value = Math.min(80, .4 / pk); s.connect(g); g.connect(E.orig);
   s.onended = () => { try { g.disconnect(); } catch (e) {} if (T.src === s) { T.src = null; trimUi(); setTimeout(idleSuspend, 700); } };
   T.src = s; trimUi();
   const go = () => { if (T.src !== s) return; const t0 = c.currentTime + .03; s.start(t0, i0 / sr, len);
@@ -1124,7 +1477,7 @@ function trimPlay(u0, u1) {
 }
 (() => {
   const tb = $('trim'), at = e => { const r = tb.getBoundingClientRect(); return { u: clamp((e.clientX - r.left) / r.width, 0, 1), edge: 26 / r.width }; };
-  const move = u => { const d = T.drag; if (!d || !S.raw) return; const min = Math.min(1, Math.max(.5 / (S.raw.x.length / S.raw.sr), .02));
+  const move = u => { const d = T.drag; if (!d || !T.x) return; const min = Math.min(1, Math.max((T.mode === 'mark' ? .15 : .5) / (T.x.length / T.sr), T.mode === 'mark' ? .004 : .02));
     if (d.mode === 'a') T.a = clamp(u, 0, T.b - min); else if (d.mode === 'b') T.b = clamp(u, T.a + min, 1);
     else { const w = d.b0 - d.a0, a = clamp(d.a0 + u - d.u0, 0, 1 - w); T.a = a; T.b = a + w; }
     trimDraw(); };
@@ -1135,13 +1488,14 @@ function trimPlay(u0, u1) {
     trimStop(); if (mode !== 'm') move(u); e.preventDefault();
   });
   tb.addEventListener('pointermove', e => { if (T.drag) move(at(e).u); });
-  tb.addEventListener('pointerup', () => { const d = T.drag; T.drag = null; if (!d || !S.raw || (d.a0 === T.a && d.b0 === T.b)) return;
-    const two = 2 / (S.raw.x.length / S.raw.sr); if (d.mode === 'b') trimPlay(Math.max(T.a, T.b - two), T.b); else trimPlay(T.a, Math.min(T.b, T.a + two * 1.5)); });
+  tb.addEventListener('pointerup', () => { const d = T.drag; T.drag = null; if (!d || !T.x || (d.a0 === T.a && d.b0 === T.b)) return;
+    const two = 2 / (T.x.length / T.sr); if (d.mode === 'b') trimPlay(Math.max(T.a, T.b - two), T.b); else trimPlay(T.a, Math.min(T.b, T.a + two * 1.5)); });
   tb.addEventListener('pointercancel', () => { T.drag = null; });
   window.addEventListener('resize', () => { if (S.view === 'trim') { T.env = null; trimDraw(); } });
 })();
 $('trimPlay').onclick = () => { if (T.src) trimStop(); else trimPlay(T.a, T.b); };
 $('trimUse').onclick = () => {
+  if (T.mode === 'mark') return applyMark();
   if (!S.raw || !S.sound) return; trimStop();
   const n = S.raw.x.length, a = Math.floor(T.a * n), b = Math.floor(T.b * n), s = S.sound;
   loadSound(S.raw.x, S.raw.sr, s.name, { id: s.id, isNew: s.isNew, sel: a <= 0 && b >= n ? null : [a, b], src: s.src, resel: true });
@@ -1161,7 +1515,7 @@ function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.
 function openSound(it) {
   if (!ensureCtx()) return; const d = it.data, f = new Float32Array(d.length);
   if (d instanceof Int16Array) for (let i = 0; i < d.length; i++) f[i] = d[i] / 32767; else f.set(d);
-  loadSound(f, it.sr, it.name, { id: it.id, sel: it.sel, src: it.src || 'biblioteca', set: it.set, direct: true, hasSig: !!it.sig });
+  loadSound(f, it.sr, it.name, { id: it.id, sel: it.sel, src: it.src || 'biblioteca', set: it.set, lab: it.lab, direct: true, hasSig: !!it.sig });
 }
 function sigOf(it) {                 // older sounds were saved without their drawing: give them a stable one
   if (it.sig) return { sig: Float32Array.from(it.sig), sym: it.sym || 5, hue: it.hue == null ? 100 : it.hue };
@@ -1320,7 +1674,7 @@ if (window.visualViewport) {
 }
 
 /* ───────────── Self-update: load the newest version without the person reloading ───────────── */
-const BUILD = '20261125170542'; let pendingBuild = '';
+const BUILD = '20261125181705'; let pendingBuild = '';
 function applyUpdate() {
   if (!pendingBuild || S.view !== 'home' || S.busy || rec || rateCtx || !$('edit').hidden) return;      // never interrupt a session
   try { if (sessionStorage.getItem('resona.tried') === pendingBuild) return; sessionStorage.setItem('resona.tried', pendingBuild); } catch (e) {}
@@ -1344,6 +1698,7 @@ document.querySelectorAll('[data-demo]').forEach(b => b.onclick = () => { const 
 $('btnBack').onclick = () => {
   const v = S.view;
   if (v === 'rec') return stopRec(true);
+  if (v === 'ab') return abLeave();
   if (v === 'trim') { trimStop(); return enterLand(false); }
   if (v === 'session') { hidePre(); if (S.playing) pause(); return enterLand(false); }
   if (v === 'land') return S.sound && S.sound.isNew ? goEnd() : (pvStop(), teardown(), setTimeout(idleSuspend, 900), logSession(), home());
@@ -1366,7 +1721,7 @@ $('segHum').onclick = e => { const b = e.target.closest('button'); if (!b) retur
     toast('Al exhalar, tararea «mmm» con la boca cerrada en la nota que oyes' + (S.sound ? ' (' + S.sound.an.note + ')' : '') + '. Suave, sin forzar.', 6500); }
   syncOpts(); };
 for (const id of ['rngPres', 'rngPres2']) {
-  $(id).oninput = e => { S.pres = e.target.value / 100; for (const o of ['rngPres', 'rngPres2']) { $(o).value = e.target.value; fillRange($(o)); } if (E) E.grain.gain.setTargetAtTime(S.pres, S.ctx.currentTime, .1); };
+  $(id).oninput = e => { S.pres = e.target.value / 100; for (const o of ['rngPres', 'rngPres2']) { $(o).value = e.target.value; fillRange($(o)); } if (E) { E.grain.gain.setTargetAtTime(S.pres, S.ctx.currentTime, .1); E.mark.gain.setTargetAtTime(Math.min(1, S.pres * 1.6), S.ctx.currentTime, .1); } };
   // on release, let the original come through at once so the change can be heard, not waited for
   $(id).onchange = () => { if (S.playing && S.ctx && S.pres > .02) nextGrain = S.ctx.currentTime + .2; };
 }
@@ -1442,7 +1797,7 @@ function draw(ts) {
   else if (v === 'proc') { speed = 4; prog = .12; if (S.sound && S.procOk) { hs = S.sound.H || (S.sound.H = harmonics(S.sound.an.sig, S.sound.an.sym)); hue = S.hue; prog = .12 + .88 * S.progress; } }
   else if (S.sound) {
     hs = S.sound.H || (S.sound.H = harmonics(S.sound.an.sig, S.sound.an.sym)); hue = S.hue;
-    if ((S.playing || origPlaying) && E && (dark || v === 'land')) {
+    if ((S.playing || origPlaying) && E && (dark || v === 'land' || v === 'ab')) {
       E.an.getByteFrequencyData(E.freq); let sum = 0; const nyq = S.ctx.sampleRate / 2, nb = E.freq.length;
       for (let b = 0; b < 64; b += 2) sum += E.freq[clamp(Math.round(80 * Math.pow(100, b / 64) / nyq * nb), 1, nb - 1)] / 255;
       e = clamp(sum / 32 * 2.2, 0, 1); if (S.playing) br = curBreath.v;
@@ -1456,7 +1811,7 @@ function draw(ts) {
 requestAnimationFrame(draw);
 
 setView('home'); renderLib(); showTime(); syncOpts(); uiPlay(); pvUi(); fillRange($('rngVol'));
-window.__resona = { S, PV, T, renderPad, analyze, trimNorm, prepare, DEMOS, MODES, getLog, get E() { return E; } };   // test hook
+window.__resona = { S, PV, T, AB, LAB, onFile, diagText, getAB, abSelect, abOpen, renderPad, analyze, trimNorm, prepare, DEMOS, MODES, getLog, get E() { return E; } };   // test hook
 })();
 </script>
 
