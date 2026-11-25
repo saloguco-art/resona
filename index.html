@@ -103,6 +103,7 @@ input[type=range]::-moz-range-thumb{width:24px;height:24px;border-radius:50%;bac
 .trim-sel{position:absolute;top:0;bottom:0;background:rgba(47,69,38,.09);border-inline:2px solid var(--accent);pointer-events:none}
 .trim-sel i{position:absolute;top:50%;width:14px;height:44px;margin-top:-22px;border-radius:7px;background:var(--accent)}
 .trim-sel i.l{left:-8px} .trim-sel i.r{right:-8px}
+.trim-head{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--warn);pointer-events:none}
 .field{font:inherit;font-size:17px;color:var(--ink);background:transparent;border:1px solid var(--dim);border-radius:9px;padding:13px 14px;width:100%;-webkit-user-select:text;user-select:text}
 /* sheets */
 .sheet{position:fixed;z-index:4;left:max(14px, env(safe-area-inset-left, 0px));right:max(14px, env(safe-area-inset-right, 0px));
@@ -216,11 +217,12 @@ html:not(.dark) #optPres{display:none}
   <!-- FRAGMENT -->
   <section class="view" id="vTrim" hidden>
     <div class="center"><h1>Elige el fragmento</h1><p class="sub">Arrastra los bordes y quédate con la parte que quieres volver a escuchar.</p></div>
-    <div class="trim" id="trim"><canvas id="trimCv"></canvas><div class="trim-sel" id="trimSel"><i class="l"></i><i class="r"></i></div></div>
+    <div class="trim" id="trim"><canvas id="trimCv"></canvas><div class="trim-sel" id="trimSel"><i class="l"></i><i class="r"></i></div><div class="trim-head" id="trimHead" hidden></div></div>
     <p class="fine" id="trimInfo" style="font-variant-numeric:tabular-nums">&nbsp;</p>
+    <div class="center"><button class="round" id="trimPlay" aria-label="Escuchar el fragmento"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+      <p class="fine" id="trimHint" style="margin-top:8px">Escucha el fragmento antes de elegirlo.<br>También suena al soltar un borde.</p></div>
     <div class="grow"></div>
     <div class="foot">
-      <button class="text" id="trimPlay">Escuchar el fragmento</button>
       <button class="primary" id="trimUse">Usar este fragmento</button>
     </div>
   </section>
@@ -1105,7 +1107,21 @@ function trimDraw() {
   const sel = $('trimSel'); sel.style.left = T.a * 100 + '%'; sel.style.width = (T.b - T.a) * 100 + '%';
   const dur = n / S.raw.sr; $('trimInfo').textContent = 'De ' + num(T.a * dur, 1) + ' a ' + num(T.b * dur, 1) + ' s · ' + num((T.b - T.a) * dur, 1) + ' s de ' + num(dur, 1);
 }
-function trimStop() { if (T.src) { const s = T.src; T.src = null; try { s.stop(); } catch (e) {} } $('trimPlay').textContent = 'Escuchar el fragmento'; }
+function trimUi() { const on = !!T.src; $('trimPlay').innerHTML = on ? ICON.pause : ICON.play; $('trimPlay').setAttribute('aria-label', on ? 'Parar' : 'Escuchar el fragmento'); if (!on) $('trimHead').hidden = true; }
+function trimStop() { if (T.src) { const s = T.src; T.src = null; try { s.stop(); } catch (e) {} } trimUi(); }
+// Plays the chosen part of the recording as it is, from u0 to u1 (fractions of the whole), with a line showing where it is.
+function trimPlay(u0, u1) {
+  const c = ensureCtx(); if (!c || !S.raw) return; trimStop();
+  const x = S.raw.x, n = x.length, sr = S.raw.sr, i0 = Math.floor(u0 * n), i1 = Math.floor(u1 * n), len = (i1 - i0) / sr; if (len < .05) return;
+  if (!S.raw.buf) { const b = c.createBuffer(1, n, sr); b.getChannelData(0).set(x); S.raw.buf = b; }
+  let pk = 1e-6; const a0 = Math.floor(T.a * n), a1 = Math.floor(T.b * n); for (let i = a0; i < a1; i += 5) { const a = Math.abs(x[i]); if (a > pk) pk = a; }
+  const s = c.createBufferSource(), g = c.createGain(); s.buffer = S.raw.buf; g.gain.value = Math.min(80, .4 / pk); s.connect(g); g.connect(E.orig);
+  s.onended = () => { try { g.disconnect(); } catch (e) {} if (T.src === s) { T.src = null; trimUi(); setTimeout(idleSuspend, 700); } };
+  T.src = s; trimUi();
+  const go = () => { if (T.src !== s) return; const t0 = c.currentTime + .03; s.start(t0, i0 / sr, len);
+    const head = $('trimHead'), step = () => { if (T.src !== s) return; const p = clamp((c.currentTime - t0) / len, 0, 1); head.hidden = false; head.style.left = (u0 + (u1 - u0) * p) * 100 + '%'; requestAnimationFrame(step); }; step(); };
+  if (c.state === 'running') go(); else c.resume().then(go).catch(() => trimStop());
+}
 (() => {
   const tb = $('trim'), at = e => { const r = tb.getBoundingClientRect(); return { u: clamp((e.clientX - r.left) / r.width, 0, 1), edge: 26 / r.width }; };
   const move = u => { const d = T.drag; if (!d || !S.raw) return; const min = Math.min(1, Math.max(.5 / (S.raw.x.length / S.raw.sr), .02));
@@ -1119,18 +1135,12 @@ function trimStop() { if (T.src) { const s = T.src; T.src = null; try { s.stop()
     trimStop(); if (mode !== 'm') move(u); e.preventDefault();
   });
   tb.addEventListener('pointermove', e => { if (T.drag) move(at(e).u); });
-  for (const ev of ['pointerup', 'pointercancel']) tb.addEventListener(ev, () => { T.drag = null; });
+  tb.addEventListener('pointerup', () => { const d = T.drag; T.drag = null; if (!d || !S.raw || (d.a0 === T.a && d.b0 === T.b)) return;
+    const two = 2 / (S.raw.x.length / S.raw.sr); if (d.mode === 'b') trimPlay(Math.max(T.a, T.b - two), T.b); else trimPlay(T.a, Math.min(T.b, T.a + two * 1.5)); });
+  tb.addEventListener('pointercancel', () => { T.drag = null; });
   window.addEventListener('resize', () => { if (S.view === 'trim') { T.env = null; trimDraw(); } });
 })();
-$('trimPlay').onclick = () => {
-  const c = ensureCtx(); if (!c || !S.raw) return; if (T.src) return trimStop();
-  const x = S.raw.x, n = x.length, i0 = Math.floor(T.a * n), i1 = Math.floor(T.b * n), sr = S.raw.sr;
-  if (!S.raw.buf) { const b = c.createBuffer(1, n, sr); b.getChannelData(0).set(x); S.raw.buf = b; }
-  let pk = 1e-6; for (let i = i0; i < i1; i += 5) { const a = Math.abs(x[i]); if (a > pk) pk = a; }
-  const s = c.createBufferSource(), g = c.createGain(); s.buffer = S.raw.buf; g.gain.value = Math.min(80, .4 / pk); s.connect(g); g.connect(E.orig);
-  s.onended = () => { g.disconnect(); if (T.src === s) { trimStop(); setTimeout(idleSuspend, 700); } };
-  T.src = s; $('trimPlay').textContent = 'Parar'; c.resume().then(() => s.start(0, i0 / sr, (i1 - i0) / sr)).catch(() => trimStop());
-};
+$('trimPlay').onclick = () => { if (T.src) trimStop(); else trimPlay(T.a, T.b); };
 $('trimUse').onclick = () => {
   if (!S.raw || !S.sound) return; trimStop();
   const n = S.raw.x.length, a = Math.floor(T.a * n), b = Math.floor(T.b * n), s = S.sound;
@@ -1310,7 +1320,7 @@ if (window.visualViewport) {
 }
 
 /* ───────────── Self-update: load the newest version without the person reloading ───────────── */
-const BUILD = '20261124231604'; let pendingBuild = '';
+const BUILD = '20261125170542'; let pendingBuild = '';
 function applyUpdate() {
   if (!pendingBuild || S.view !== 'home' || S.busy || rec || rateCtx || !$('edit').hidden) return;      // never interrupt a session
   try { if (sessionStorage.getItem('resona.tried') === pendingBuild) return; sessionStorage.setItem('resona.tried', pendingBuild); } catch (e) {}
