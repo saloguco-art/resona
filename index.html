@@ -1,4 +1,4 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#f3efe6"><meta name="apple-mobile-web-app-title" content="Arrullo"><link rel="apple-touch-icon" href="icon-180.png"><link rel="manifest" href="manifest.webmanifest"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);box-sizing:border-box}*,*:before,*:after{box-sizing:inherit}body{margin:0}[hidden]{display:none!important}</style></head><body>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,user-scalable=no,viewport-fit=cover"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="theme-color" content="#fbfbf9"><meta name="apple-mobile-web-app-title" content="Arrullo"><link rel="apple-touch-icon" href="icon-180.png"><link rel="manifest" href="manifest.webmanifest"><style>:root{padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px);box-sizing:border-box}*,*:before,*:after{box-sizing:inherit}body{margin:0}[hidden]{display:none!important}</style></head><body>
 <title>Arrullo</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
@@ -352,11 +352,97 @@ h1{font-size:clamp(1.7rem,7.6vw,2.05rem);font-weight:600;letter-spacing:-.02em;l
 #soundRelief{position:absolute;inset:0;width:100%;height:100%;display:block}
 #freqProbe{display:block;position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:crosshair;touch-action:pan-y}
 .sound-plot:focus-within{outline:1px solid #8d9d85;outline-offset:-1px;border-radius:6px}
-#freqReadout{position:absolute;top:0;left:0;white-space:nowrap;pointer-events:none;padding:2px 7px;border-radius:9px;background:rgba(31,42,34,.82);font:500 .72rem/1.3 var(--ui);font-variant-numeric:tabular-nums;color:#e6d6bd}
+#freqReadout{position:absolute;top:0;left:0;white-space:nowrap;pointer-events:none;padding:2px 7px;border-radius:9px;background:color-mix(in srgb,var(--bg) 82%,transparent);font:500 .72rem/1.3 var(--ui);font-variant-numeric:tabular-nums;color:#e6d6bd}
 .vib-modes{display:flex;align-self:center;gap:2px}
 .vib-modes button{min-height:44px;min-width:64px;font:500 .79rem/1 var(--ui);color:var(--faint)}
 .vib-modes button[aria-pressed="true"]{color:var(--ink);text-decoration:underline;text-underline-offset:6px;text-decoration-color:#91a88e}
 #vSession .sound-stage .cue{position:static;min-height:1.1em;line-height:1.1;transform:none;text-align:center}
+
+/* ═════ Minimal: one neutral surface, one accent, the system typeface, quiet controls.
+   Near-black on warm white for everything that is read or pressed; green only marks what is selected or sounding. ═════ */
+:root{ --bg:#fbfbf9; --ink:#121413; --dim:#5d625f; --faint:#8e938f; --line:rgba(18,20,19,.09); --panel:#ffffff; --fill:#f0f0ec;
+  --accent:#121413; --on:#ffffff; --tint:#1f7a63; --warn:#b3261e; --sage:#e4efe9; --rust:#1f7a63; --display:var(--ui) }
+html.dark{ --bg:#0b0d0c; --ink:#f3f4f2; --dim:#a4a9a5; --faint:#727873; --line:rgba(255,255,255,.12); --panel:#191c1a; --fill:#1b1f1d;
+  --accent:#f3f4f2; --on:#0b0d0c; --tint:#7ad3ba; --warn:#ff8a80; --sage:#1e2d27; --rust:#7ad3ba }
+h1{font-size:clamp(1.75rem,7.4vw,2.05rem);font-weight:700;letter-spacing:-.028em;line-height:1.1}
+h1.it,.iname,.line.iname{font-family:var(--ui);font-style:normal;font-weight:700;letter-spacing:-.022em}
+.sub{color:var(--dim);font-size:1rem;line-height:1.4;margin-top:8px}
+.top .mid,.top .mid.brand{font-family:var(--ui);font-style:normal;font-weight:600;font-size:1.02rem;letter-spacing:-.01em}
+.kicker{color:var(--faint);text-transform:none;letter-spacing:0;font-weight:600;font-size:.82rem;margin:0 0 2px}
+.primary{border-radius:16px;min-height:56px;background:var(--accent);color:var(--on);font-weight:600;font-size:1.04rem}
+.outline{border:0;background:var(--fill);color:var(--ink);border-radius:16px;min-height:56px;font-weight:600}
+.text.under{text-decoration:none}
+.foot .text{color:var(--dim);min-height:46px}
+.pill{border:0;background:var(--fill);color:var(--ink);border-radius:12px;min-height:44px;font-weight:500}
+.pill[aria-pressed="true"]{background:var(--ink);border:0;color:var(--bg);font-weight:600}
+.round{background:var(--ink);color:var(--bg)}
+.links{color:var(--faint)} .links button{text-decoration:none;color:var(--dim);font-weight:600}
+.note{border:0;background:var(--fill);border-radius:14px;color:var(--ink)}
+/* segmented controls, as the system draws them */
+.seg.eq,.steps{background:var(--fill);border-radius:12px;padding:3px;gap:0;display:flex}
+.seg.eq .pill,.steps button{flex:1;background:transparent;border-radius:9px;min-height:40px;min-width:0;font-size:.9rem;font-weight:500;color:var(--dim);align-items:center;justify-content:center;flex-direction:row;padding-inline:4px}
+.steps button:first-child,.steps button:nth-child(2),.steps button:last-child{align-items:center}
+.seg.eq .pill[aria-pressed="true"],.steps button[aria-pressed="true"]{background:var(--panel);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.14)}
+html.dark .seg.eq .pill[aria-pressed="true"],html.dark .steps button[aria-pressed="true"]{background:#343a36}
+.steps{margin-top:2px} .steps::before,.steps i{display:none} .steps button[aria-pressed="true"] span{font-weight:600}
+/* tabs with icons */
+.tabs{gap:0;padding-top:6px;margin-top:8px}
+.tabs button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:52px;border-radius:12px;font-size:.7rem;font-weight:500;color:var(--faint)}
+.tabs button[aria-pressed="true"]{background:none;color:var(--ink);font-weight:600} .tabs svg{width:24px;height:24px}
+/* create: three plain rows */
+.orows{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.orow{display:flex;align-items:center;gap:14px;width:100%;min-height:76px;padding:12px 14px;border-radius:18px;background:var(--panel);border:1px solid var(--line);text-align:left;cursor:pointer;color:var(--ink);transition:transform 140ms var(--ease-out)}
+.orow:active{transform:scale(.98)}
+.oic{width:46px;height:46px;border-radius:13px;background:var(--fill);display:grid;place-items:center;flex:none} .oic svg{width:22px;height:22px}
+.otx{flex:1;display:flex;flex-direction:column;gap:1px;min-width:0} .otx b{font-weight:600;font-size:1.02rem} .otx small{color:var(--dim);font-size:.86rem}
+.chev{width:18px;height:18px;color:var(--faint);flex:none}
+/* home: the ritual on one surface */
+.rcard{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:16px 18px 18px;display:flex;flex-direction:column;gap:8px}
+#heroFp{align-self:center;margin:2px 0}
+@media (min-height:800px){ #heroFp{width:min(64vw,270px);height:min(64vw,270px);margin:10px 0} .rcard{padding-bottom:22px} }
+.hero .iname{font-size:clamp(1.45rem,6.6vw,1.75rem);line-height:1.15;-webkit-line-clamp:2} .hero .meta{font-size:.95rem;margin-top:2px}
+.dots{color:var(--faint)}
+/* library */
+.li{gap:12px;min-height:70px}
+.li canvas{width:48px;height:48px;border-radius:13px;background:var(--fill)}
+.li .open b{font-family:var(--ui);font-style:normal;font-weight:600;font-size:1.02rem;letter-spacing:-.01em} .li .open small{font-size:.85rem}
+.li .tri{width:40px;height:40px;background:var(--fill);color:var(--ink)} .li .tri svg{width:15px;height:15px}
+/* capture */
+.recTime .count,#vSession .count{font-weight:200;letter-spacing:-.04em}
+.meter{height:6px;background:var(--fill)} .meter i{background:var(--tint)}
+.round.stop{width:84px;height:84px;background:#e5484d;color:#fff;margin-inline:auto} .round.stop svg{width:30px;height:30px}
+.cap{font-size:.82rem;color:var(--dim);text-align:center}
+.recHint{color:var(--dim);font-size:.95rem}
+/* instant */
+#trimName{font-size:1.05rem;font-weight:600;color:var(--dim);margin-top:6px}
+.trim{background:var(--fill);border-block:0}
+.trim-sel{background:rgba(31,122,99,.13);border-inline:3px solid var(--tint)} .trim-sel i{background:var(--tint)}
+.trim-tip{border-radius:10px}
+.range{color:var(--ink);font-weight:600} #trimListen{color:var(--tint)}
+.nudge button{border:0;background:var(--fill);border-radius:12px;font-weight:500}
+/* first listen: the sound's own fingerprint fills the room left over, and moves with what is playing */
+#vLand .stage{min-height:0}
+.nudge{flex-wrap:nowrap} .nudge button{flex:1}
+#landName{font-size:clamp(1.6rem,7vw,1.95rem)}
+#vLand.demo #landTitle{color:var(--faint);letter-spacing:0;font-size:.82rem;font-weight:600}
+.pvtxt{font-size:.95rem}
+/* forms */
+.line{background:var(--fill);border:0;border-radius:14px;padding:14px;font-size:1.04rem;font-family:var(--ui);font-weight:500}
+.line.iname{font-weight:600} .line:focus{outline:2px solid var(--tint);outline-offset:0}
+.field{background:var(--fill);border:0;border-radius:14px;padding:14px;font-size:1.02rem} .field:focus{outline:2px solid var(--tint);outline-offset:0}
+#editDel{color:var(--warn)} .pill{min-width:52px}
+.fld{gap:6px} #endSug .pill{min-height:38px;border-radius:10px}
+/* adjust */
+.opt{border-bottom:0;padding-bottom:4px} .opt .lbl{font-size:.86rem;color:var(--dim)}
+.sw{background:#d5d7d3} html.dark .sw{background:#3a3f3c} .sw i{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25)} .sw[aria-checked="true"],html.dark .sw[aria-checked="true"]{background:var(--tint)}
+.sheet:not(.page){border:0;border-radius:26px;background:var(--panel);box-shadow:0 12px 44px rgba(0,0,0,.2)}
+.sheet.page .ptop{font-family:var(--ui);font-style:normal;font-weight:600;font-size:1.02rem}
+/* session */
+#sName{font-size:clamp(1.4rem,6.4vw,1.75rem)}
+.inst{border:0;background:var(--fill);border-radius:16px;min-height:56px} .inst.on{background:var(--sage);color:var(--tint)}
+#btnPlay.round.xl{background:var(--ink);color:var(--bg)}
+.hint button{text-decoration:none;color:var(--dim);font-weight:600}
+@media (max-height:640px){ #heroFp{width:120px;height:120px} .orow{min-height:64px;padding-block:8px} .round.stop{width:72px;height:72px} .rcard{padding:12px 16px 14px} }
 </style>
 
 <canvas id="cv" aria-hidden="true"></canvas>
@@ -371,11 +457,13 @@ h1{font-size:clamp(1.7rem,7.6vw,2.05rem);font-weight:600;letter-spacing:-.02em;l
   <!-- HOME: first time = record or import; returning = play your last landscape -->
   <section class="view" id="vHome">
     <h1>Volver aquí</h1>
-    <canvas id="heroFp" width="1" height="1" aria-hidden="true"></canvas>
-    <div class="hero">
-      <div class="hero-txt"><p class="kicker" id="heroKick">Mi ritual</p><p class="iname" id="heroName"></p><p class="meta" id="heroMeta"></p></div>
-      <button class="dots" id="heroEdit" aria-label="Cambiar nombre, momento o borrar">···</button>
-      <button id="heroPlay" hidden aria-hidden="true" tabindex="-1"></button>
+    <div class="rcard">
+      <canvas id="heroFp" width="1" height="1" aria-hidden="true"></canvas>
+      <div class="hero">
+        <div class="hero-txt"><p class="kicker" id="heroKick">Mi ritual</p><p class="iname" id="heroName"></p><p class="meta" id="heroMeta"></p></div>
+        <button class="dots" id="heroEdit" aria-label="Cambiar nombre, momento o borrar">···</button>
+        <button id="heroPlay" hidden aria-hidden="true" tabindex="-1"></button>
+      </div>
     </div>
     <div class="grow"></div>
     <div class="foot">
@@ -386,17 +474,17 @@ h1{font-size:clamp(1.7rem,7.6vw,2.05rem);font-weight:600;letter-spacing:-.02em;l
 
   <!-- CREATE: the first thing seen with an empty library -->
   <section class="view" id="vCreate" hidden>
-    <h1>¿Qué sonido quieres cerca?</h1>
-    <p class="sub">Puede ser la lluvia en tu ventana, un tarareo o el vaso que usas cada mañana.</p>
-    <div class="grow"></div>
+    <div><h1>¿Qué sonido quieres cerca?</h1>
+      <p class="sub">La lluvia en tu ventana, un tarareo o el vaso de cada mañana.</p></div>
     <p class="note" id="micNote" hidden></p>
-    <div class="foot">
-      <button class="primary" id="btnRec"><span id="btnRecTxt">Grabar un sonido</span></button>
-      <label class="outline" id="lblFile">Elegir audio o vídeo<input class="sr" type="file" id="file" accept="video/*,audio/*"></label>
-      <button class="text" id="btnDemoHome">Escuchar antes una muestra</button>
-      <p class="links" id="kindLinks">Con guía: <button data-kind="objeto">objeto</button> <button data-kind="tarareo">tarareo</button> <button data-kind="rio">río a dos tomas</button></p>
-      <p class="links" id="demoLinks" hidden>Sintéticos: <button data-demo="madera">madera</button> <button data-demo="agua">agua</button> <button data-demo="voz">voz</button> <button data-demo="pajaro">pájaro</button></p>
+    <div class="orows">
+      <button class="orow" id="btnRec"><span class="oic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg></span><span class="otx"><b id="btnRecTxt">Grabar un sonido</b><small>Con el micrófono, hasta 30 s</small></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+      <label class="orow" id="lblFile"><span class="oic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="M16 10.5l5-3v9l-5-3"/></svg></span><span class="otx"><b>Elegir audio o vídeo</b><small>De tu carrete o tus archivos</small></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg><input class="sr" type="file" id="file" accept="video/*,audio/*"></label>
+      <button class="orow" id="btnDemoHome"><span class="oic"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg></span><span class="otx"><b>Escuchar una muestra</b><small>Antes de crear nada</small></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
     </div>
+    <div class="grow"></div>
+    <p class="links" id="kindLinks">Con guía: <button data-kind="objeto">objeto</button> <button data-kind="tarareo">tarareo</button> <button data-kind="rio">río a dos tomas</button></p>
+    <p class="links" id="demoLinks" hidden>Sintéticos: <button data-demo="madera">madera</button> <button data-demo="agua">agua</button> <button data-demo="voz">voz</button> <button data-demo="pajaro">pájaro</button></p>
   </section>
 
   <!-- LIBRARY -->
@@ -416,7 +504,8 @@ h1{font-size:clamp(1.7rem,7.6vw,2.05rem);font-weight:600;letter-spacing:-.02em;l
       <div class="meter" id="recMeter" role="meter" aria-label="Nivel de entrada del micrófono" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i></i></div>
       <p class="recHint"><span id="recHint" aria-live="polite"></span><span id="recHz">— Hz</span></p>
       <div class="foot">
-        <button class="primary" id="btnStop">Terminar grabación</button>
+        <button class="round stop" id="btnStop" aria-label="Terminar grabación"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="6.5" width="11" height="11" rx="2.5" fill="currentColor"/></svg></button>
+        <span class="cap" aria-hidden="true">Terminar</span>
         <button class="text" id="recCancel">Cancelar</button>
       </div>
     </div>
@@ -454,7 +543,7 @@ h1{font-size:clamp(1.7rem,7.6vw,2.05rem);font-weight:600;letter-spacing:-.02em;l
     <div id="demoBox" hidden><p class="fine" id="demoNote" style="text-align:left"></p><div class="seg" id="demoTakes" role="group" aria-label="Qué toma escuchar" hidden style="margin-top:6px"></div><button id="btnAgain" hidden></button></div>
     <div id="labRow" hidden><p class="fine" id="labInfo"></p>
       <div class="row" style="justify-content:center;gap:2px"><button class="text small" id="labAB">A/B del laboratorio</button><button class="text small" id="labDiag">Diagnóstico</button></div></div>
-    <div class="grow"></div>
+    <div class="stage" data-stage aria-hidden="true"></div>
     <div class="foot">
       <button class="outline nodemo" id="btnKeep"><span id="keepTxt">Elegir mi instante</span></button>
       <button class="primary" id="btnStart">Meditar 5 min</button>
@@ -630,7 +719,11 @@ h1{font-size:clamp(1.7rem,7.6vw,2.05rem);font-weight:600;letter-spacing:-.02em;l
       <p>Mide la vibración acústica que capta el micrófono: su nota dominante, sus armónicos, su brillo y cómo evoluciona. No mide campos electromagnéticos ni promete curar nada. Todo ocurre en tu dispositivo y nada se envía a ningún servidor.</p>
     </div>
   </section>
-  <nav class="tabs" id="tabs" aria-label="Secciones"><button data-v="home" aria-pressed="false">Inicio</button><button data-v="create" aria-pressed="false">Crear</button><button data-v="lib" aria-pressed="false">Biblioteca</button></nav>
+  <nav class="tabs" id="tabs" aria-label="Secciones">
+    <button data-v="home" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/></svg>Inicio</button>
+    <button data-v="create" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 8.5v7M8.5 12h7"/></svg>Crear</button>
+    <button data-v="lib" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9"/></svg>Biblioteca</button>
+  </nav>
 </main>
 
 <div class="sheet" id="opts" role="dialog" aria-label="Ajustar sesión" hidden>
@@ -2300,7 +2393,7 @@ function setView(v) {
   S.view = v;
   for (const id of VIEWS) $('v' + id).hidden = id.toLowerCase() !== v;
   const sess = v === 'session', dark = sess || v === 'rec'; document.documentElement.classList.toggle('dark', dark);
-  const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = dark ? '#1f2a22' : '#f3efe3';
+  const tc = document.querySelector('meta[name=theme-color]'); if (tc) tc.content = dark ? '#0b0d0c' : '#fbfbf9';
   const root = v === 'home' || v === 'create' || v === 'lib', bb = $('btnBack');
   bb.style.visibility = root || v === 'proc' ? 'hidden' : 'visible'; bb.innerHTML = sess ? ICON.down : ICON.back; bb.setAttribute('aria-label', sess ? 'Volver a tu paisaje' : 'Atrás');
   $('btnOpts').style.visibility = sess ? 'visible' : 'hidden';
@@ -2507,7 +2600,7 @@ function trimDraw() {
   }
   const k = cvs.getContext('2d'); k.setTransform(d, 0, 0, d, 0, 0); k.clearRect(0, 0, w, h); k.lineWidth = 1.3; k.lineCap = 'round';
   for (let c = 0; c < cols; c++) { const u = (c + .5) / cols, hh = Math.max(1.5, T.env[c] * h * .44), px = c * 3 + 1.5;
-    k.strokeStyle = u >= T.a && u <= T.b ? '#8a3f25' : 'rgba(31,42,34,.32)'; k.beginPath(); k.moveTo(px, h / 2 - hh); k.lineTo(px, h / 2 + hh); k.stroke(); }
+    k.strokeStyle = u >= T.a && u <= T.b ? '#1f7a63' : 'rgba(18,20,19,.28)'; k.beginPath(); k.moveTo(px, h / 2 - hh); k.lineTo(px, h / 2 + hh); k.stroke(); }
   const sel = $('trimSel'); sel.style.left = T.a * 100 + '%'; sel.style.width = (T.b - T.a) * 100 + '%';
   const dur = n / T.sr; $('trimRange').textContent = num(T.a * dur, 1) + ' – ' + num(T.b * dur, 1) + ' s'; $('trimInfo').textContent = 'De ' + num(T.a * dur, 1) + ' a ' + num(T.b * dur, 1) + ' s · ' + num((T.b - T.a) * dur, 1) + ' s de ' + num(dur, 1);
 }
@@ -3342,7 +3435,7 @@ if (window.visualViewport) {
 }
 
 /* ───────────── Self-update: load the newest version without the person reloading ───────────── */
-const BUILD = '20261126142203'; let pendingBuild = '';
+const BUILD = '20261126144408'; let pendingBuild = '';
 function applyUpdate() {
   if (!pendingBuild || S.view !== 'home' || S.busy || rec || rateCtx || !$('edit').hidden) return;      // never interrupt a session
   try { if (sessionStorage.getItem('resona.tried') === pendingBuild) return; sessionStorage.setItem('resona.tried', pendingBuild); } catch (e) {}
@@ -3623,7 +3716,7 @@ function draw(ts) {
     const hint = kh ? kh : (el > 1.5 && S.micRaw < .0012) ? 'Casi no llega sonido. Acércate al micrófono.' : (el > 1.5 && S.micRaw < .012) ? 'Suena suave, pero lo estoy captando.' : 'Deja que se apague el último toque.';
     { const lv = Math.round((S.micDb || 0) * 100); if (lv !== S.micShown) { S.micShown = lv; const m = $('recMeter'); m.firstChild.style.transform = 'scaleX(' + lv / 100 + ')'; m.setAttribute('aria-valuenow', lv); } } if (hint !== recHintShown) { recHintShown = hint; $('recHint').textContent = hint; }
     if (ts - wavePush > 55) { wavePush = ts; wave.copyWithin(0, 1); const last = wave[wave.length - 2]; wave[wave.length - 1] = last + (clamp(S.micDb || 0, 0, 1) - last) * .5; }
-    { const n = 46, bw = rc.width / n, amp = Math.min(rc.height * .47, 120); g.lineCap = 'round'; g.lineWidth = Math.max(2.5, bw * .4); g.strokeStyle = '#cdd4bd';
+    { const n = 46, bw = rc.width / n, amp = Math.min(rc.height * .47, 120); g.lineCap = 'round'; g.lineWidth = Math.max(2.5, bw * .4); g.strokeStyle = '#7ad3ba';
       for (let i = 0; i < n; i++) { const hh = Math.max(1.5, wave[wave.length - n + i] * amp), x = rc.left + (i + .5) * bw; g.beginPath(); g.moveTo(x, cy - hh); g.lineTo(x, cy + hh); g.stroke(); } }
     return;
   }
