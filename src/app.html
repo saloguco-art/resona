@@ -3595,7 +3595,7 @@ let energy = 0, cueShown = '', recHintShown = '', recShown = '', wavePush = 0;
 function sessionVibration(id, active, light) {
   const canvas = $(id[0]), ctx = canvas.getContext('2d');
   const pick = $(id[1]), readout = $(id[2]), modes = $(id[3]);
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const reduced = { matches: false };      // the drawing of the sound is what this screen is for, not a decoration: it stays fluid with Reduce Motion on
   const bands = 136, depth = 32, minHz = 40, maxHz = 12000, floorDb = -84, topDb = -12, margin = 12;
   const history = Array.from({length: depth}, () => new Float32Array(bands));
   const live = new Float32Array(bands), peak = new Float32Array(bands), liveDb = new Float32Array(bands).fill(-Infinity), sm = new Float32Array(bands);
