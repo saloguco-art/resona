@@ -352,7 +352,7 @@ h1{font-size:clamp(1.7rem,7.6vw,2.05rem);font-weight:600;letter-spacing:-.02em;l
 #soundRelief{position:absolute;inset:0;width:100%;height:100%;display:block}
 #freqProbe{display:block;position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:crosshair;touch-action:pan-y}
 .sound-plot:focus-within{outline:1px solid #8d9d85;outline-offset:-1px;border-radius:6px}
-#freqReadout{position:absolute;bottom:0;left:0;right:0;text-align:center;pointer-events:none;font:500 .69rem/1.3 var(--ui);font-variant-numeric:tabular-nums;color:#dac6aa}
+#freqReadout{position:absolute;top:0;left:0;white-space:nowrap;pointer-events:none;padding:2px 7px;border-radius:9px;background:rgba(31,42,34,.82);font:500 .72rem/1.3 var(--ui);font-variant-numeric:tabular-nums;color:#e6d6bd}
 .vib-modes{display:flex;align-self:center;gap:2px}
 .vib-modes button{min-height:44px;min-width:64px;font:500 .79rem/1 var(--ui);color:var(--faint)}
 .vib-modes button[aria-pressed="true"]{color:var(--ink);text-decoration:underline;text-underline-offset:6px;text-decoration-color:#91a88e}
@@ -3342,7 +3342,7 @@ if (window.visualViewport) {
 }
 
 /* ───────────── Self-update: load the newest version without the person reloading ───────────── */
-const BUILD = '20261126135323'; let pendingBuild = '';
+const BUILD = '20261126142203'; let pendingBuild = '';
 function applyUpdate() {
   if (!pendingBuild || S.view !== 'home' || S.busy || rec || rateCtx || !$('edit').hidden) return;      // never interrupt a session
   try { if (sessionStorage.getItem('resona.tried') === pendingBuild) return; sessionStorage.setItem('resona.tried', pendingBuild); } catch (e) {}
@@ -3469,114 +3469,140 @@ const idleSig = new Float32Array(64); for (let i = 0; i < 64; i++) idleSig[i] = 
 const idleH = harmonics(idleSig, 5), wave = new Float32Array(84);
 let energy = 0, cueShown = '', recHintShown = '', recShown = '', wavePush = 0;
 
-// Session visualisation is a passive reader of the final mix. It creates no audio nodes.
+// Session visualisation is a passive reader of the final mix (E.outAn). It creates no audio nodes and changes none.
+// Relieve: its own FFT of the samples that leave, peak-held between rows, so a short attack is never averaged away.
+// Onda: the latest 12 ms of those same samples, one point per sample, on a soft amplitude scale.
 function sessionVibration() {
   const canvas = $('soundRelief'), ctx = canvas.getContext('2d');
   const pick = $('freqProbe'), readout = $('freqReadout'), modes = $('vibModes');
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
-  const bands = 136, depth = 38, minHz = 40, maxHz = 12000;
+  const bands = 136, depth = 32, minHz = 40, maxHz = 12000, floorDb = -84, topDb = -12, margin = 12;
   const history = Array.from({length: depth}, () => new Float32Array(bands));
-  const measuredDb = new Float32Array(bands).fill(-Infinity);
-  let analyser, bins, samples, engine, head = 0, count = 0, last = -Infinity, nextRow = 0;
-  let view = 'relief', inspect = false, staticFrame = false, dirty = true;
+  const live = new Float32Array(bands), liveDb = new Float32Array(bands).fill(-Infinity), sm = new Float32Array(bands);
+  let analyser, samples, engine, N = 0, fft, win, winSum = 1, re, im, bLo, bHi, bMid;
+  let head = 0, count = 0, clock = 0, rowAt = 0, lastTs = 0, held = false, waveN = 1, waveOff = 0;
+  let view = 'relief', inspect = false, dirty = true, probeP = .5, pointing = false;
+  pick.max = 1000; pick.value = 500;
   function reset() {
     for (const row of history) row.fill(0);
-    measuredDb.fill(-Infinity); analyser = null; samples = null;
-    engine = null; head = 0; count = 0; nextRow = 0; last = -Infinity;
-    staticFrame = false; dirty = true; inspect = false;
-    readout.textContent = '';
+    live.fill(0); liveDb.fill(-Infinity); analyser = null; samples = null;
+    engine = null; head = 0; count = 0; clock = 0; rowAt = 0; lastTs = 0; held = false; waveOff = 0;
+    dirty = true; inspect = false; readout.textContent = ''; readout.hidden = true;
   }
   function select(mode) {
-    view = mode; dirty = true; staticFrame = false;
+    view = mode; dirty = true;
     for (const b of modes.querySelectorAll('button')) b.setAttribute('aria-pressed',String(b.dataset.v === view));
-    pick.hidden = mode !== 'relief'; inspect = false; readout.textContent = '';
+    pick.hidden = mode !== 'relief'; inspect = false; readout.textContent = ''; readout.hidden = true;
   }
   modes.onclick = event => { const b = event.target.closest('button'); if (b) select(b.dataset.v); };
-  pick.oninput = pick.onpointerdown = pick.onfocus = () => { inspect = true; dirty = true; };
-  pick.onblur = () => { inspect = false; readout.textContent = ''; dirty = true; };
+  // The band is the one under the finger: the position comes from the pointer, not from the slider's own thumb geometry.
+  const fromPointer = e => { const r = pick.getBoundingClientRect(); probeP = clamp((e.clientX - r.left - margin) / Math.max(1, r.width - 2 * margin), 0, 1); pick.value = Math.round(probeP * 1000); inspect = true; dirty = true; };
+  pick.onpointerdown = e => { pointing = true; fromPointer(e); };
+  pick.onpointermove = e => { if (pointing) fromPointer(e); };
+  pick.onpointerup = pick.onpointercancel = () => { pointing = false; };
+  pick.oninput = () => { if (pointing) pick.value = Math.round(probeP * 1000); else probeP = Number(pick.value) / 1000; inspect = true; dirty = true; };
+  pick.onfocus = () => { inspect = true; dirty = true; };
+  pick.onblur = () => { inspect = false; pointing = false; readout.textContent = ''; readout.hidden = true; dirty = true; };
   const frequency = p => minHz * (maxHz / minHz) ** p;
-  function capture(row) {
-    analyser.getFloatFrequencyData(bins);
-    const binHz = analyser.context.sampleRate / analyser.fftSize;
+  function attach(an) {
+    analyser = an; N = an ? an.fftSize : 0; samples = an ? new Float32Array(N) : null;
+    if (!an) return;
+    fft = getFFT(N); re = new Float32Array(N); im = new Float32Array(N); win = new Float32Array(N); winSum = 0;
+    for (let i = 0; i < N; i++) { win[i] = .5 - .5 * Math.cos(TAU * i / (N - 1)); winSum += win[i]; }
+    const binHz = an.context.sampleRate / N; bLo = new Uint16Array(bands); bHi = new Uint16Array(bands); bMid = new Float32Array(bands);
     for (let j = 0; j < bands; j++) {
-      const low = Math.max(1, Math.round(frequency((j-.5)/(bands-1)) / binHz));
-      const high = Math.min(bins.length-1, Math.max(low, Math.round(frequency((j+.5)/(bands-1)) / binHz)));
-      let db = -Infinity;
-      for (let k = low; k <= high; k++) db = Math.max(db, bins[k]);
-      measuredDb[j] = db;
-      row[j] = clamp((db + 86) / 76, 0, 1);
+      bMid[j] = clamp(frequency(j / (bands - 1)) / binHz, 1, N / 2 - 2);
+      bLo[j] = Math.max(1, Math.ceil(frequency((j - .5) / (bands - 1)) / binHz));
+      bHi[j] = Math.min(N / 2 - 1, Math.floor(frequency((j + .5) / (bands - 1)) / binHz));
     }
+    waveN = Math.min(N >> 1, Math.round(an.context.sampleRate * .012));
   }
-  function relief(w,h) {
-    const margin = 12, span = w-2*margin;
-    for (let age = Math.min(count,depth)-1; age >= 0; age--) {
-      const row = history[(head-age+depth)%depth], far = age/(depth-1);
-      const base = h*(.84-.44*far), inset = span*.08*far;
-      const x0 = margin+inset, width = span-2*inset, strength = 1-far;
-      ctx.beginPath();
-      for (let j=0; j<bands; j++) {
-        // Gentle smoothing across adjacent bands keeps narrow transients legible at phone sizes.
-        const v = (row[Math.max(0,j-1)] + 2*row[j] + row[Math.min(bands-1,j+1)])/4;
-        const x = x0+width*j/(bands-1), y = base-v*h*(.5-.12*far);
-        if (j===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      }
-      ctx.strokeStyle = age===0 ? '#e0f2ca' : 'rgba('+Math.round(120+65*strength)+','+Math.round(154+59*strength)+','+Math.round(158+14*strength)+','+(.19+.53*strength)+')';
-      ctx.lineWidth = age===0 ? 1.65 : .85; ctx.stroke();
+  // One reading of what is leaving right now. Digital silence gives exactly zero in every band.
+  function measure() {
+    for (let i = 0; i < N; i++) { re[i] = samples[i] * win[i]; im[i] = 0; }
+    fft(re, im);
+    const mag = k => Math.hypot(re[k], im[k]) * 2 / winSum;
+    for (let j = 0; j < bands; j++) {
+      let m = 0;
+      if (bHi[j] >= bLo[j]) { for (let k = bLo[j]; k <= bHi[j]; k++) { const q = mag(k); if (q > m) m = q; } }
+      else { const k = Math.floor(bMid[j]), f = bMid[j] - k; m = mag(k) * (1 - f) + mag(k + 1) * f; }      // bands narrower than one bin: between its neighbours
+      const db = m > 1e-9 ? 20 * Math.log10(m) : -Infinity, v = db > floorDb ? Math.pow(clamp((db - floorDb) / (topDb - floorDb), 0, 1), 1.15) : 0;
+      if (v > live[j] || !held) { live[j] = v; liveDb[j] = db; }
     }
-    if (!count) { ctx.strokeStyle='#647c70';ctx.beginPath();ctx.moveTo(margin,h*.84);ctx.lineTo(w-margin,h*.84);ctx.stroke(); }
+    held = true;
+  }
+  function commit() { head = (head + 1) % depth; history[head].set(live); count = Math.min(depth, count + 1); held = false; }
+  function trace(row, x0, width, base, lift) {
+    for (let j = 0; j < bands; j++) sm[j] = (row[Math.max(0, j - 1)] + 2 * row[j] + row[Math.min(bands - 1, j + 1)]) / 4;
+    ctx.beginPath(); ctx.moveTo(x0, base - sm[0] * lift);
+    for (let j = 1; j < bands; j++) ctx.lineTo(x0 + width * j / (bands - 1), base - sm[j] * lift);
+  }
+  function relief(w, h, frac) {
+    const span = w - 2 * margin, front = h - 5, back = h * .3, shown = reduced.matches ? Math.min(count, 12) : count;
+    ctx.lineJoin = 'round';
+    // Far to near. Each row first clears what lies behind and below it, so older readings never pile up through newer ones.
+    for (let age = shown; age >= 0; age--) {
+      const row = age ? history[(head - (age - 1) + depth) % depth] : live, pos = age ? age - 1 + frac : 0, p = Math.min(1, pos / (depth - 1));
+      if (age && pos < .02) continue;      // just committed: it is still the front reading
+      const near = 1 - p, base = front - (front - back) * (1 - Math.pow(near, 1.55)), inset = span * .13 * p, x0 = margin + inset, width = span - 2 * inset;
+      const lift = h * (.15 + .27 * near);
+      trace(row, x0, width, base, lift);
+      ctx.save(); ctx.lineTo(x0 + width, base + 3); ctx.lineTo(x0, base + 3); ctx.closePath(); ctx.globalCompositeOperation = 'destination-out'; ctx.fill(); ctx.restore();
+      trace(row, x0, width, base, lift);
+      if (age === 0) { ctx.strokeStyle = '#f1ecdf'; ctx.lineWidth = 1.25; }
+      else { ctx.strokeStyle = 'rgba(' + Math.round(150 + 60 * near) + ',' + Math.round(176 + 40 * near) + ',' + Math.round(150 + 40 * near) + ',' + (.06 + .58 * Math.pow(near, 1.7)).toFixed(3) + ')'; ctx.lineWidth = .6 + .35 * near; }
+      ctx.stroke();
+    }
     if (inspect) {
-      const p = Number(pick.value)/100, x=margin+span*p, hz = Math.round(frequency(p));
-      ctx.strokeStyle='#c7ad8a';ctx.lineWidth=.8;ctx.setLineDash([2,4]);
-      ctx.beginPath();ctx.moveTo(x,h*.15);ctx.lineTo(x,h*.90);ctx.stroke();ctx.setLineDash([]);
-      const db=measuredDb[Math.round(p*(bands-1))];
-      const label=hz+' Hz · '+(db>-86 ? Math.round(db)+' dB (FFT)' : 'bajo el umbral');
-      if (readout.textContent!==label) readout.textContent=label;
-      pick.setAttribute('aria-valuetext',label);
+      const p = probeP, j = Math.round(p * (bands - 1)), x = margin + span * p, hz = frequency(p), y = front - sm[j] * h * .42;      // sm holds the front row: it was traced last
+      ctx.strokeStyle = 'rgba(218,198,170,.75)'; ctx.lineWidth = .8; ctx.setLineDash([2, 4]);
+      ctx.beginPath(); ctx.moveTo(x, 20); ctx.lineTo(x, Math.max(20, y - 5)); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = '#f1ecdf'; ctx.beginPath(); ctx.arc(x, y, 2.6, 0, TAU); ctx.fill();
+      const db = liveDb[j], label = (hz < 1000 ? Math.round(hz) + ' Hz' : (hz / 1000).toFixed(1).replace('.', ',') + ' kHz') + ' · ' + (db > floorDb ? Math.round(db) + ' dB (FFT)' : 'bajo el umbral');
+      if (readout.textContent !== label) { readout.textContent = label; pick.setAttribute('aria-valuetext', label); }
+      // Above the plot and beside the band, never under the finger; it stays inside the plot at both ends.
+      readout.hidden = false; const half = readout.offsetWidth / 2; readout.style.transform = 'translateX(' + Math.round(clamp(x, half + 2, w - half - 2) - half) + 'px)';
     }
   }
-  function waveform(w,h) {
-    const middle=h*.5, margin=12, span=w-2*margin;
-    const n=analyser ? Math.min(samples.length>>1,Math.round(analyser.context.sampleRate*.025)) : 1;
-    let offset=0;
-    if(samples) {
-      // A rising zero crossing stabilises tonal sources without imposing a pitch.
-      for(let i=1;i<samples.length-n;i++) if(samples[i-1]<=0 && samples[i]>0){offset=i;break;}
+  const soft = v => { const a = Math.abs(v), y = (1 - Math.exp(-7 * a)) / (1 - Math.exp(-7)); return v < 0 ? -y : y; };      // quiet stays visible, loud is not cut flat, zero stays zero
+  function waveform(w, h) {
+    const middle = h * .5, span = w - 2 * margin, n = samples ? waveN : 2, reach = Math.min(h * .46, 150);
+    ctx.strokeStyle = 'rgba(241,236,223,.16)'; ctx.lineWidth = .6; ctx.beginPath(); ctx.moveTo(margin, middle); ctx.lineTo(w - margin, middle); ctx.stroke();
+    ctx.strokeStyle = '#ece6d3'; ctx.lineWidth = 1.5; ctx.lineJoin = ctx.lineCap = 'round'; ctx.beginPath();
+    let px = 0, py = 0;
+    for (let i = 0; i < n; i++) {
+      const x = margin + i * span / (n - 1), y = middle - (samples ? soft(samples[waveOff + i]) : 0) * reach;
+      // through the midpoints of consecutive samples: a continuous curve that still passes every peak's neighbourhood
+      if (i === 0) ctx.moveTo(x, y); else ctx.quadraticCurveTo(px, py, (px + x) / 2, (py + y) / 2);
+      px = x; py = y;
     }
-    ctx.strokeStyle='#4a6156';ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(margin,middle);ctx.lineTo(w-margin,middle);ctx.stroke();
-    ctx.strokeStyle='#cbe5c6';ctx.lineWidth=1.4;ctx.beginPath();
-    for(let i=0;i<n;i++){
-      const v=samples?samples[offset+i]:0,x=margin+i*span/Math.max(1,n-1);
-      const y=middle-clamp(v*3,-1,1)*h*.42;
-      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
-    }
-    ctx.stroke();
+    ctx.lineTo(px, py); ctx.stroke();
   }
   function render(ts) {
-    if (engine!==E) {
-      reset(); engine=E; analyser=E && E.outAn;
-      bins=analyser?new Float32Array(analyser.frequencyBinCount):null;
-      samples=analyser?new Float32Array(analyser.fftSize):null;
-    }
-    const w=canvas.clientWidth,h=canvas.clientHeight;
-    if(!w||!h)return;
-    const scale=Math.min(window.devicePixelRatio||1,2),pw=Math.round(w*scale),ph=Math.round(h*scale);
-    if(canvas.width!==pw || canvas.height!==ph){canvas.width=pw;canvas.height=ph;dirty=true;}
-    const running=analyser && S.playing && analyser.context.state==='running';
-    const canSample=running && (!reduced.matches || !staticFrame) && ts-last>=40;
-    if(!canSample && !dirty)return;
-    if(canSample) {
-      last=ts;
-      analyser.getFloatTimeDomainData(samples);
-      if(ts>=nextRow || !count){
-        head=(head+1)%depth;capture(history[head]);count=Math.min(depth,count+1);nextRow=ts+88;
+    if (engine !== E) { reset(); engine = E; attach(E && E.outAn); }
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    const scale = Math.min(window.devicePixelRatio || 1, 2), pw = Math.round(w * scale), ph = Math.round(h * scale);
+    if (canvas.width !== pw || canvas.height !== ph) { canvas.width = pw; canvas.height = ph; dirty = true; }
+    const running = analyser && S.playing && analyser.context.state === 'running', still = reduced.matches, rowMs = still ? 1000 : 100;
+    if (running) {
+      // The clock only runs while sound runs: on pause the drawing keeps exactly its last state.
+      clock += lastTs ? Math.min(250, ts - lastTs) : 0; lastTs = ts;
+      analyser.getFloatTimeDomainData(samples); measure();
+      let stepped = false;
+      while (clock - rowAt >= rowMs) { rowAt += rowMs; if (clock - rowAt > rowMs * depth) rowAt = clock; commit(); stepped = true; }
+      if (stepped) measure();
+      if (!still || stepped || !count) {
+        // the most recent 12 ms that start on a rising zero crossing: steady for a held note, and never late for an attack
+        waveOff = N - waveN; for (let i = N - waveN; i > 0; i--) if (samples[i - 1] <= 0 && samples[i] > 0) { waveOff = i; break; }
+        dirty = true;
       }
-      // After the fade-in, keep one measured frame for reduced motion.
-      if(reduced.matches && history[head].some(v=>v>.1))staticFrame=true;
-    }
-    dirty=false;ctx.setTransform(scale,0,0,scale,0,0);ctx.clearRect(0,0,w,h);
-    if(view==='wave')waveform(w,h);else relief(w,h);
+    } else lastTs = 0;
+    if (!dirty) return;
+    dirty = false; ctx.setTransform(scale, 0, 0, scale, 0, 0); ctx.clearRect(0, 0, w, h);
+    if (view === 'wave') waveform(w, h); else relief(w, h, still ? 0 : clamp((clock - rowAt) / rowMs, 0, 1));
   }
-  return {render,reset};
+  return {render, reset};
 }
 const vibration = sessionVibration();
 
