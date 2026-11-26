@@ -3579,14 +3579,14 @@ function sessionVibration() {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const bands = 136, depth = 32, minHz = 40, maxHz = 12000, floorDb = -84, topDb = -12, margin = 12;
   const history = Array.from({length: depth}, () => new Float32Array(bands));
-  const live = new Float32Array(bands), liveDb = new Float32Array(bands).fill(-Infinity), sm = new Float32Array(bands);
+  const live = new Float32Array(bands), peak = new Float32Array(bands), liveDb = new Float32Array(bands).fill(-Infinity), sm = new Float32Array(bands);
   let analyser, samples, engine, N = 0, fft, win, winSum = 1, re, im, bLo, bHi, bMid;
   let head = 0, count = 0, clock = 0, rowAt = 0, lastTs = 0, held = false, waveN = 1, waveOff = 0;
   let view = 'relief', inspect = false, dirty = true, probeP = .5, pointing = false;
   pick.max = 1000; pick.value = 500;
   function reset() {
     for (const row of history) row.fill(0);
-    live.fill(0); liveDb.fill(-Infinity); analyser = null; samples = null;
+    live.fill(0); peak.fill(0); liveDb.fill(-Infinity); analyser = null; samples = null;
     engine = null; head = 0; count = 0; clock = 0; rowAt = 0; lastTs = 0; held = false; waveOff = 0;
     dirty = true; inspect = false; readout.textContent = ''; readout.hidden = true;
   }
@@ -3619,7 +3619,9 @@ function sessionVibration() {
     waveN = Math.min(N >> 1, Math.round(an.context.sampleRate * .012));
   }
   // One reading of what is leaving right now. Digital silence gives exactly zero in every band.
-  function measure() {
+  // A band rises at once and falls back gradually (about 70 ms), so the front line never snaps down when a row is committed.
+  function measure(dt) {
+    const fall = dt > 0 ? 1 - Math.exp(-dt / 70) : 0;
     for (let i = 0; i < N; i++) { re[i] = samples[i] * win[i]; im[i] = 0; }
     fft(re, im);
     const mag = k => Math.hypot(re[k], im[k]) * 2 / winSum;
@@ -3628,11 +3630,13 @@ function sessionVibration() {
       if (bHi[j] >= bLo[j]) { for (let k = bLo[j]; k <= bHi[j]; k++) { const q = mag(k); if (q > m) m = q; } }
       else { const k = Math.floor(bMid[j]), f = bMid[j] - k; m = mag(k) * (1 - f) + mag(k + 1) * f; }      // bands narrower than one bin: between its neighbours
       const db = m > 1e-9 ? 20 * Math.log10(m) : -Infinity, v = db > floorDb ? Math.pow(clamp((db - floorDb) / (topDb - floorDb), 0, 1), 1.15) : 0;
-      if (v > live[j] || !held) { live[j] = v; liveDb[j] = db; }
+      if (v > peak[j]) peak[j] = v;      // what a row keeps: the highest reading since the last one, so a short attack is never averaged away
+      if (v >= live[j]) { live[j] = v; liveDb[j] = db; }
+      else { const q = live[j] + (v - live[j]) * fall; live[j] = q < .002 && !v ? 0 : q; liveDb[j] = live[j] ? floorDb + (topDb - floorDb) * Math.pow(live[j], 1 / 1.15) : -Infinity; }
     }
     held = true;
   }
-  function commit() { head = (head + 1) % depth; history[head].set(live); count = Math.min(depth, count + 1); held = false; }
+  function commit() { head = (head + 1) % depth; history[head].set(peak); peak.set(live); count = Math.min(depth, count + 1); held = false; }
   function trace(row, x0, width, base, lift) {
     for (let j = 0; j < bands; j++) sm[j] = (row[Math.max(0, j - 1)] + 2 * row[j] + row[Math.min(bands - 1, j + 1)]) / 4;
     ctx.beginPath(); ctx.moveTo(x0, base - sm[0] * lift);
@@ -3651,7 +3655,7 @@ function sessionVibration() {
       ctx.save(); ctx.lineTo(x0 + width, base + 3); ctx.lineTo(x0, base + 3); ctx.closePath(); ctx.globalCompositeOperation = 'destination-out'; ctx.fill(); ctx.restore();
       trace(row, x0, width, base, lift);
       if (age === 0) { ctx.strokeStyle = '#f1ecdf'; ctx.lineWidth = 1.25; }
-      else { ctx.strokeStyle = 'rgba(' + Math.round(150 + 60 * near) + ',' + Math.round(176 + 40 * near) + ',' + Math.round(150 + 40 * near) + ',' + (.06 + .58 * Math.pow(near, 1.7)).toFixed(3) + ')'; ctx.lineWidth = .6 + .35 * near; }
+      else { ctx.strokeStyle = 'rgba(' + Math.round(150 + 60 * near) + ',' + Math.round(176 + 40 * near) + ',' + Math.round(150 + 40 * near) + ',' + ((.06 + .58 * Math.pow(near, 1.7)) * (age === 1 ? Math.min(1, pos * 1.5) : 1)).toFixed(3) + ')'; ctx.lineWidth = .6 + .35 * near; }      // the newest row fades in as it leaves the front
       ctx.stroke();
     }
     if (inspect) {
@@ -3688,11 +3692,10 @@ function sessionVibration() {
     const running = analyser && S.playing && analyser.context.state === 'running', still = reduced.matches, rowMs = still ? 1000 : 100;
     if (running) {
       // The clock only runs while sound runs: on pause the drawing keeps exactly its last state.
-      clock += lastTs ? Math.min(250, ts - lastTs) : 0; lastTs = ts;
-      analyser.getFloatTimeDomainData(samples); measure();
+      const dt = lastTs ? Math.min(250, ts - lastTs) : 0; clock += dt; lastTs = ts;
+      analyser.getFloatTimeDomainData(samples); measure(dt);
       let stepped = false;
       while (clock - rowAt >= rowMs) { rowAt += rowMs; if (clock - rowAt > rowMs * depth) rowAt = clock; commit(); stepped = true; }
-      if (stepped) measure();
       if (!still || stepped || !count) {
         // the most recent 12 ms that start on a rising zero crossing: steady for a held note, and never late for an attack
         waveOff = N - waveN; for (let i = N - waveN; i > 0; i--) if (samples[i - 1] <= 0 && samples[i] > 0) { waveOff = i; break; }
