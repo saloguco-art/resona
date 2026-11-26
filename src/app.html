@@ -346,12 +346,12 @@ h1{font-size:clamp(1.7rem,7.6vw,2.05rem);font-weight:600;letter-spacing:-.02em;l
 .pbar i{display:block;height:100%;background:var(--accent);transform-origin:left center;transform:scaleX(.08);transition:transform 200ms linear}
 @media (max-height:640px){ h1{font-size:1.35rem} .round.stop{width:80px;height:80px} #btnPlay.round.xl{width:84px;height:84px} .hero canvas{width:64px;height:64px} .hero .iname{font-size:1.5rem} #btnListen{min-height:68px} }
 
-#vSession .sound-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:125px;gap:0}
+#vSession .sound-stage,#vLand .sound-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:125px;gap:0}
 .sound-plot{position:relative;width:100%;flex:1;min-height:70px;max-height:360px}
-#soundRelief{position:absolute;inset:0;width:100%;height:100%;display:block}
-#freqProbe{display:block;position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:crosshair;touch-action:pan-y}
+#soundRelief,#landRelief{position:absolute;inset:0;width:100%;height:100%;display:block}
+#freqProbe,#landProbe{display:block;position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:crosshair;touch-action:pan-y}
 .sound-plot:focus-within{outline:1px solid #8d9d85;outline-offset:-1px;border-radius:6px}
-#freqReadout{position:absolute;top:0;left:0;white-space:nowrap;pointer-events:none;padding:2px 7px;border-radius:9px;background:color-mix(in srgb,var(--bg) 82%,transparent);font:500 .72rem/1.3 var(--ui);font-variant-numeric:tabular-nums;color:#e6d6bd}
+#freqReadout,#landReadout{position:absolute;top:0;left:0;white-space:nowrap;pointer-events:none;padding:2px 7px;border-radius:9px;background:color-mix(in srgb,var(--bg) 82%,transparent);font:500 .72rem/1.3 var(--ui);font-variant-numeric:tabular-nums;color:#e6d6bd}
 .vib-modes{display:flex;align-self:center;gap:2px}
 .vib-modes button{min-height:44px;min-width:64px;font:500 .79rem/1 var(--ui);color:var(--faint)}
 .vib-modes button[aria-pressed="true"]{color:var(--ink);text-decoration:underline;text-underline-offset:6px;text-decoration-color:#91a88e}
@@ -420,7 +420,7 @@ html.dark .seg.eq .pill[aria-pressed="true"],html.dark .steps button[aria-presse
 .range{color:var(--ink);font-weight:600} #trimListen{color:var(--tint)}
 .nudge button{border:0;background:var(--fill);border-radius:12px;font-weight:500}
 /* first listen: the sound's own fingerprint fills the room left over, and moves with what is playing */
-#vLand .stage{min-height:0}
+#vLand .stage{min-height:0} #vLand .sound-plot{min-height:0} #landReadout{color:var(--ink)} #vLand .vib-modes button{min-height:40px}
 .nudge{flex-wrap:nowrap} .nudge button{flex:1}
 #landName{font-size:clamp(1.6rem,7vw,1.95rem)}
 #vLand.demo #landTitle{color:var(--faint);letter-spacing:0;font-size:.82rem;font-weight:600}
@@ -542,7 +542,12 @@ html.dark .seg.eq .pill[aria-pressed="true"],html.dark .steps button[aria-presse
     <div id="demoBox" hidden><p class="fine" id="demoNote" style="text-align:left"></p><div class="seg" id="demoTakes" role="group" aria-label="Qué toma escuchar" hidden style="margin-top:6px"></div><button id="btnAgain" hidden></button></div>
     <div id="labRow" hidden><p class="fine" id="labInfo"></p>
       <div class="row" style="justify-content:center;gap:2px"><button class="text small" id="labAB">A/B del laboratorio</button><button class="text small" id="labDiag">Diagnóstico</button></div></div>
-    <div class="stage" data-stage aria-hidden="true"></div>
+    <div class="stage sound-stage" data-stage>
+      <div class="sound-plot"><canvas id="landRelief" role="img" aria-label="Vibración de lo que suena"></canvas>
+        <input type="range" id="landProbe" min="0" max="100" value="50" aria-label="Explorar bandas de graves a agudos">
+        <output id="landReadout" for="landProbe"></output></div>
+      <div class="vib-modes" id="landModes" role="group" aria-label="Vista del sonido">
+        <button data-v="relief" aria-pressed="true">Relieve</button><button data-v="wave" aria-pressed="false">Onda</button></div></div>
     <div class="foot">
       <button class="outline nodemo" id="btnKeep"><span id="keepTxt">Elegir mi instante</span></button>
       <button class="primary" id="btnStart">Meditar 5 min</button>
@@ -2389,6 +2394,7 @@ const ICON = {
 const VIEWS = ['Home', 'Create', 'Lib', 'Rec', 'Proc', 'Land', 'Trim', 'AB', 'Cmp', 'Eval', 'Lugar', 'Pick', 'Session', 'End', 'Stats', 'Guide'];
 function setView(v) {
   if (S.view === "session" && v !== "session") vibration.reset();
+  if (S.view === "land" && v !== "land") landVib.reset();
   S.view = v;
   for (const id of VIEWS) $('v' + id).hidden = id.toLowerCase() !== v;
   const sess = v === 'session', dark = sess || v === 'rec'; document.documentElement.classList.toggle('dark', dark);
@@ -3573,9 +3579,10 @@ let energy = 0, cueShown = '', recHintShown = '', recShown = '', wavePush = 0;
 // Session visualisation is a passive reader of the final mix (E.outAn). It creates no audio nodes and changes none.
 // Relieve: its own FFT of the samples that leave, peak-held between rows, so a short attack is never averaged away.
 // Onda: the latest 12 ms of those same samples, one point per sample, on a soft amplitude scale.
-function sessionVibration() {
-  const canvas = $('soundRelief'), ctx = canvas.getContext('2d');
-  const pick = $('freqProbe'), readout = $('freqReadout'), modes = $('vibModes');
+// The same drawing serves the session (dark) and the first listen (light, in the theme's ink): `active` says when sound is running there.
+function sessionVibration(id, active, light) {
+  const canvas = $(id[0]), ctx = canvas.getContext('2d');
+  const pick = $(id[1]), readout = $(id[2]), modes = $(id[3]);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const bands = 136, depth = 32, minHz = 40, maxHz = 12000, floorDb = -84, topDb = -12, margin = 12;
   const history = Array.from({length: depth}, () => new Float32Array(bands));
@@ -3654,15 +3661,15 @@ function sessionVibration() {
       trace(row, x0, width, base, lift);
       ctx.save(); ctx.lineTo(x0 + width, base + 3); ctx.lineTo(x0, base + 3); ctx.closePath(); ctx.globalCompositeOperation = 'destination-out'; ctx.fill(); ctx.restore();
       trace(row, x0, width, base, lift);
-      if (age === 0) { ctx.strokeStyle = '#f1ecdf'; ctx.lineWidth = 1.25; }
-      else { ctx.strokeStyle = 'rgba(' + Math.round(150 + 60 * near) + ',' + Math.round(176 + 40 * near) + ',' + Math.round(150 + 40 * near) + ',' + ((.06 + .58 * Math.pow(near, 1.7)) * (age === 1 ? Math.min(1, pos * 1.5) : 1)).toFixed(3) + ')'; ctx.lineWidth = .6 + .35 * near; }      // the newest row fades in as it leaves the front
+      if (age === 0) { ctx.strokeStyle = light ? 'rgb(' + inkRgb() + ')' : '#f1ecdf'; ctx.lineWidth = 1.25; }
+      else { ctx.strokeStyle = 'rgba(' + (light ? inkRgb() : Math.round(150 + 60 * near) + ',' + Math.round(176 + 40 * near) + ',' + Math.round(150 + 40 * near)) + ',' + ((.06 + .58 * Math.pow(near, 1.7)) * (age === 1 ? Math.min(1, pos * 1.5) : 1)).toFixed(3) + ')'; ctx.lineWidth = .6 + .35 * near; }      // the newest row fades in as it leaves the front
       ctx.stroke();
     }
     if (inspect) {
       const p = probeP, j = Math.round(p * (bands - 1)), x = margin + span * p, hz = frequency(p), y = front - sm[j] * h * .42;      // sm holds the front row: it was traced last
-      ctx.strokeStyle = 'rgba(218,198,170,.75)'; ctx.lineWidth = .8; ctx.setLineDash([2, 4]);
+      ctx.strokeStyle = light ? 'rgba(' + inkRgb() + ',.5)' : 'rgba(218,198,170,.75)'; ctx.lineWidth = .8; ctx.setLineDash([2, 4]);
       ctx.beginPath(); ctx.moveTo(x, 20); ctx.lineTo(x, Math.max(20, y - 5)); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = '#f1ecdf'; ctx.beginPath(); ctx.arc(x, y, 2.6, 0, TAU); ctx.fill();
+      ctx.fillStyle = light ? 'rgb(' + inkRgb() + ')' : '#f1ecdf'; ctx.beginPath(); ctx.arc(x, y, 2.6, 0, TAU); ctx.fill();
       const db = liveDb[j], label = (hz < 1000 ? Math.round(hz) + ' Hz' : (hz / 1000).toFixed(1).replace('.', ',') + ' kHz') + ' · ' + (db > floorDb ? Math.round(db) + ' dB (FFT)' : 'bajo el umbral');
       if (readout.textContent !== label) { readout.textContent = label; pick.setAttribute('aria-valuetext', label); }
       // Above the plot and beside the band, never under the finger; it stays inside the plot at both ends.
@@ -3672,8 +3679,8 @@ function sessionVibration() {
   const soft = v => { const a = Math.abs(v), y = (1 - Math.exp(-7 * a)) / (1 - Math.exp(-7)); return v < 0 ? -y : y; };      // quiet stays visible, loud is not cut flat, zero stays zero
   function waveform(w, h) {
     const middle = h * .5, span = w - 2 * margin, n = samples ? waveN : 2, reach = Math.min(h * .46, 150);
-    ctx.strokeStyle = 'rgba(241,236,223,.16)'; ctx.lineWidth = .6; ctx.beginPath(); ctx.moveTo(margin, middle); ctx.lineTo(w - margin, middle); ctx.stroke();
-    ctx.strokeStyle = '#ece6d3'; ctx.lineWidth = 1.5; ctx.lineJoin = ctx.lineCap = 'round'; ctx.beginPath();
+    ctx.strokeStyle = light ? 'rgba(' + inkRgb() + ',.16)' : 'rgba(241,236,223,.16)'; ctx.lineWidth = .6; ctx.beginPath(); ctx.moveTo(margin, middle); ctx.lineTo(w - margin, middle); ctx.stroke();
+    ctx.strokeStyle = light ? 'rgb(' + inkRgb() + ')' : '#ece6d3'; ctx.lineWidth = 1.5; ctx.lineJoin = ctx.lineCap = 'round'; ctx.beginPath();
     let px = 0, py = 0;
     for (let i = 0; i < n; i++) {
       const x = margin + i * span / (n - 1), y = middle - (samples ? soft(samples[waveOff + i]) : 0) * reach;
@@ -3689,7 +3696,7 @@ function sessionVibration() {
     if (!w || !h) return;
     const scale = Math.min(window.devicePixelRatio || 1, 2), pw = Math.round(w * scale), ph = Math.round(h * scale);
     if (canvas.width !== pw || canvas.height !== ph) { canvas.width = pw; canvas.height = ph; dirty = true; }
-    const running = analyser && S.playing && analyser.context.state === 'running', still = reduced.matches, rowMs = still ? 1000 : 100;
+    const running = analyser && active() && analyser.context.state === 'running', still = reduced.matches, rowMs = still ? 1000 : 100;
     if (running) {
       // The clock only runs while sound runs: on pause the drawing keeps exactly its last state.
       const dt = lastTs ? Math.min(250, ts - lastTs) : 0; clock += dt; lastTs = ts;
@@ -3708,7 +3715,8 @@ function sessionVibration() {
   }
   return {render, reset};
 }
-const vibration = sessionVibration();
+const vibration = sessionVibration(['soundRelief', 'freqProbe', 'freqReadout', 'vibModes'], () => S.playing);
+const landVib = sessionVibration(['landRelief', 'landProbe', 'landReadout', 'landModes'], () => S.playing || origPlaying || DM.on, true);
 
 function draw(ts) {
   requestAnimationFrame(draw);
@@ -3739,6 +3747,7 @@ function draw(ts) {
     vibration.render(ts);
     return;
   }
+  if (v === 'land') { landVib.render(ts); return; }      // first listen: the same reading of what is leaving, original, transition or landscape
   const R = Math.min(rc.width, rc.height) * .34;
   let hs = idleH, hue = 100, e = 0, br = REDUCED ? .5 : .5 + .5 * Math.sin(t * .5), prog = 1, speed = 1;
   if (v === 'home') { if (S.hero) { hs = S.hero.H; hue = S.hero.hue; } }
