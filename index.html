@@ -2684,10 +2684,19 @@ function sigOf(it) {                 // older sounds were saved without their dr
   for (let i = 0; i < 64; i++) { r = (r * 73 + 17) % 9973; s[i] = r / 9973; }
   return { sig: s, sym: 3 + it.id % 4, hue: 80 + it.id % 180 };
 }
+// The fingerprint takes the colour of what is read: ink on the surface of the moment (light or dark). Its shape is the sound's; its colour is the interface's.
+const INK = {};
+function inkRgb() {
+  const k = document.documentElement.classList.contains('dark') ? 'd' : 'l'; if (INK[k]) return INK[k];
+  let v = ''; try { v = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim(); } catch (e) {}
+  const m = /^#([0-9a-f]{6})$/i.exec(v); if (!m) return k === 'd' ? '243,244,242' : '18,20,19';
+  const n = parseInt(m[1], 16); return INK[k] = (n >> 16) + ',' + (n >> 8 & 255) + ',' + (n & 255);
+}
 function thumb(it, px) {            // the sound's fingerprint: rings drawn from its own spectrum
   px = px || 44; const c = el('canvas'), d = Math.min(2, window.devicePixelRatio || 1); c.width = px * d; c.height = px * d; c.setAttribute('aria-hidden', 'true');
-  const k = c.getContext('2d'), s = sigOf(it); k.setTransform(d, 0, 0, d, 0, 0);
-  drawOrb(k, px / 2, px / 2, px * .37, harmonics(s.sig, s.sym), { n: px > 60 ? 16 : 9, pts: 56, lw: px > 60 ? .9 : .8, col: f => `hsla(${s.hue},30%,36%,${.5 + .4 * f})` });
+  const k = c.getContext('2d'), s = sigOf(it), big = px > 60, ink = inkRgb(); k.setTransform(d, 0, 0, d, 0, 0);
+  // large: many fine rings that fade towards the centre, enough points for a smooth curve; small: few, firmer rings that hold at 44 px
+  drawOrb(k, px / 2, px / 2, px * (big ? .35 : .37), harmonics(s.sig, s.sym), { n: big ? 18 : 7, pts: big ? 144 : 56, lw: big ? 1.15 : 1, col: f => 'rgba(' + ink + ',' + (big ? .14 + .7 * f * f : .35 + .5 * f).toFixed(3) + ')' });
   return c;
 }
 async function renderLib() {
@@ -2698,7 +2707,7 @@ async function renderLib() {
   const kept = all.filter(i => i.keep || i.moment), h = (kept.length ? kept : all)[0], st = h.set || {}, dur = st.dur != null ? +st.dur : 5, what = (MODE_NAMES[st.mode] || 'Calma') + ' · ' + (dur > 0 ? dur + ' min' : 'sin límite');
   S.hero = { it: h };
   $('heroKick').textContent = kept.length ? 'Mi ritual' : 'Último paisaje'; $('heroName').textContent = h.name; $('heroMeta').textContent = momentLabel(h.moment); $('heroMeta').hidden = !h.moment;
-  { const fp = thumb(h, 190); fp.id = 'heroFp'; $('heroFp').replaceWith(fp); }
+  { const fp = thumb(h, 270); fp.id = 'heroFp'; $('heroFp').replaceWith(fp); }      // drawn at its largest displayed size, so it is never scaled up
   $('listenTxt').textContent = 'Escuchar · ' + what; $('btnListen').setAttribute('aria-label', 'Escuchar ' + h.name + ', ' + what + (h.moment ? ', ' + momentLabel(h.moment) : ''));
   for (const it of all) {
     const row = el('div', 'li'), open = el('button', 'open'), dots = el('button', 'dots', '···'), tri = el('button', 'tri');
@@ -3435,7 +3444,7 @@ if (window.visualViewport) {
 }
 
 /* ───────────── Self-update: load the newest version without the person reloading ───────────── */
-const BUILD = '20261126144408'; let pendingBuild = '';
+const BUILD = '20261126145110'; let pendingBuild = '';
 function applyUpdate() {
   if (!pendingBuild || S.view !== 'home' || S.busy || rec || rateCtx || !$('edit').hidden) return;      // never interrupt a session
   try { if (sessionStorage.getItem('resona.tried') === pendingBuild) return; sessionStorage.setItem('resona.tried', pendingBuild); } catch (e) {}
@@ -3741,7 +3750,7 @@ function draw(ts) {
     }
   }
   energy += (e - energy) * .08;
-  drawOrb(g, cx, cy, R, hs, { t: REDUCED ? 0 : t * speed, e: energy, br, prog, lw:.9, col: f => `hsla(${hue},30%,36%,${.4 + .5 * f})` });
+  const ink = inkRgb(); drawOrb(g, cx, cy, R, hs, { t: REDUCED ? 0 : t * speed, e: energy, br, prog, pts: 144, lw: 1, col: f => 'rgba(' + ink + ',' + (.14 + .7 * f * f).toFixed(3) + ')' });
 }
 requestAnimationFrame(draw);
 
