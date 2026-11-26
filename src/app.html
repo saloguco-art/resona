@@ -345,6 +345,17 @@ h1{font-size:clamp(1.7rem,7.6vw,2.05rem);font-weight:600;letter-spacing:-.02em;l
 .pbar{height:3px;border-radius:2px;background:var(--line);overflow:hidden;margin:18px auto 0;width:min(240px,70%)}
 .pbar i{display:block;height:100%;background:var(--accent);transform-origin:left center;transform:scaleX(.08);transition:transform 200ms linear}
 @media (max-height:640px){ h1{font-size:1.35rem} .round.stop{width:80px;height:80px} #btnPlay.round.xl{width:84px;height:84px} .hero canvas{width:64px;height:64px} .hero .iname{font-size:1.5rem} #btnListen{min-height:68px} }
+
+#vSession .sound-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:125px;gap:0}
+.sound-plot{position:relative;width:100%;flex:1;min-height:70px;max-height:360px}
+#soundRelief{position:absolute;inset:0;width:100%;height:100%;display:block}
+#freqProbe{display:block;position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:crosshair;touch-action:pan-y}
+.sound-plot:focus-within{outline:1px solid #8d9d85;outline-offset:-1px;border-radius:6px}
+#freqReadout{position:absolute;bottom:0;left:0;right:0;text-align:center;pointer-events:none;font:500 .69rem/1.3 var(--ui);font-variant-numeric:tabular-nums;color:#dac6aa}
+.vib-modes{display:flex;align-self:center;gap:2px}
+.vib-modes button{min-height:44px;min-width:64px;font:500 .79rem/1 var(--ui);color:var(--faint)}
+.vib-modes button[aria-pressed="true"]{color:var(--ink);text-decoration:underline;text-underline-offset:6px;text-decoration-color:#91a88e}
+#vSession .sound-stage .cue{position:static;min-height:1.1em;line-height:1.1;transform:none;text-align:center}
 </style>
 
 <canvas id="cv" aria-hidden="true"></canvas>
@@ -510,7 +521,13 @@ h1{font-size:clamp(1.7rem,7.6vw,2.05rem);font-weight:600;letter-spacing:-.02em;l
   <section class="view" id="vSession" hidden>
     <div class="center"><h1 class="it" id="sName">—</h1><p class="kicker" id="sSub" style="margin-top:6px">Calma</p>
       <p class="hint" id="sHint" hidden>Escucha un detalle de tu grabación. Cuando te distraigas, vuelve a él.<button id="sHintX">Ocultar</button></p></div>
-    <div class="stage" data-stage><div class="cue" id="cue"></div></div>
+    <div class="stage sound-stage" data-stage>
+      <div class="sound-plot"><canvas id="soundRelief" role="img" aria-label="Vibración de la mezcla final"></canvas>
+        <input type="range" id="freqProbe" min="0" max="100" value="50" aria-label="Explorar bandas de graves a agudos">
+        <output id="freqReadout" for="freqProbe"></output></div>
+      <div class="vib-modes" id="vibModes" role="group" aria-label="Vista del sonido">
+        <button data-v="relief" aria-pressed="true">Relieve</button><button data-v="wave" aria-pressed="false">Onda</button></div>
+      <div class="cue" id="cue"></div></div>
     <div id="rioBox" hidden><div class="row between" style="font-size:13.5px;color:var(--dim)"><span>Orilla</span><span>Bajo el agua</span></div>
       <input type="range" id="rngRio" min="0" max="100" step="1" value="0" aria-label="Orilla o bajo el agua">
       <div class="row between"><button class="text small" id="rioAuto" aria-pressed="false">Recorrido lento: no</button><button class="text small" id="rioEdit">Cambiar tomas</button></div></div>
@@ -653,7 +670,7 @@ h1{font-size:clamp(1.7rem,7.6vw,2.05rem);font-weight:600;letter-spacing:-.02em;l
       <div class="seg" id="segMov"><button class="pill" data-v="estable" aria-pressed="false">Estable</button><button class="pill" data-v="suave" aria-pressed="true">Suave</button></div></div>
     <div class="opt" id="optQuiet" hidden><p class="lbl">Mi instante en Foco</p>
       <div class="seg" id="segQuiet"><button class="pill" data-v="1" aria-pressed="true">En pausa</button><button class="pill" data-v="0" aria-pressed="false">Presente</button></div></div>
-    <div class="opt" id="optDim" hidden><p class="lbl">Orbe</p>
+    <div class="opt" id="optDim" hidden><p class="lbl">Vibración</p>
       <div class="seg" id="segDim"><button class="pill" data-v="0" aria-pressed="true">Visible</button><button class="pill" data-v="1" aria-pressed="false">Oscuro</button></div></div>
     <div class="opt"><p class="lbl">Tararear</p>
       <div class="seg" id="segHum"><button class="pill" data-v="0" aria-pressed="true">No</button><button class="pill" data-v="1" aria-pressed="false">Sí, al exhalar</button></div></div>
@@ -2278,6 +2295,7 @@ const ICON = {
 };
 const VIEWS = ['Home', 'Create', 'Lib', 'Rec', 'Proc', 'Land', 'Trim', 'AB', 'Cmp', 'Eval', 'Lugar', 'Pick', 'Session', 'End', 'Stats', 'Guide'];
 function setView(v) {
+  if (S.view === "session" && v !== "session") vibration.reset();
   S.view = v;
   for (const id of VIEWS) $('v' + id).hidden = id.toLowerCase() !== v;
   const sess = v === 'session', dark = sess || v === 'rec'; document.documentElement.classList.toggle('dark', dark);
@@ -3450,6 +3468,117 @@ const idleSig = new Float32Array(64); for (let i = 0; i < 64; i++) idleSig[i] = 
 const idleH = harmonics(idleSig, 5), wave = new Float32Array(84);
 let energy = 0, cueShown = '', recHintShown = '', recShown = '', wavePush = 0;
 
+// Session visualisation is a passive reader of the final mix. It creates no audio nodes.
+function sessionVibration() {
+  const canvas = $('soundRelief'), ctx = canvas.getContext('2d');
+  const pick = $('freqProbe'), readout = $('freqReadout'), modes = $('vibModes');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const bands = 136, depth = 38, minHz = 40, maxHz = 12000;
+  const history = Array.from({length: depth}, () => new Float32Array(bands));
+  const measuredDb = new Float32Array(bands).fill(-Infinity);
+  let analyser, bins, samples, engine, head = 0, count = 0, last = -Infinity, nextRow = 0;
+  let view = 'relief', inspect = false, staticFrame = false, dirty = true;
+  function reset() {
+    for (const row of history) row.fill(0);
+    measuredDb.fill(-Infinity); analyser = null; samples = null;
+    engine = null; head = 0; count = 0; nextRow = 0; last = -Infinity;
+    staticFrame = false; dirty = true; inspect = false;
+    readout.textContent = '';
+  }
+  function select(mode) {
+    view = mode; dirty = true; staticFrame = false;
+    for (const b of modes.querySelectorAll('button')) b.setAttribute('aria-pressed',String(b.dataset.v === view));
+    pick.hidden = mode !== 'relief'; inspect = false; readout.textContent = '';
+  }
+  modes.onclick = event => { const b = event.target.closest('button'); if (b) select(b.dataset.v); };
+  pick.oninput = pick.onpointerdown = pick.onfocus = () => { inspect = true; dirty = true; };
+  pick.onblur = () => { inspect = false; readout.textContent = ''; dirty = true; };
+  const frequency = p => minHz * (maxHz / minHz) ** p;
+  function capture(row) {
+    analyser.getFloatFrequencyData(bins);
+    const binHz = analyser.context.sampleRate / analyser.fftSize;
+    for (let j = 0; j < bands; j++) {
+      const low = Math.max(1, Math.round(frequency((j-.5)/(bands-1)) / binHz));
+      const high = Math.min(bins.length-1, Math.max(low, Math.round(frequency((j+.5)/(bands-1)) / binHz)));
+      let db = -Infinity;
+      for (let k = low; k <= high; k++) db = Math.max(db, bins[k]);
+      measuredDb[j] = db;
+      row[j] = clamp((db + 86) / 76, 0, 1);
+    }
+  }
+  function relief(w,h) {
+    const margin = 12, span = w-2*margin;
+    for (let age = Math.min(count,depth)-1; age >= 0; age--) {
+      const row = history[(head-age+depth)%depth], far = age/(depth-1);
+      const base = h*(.84-.44*far), inset = span*.08*far;
+      const x0 = margin+inset, width = span-2*inset, strength = 1-far;
+      ctx.beginPath();
+      for (let j=0; j<bands; j++) {
+        // Gentle smoothing across adjacent bands keeps narrow transients legible at phone sizes.
+        const v = (row[Math.max(0,j-1)] + 2*row[j] + row[Math.min(bands-1,j+1)])/4;
+        const x = x0+width*j/(bands-1), y = base-v*h*(.5-.12*far);
+        if (j===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle = age===0 ? '#e0f2ca' : 'rgba('+Math.round(120+65*strength)+','+Math.round(154+59*strength)+','+Math.round(158+14*strength)+','+(.19+.53*strength)+')';
+      ctx.lineWidth = age===0 ? 1.65 : .85; ctx.stroke();
+    }
+    if (!count) { ctx.strokeStyle='#647c70';ctx.beginPath();ctx.moveTo(margin,h*.84);ctx.lineTo(w-margin,h*.84);ctx.stroke(); }
+    if (inspect) {
+      const p = Number(pick.value)/100, x=margin+span*p, hz = Math.round(frequency(p));
+      ctx.strokeStyle='#c7ad8a';ctx.lineWidth=.8;ctx.setLineDash([2,4]);
+      ctx.beginPath();ctx.moveTo(x,h*.15);ctx.lineTo(x,h*.90);ctx.stroke();ctx.setLineDash([]);
+      const db=measuredDb[Math.round(p*(bands-1))];
+      const label=hz+' Hz · '+(db>-86 ? Math.round(db)+' dB (FFT)' : 'bajo el umbral');
+      if (readout.textContent!==label) readout.textContent=label;
+      pick.setAttribute('aria-valuetext',label);
+    }
+  }
+  function waveform(w,h) {
+    const middle=h*.5, margin=12, span=w-2*margin;
+    const n=analyser ? Math.min(samples.length>>1,Math.round(analyser.context.sampleRate*.025)) : 1;
+    let offset=0;
+    if(samples) {
+      // A rising zero crossing stabilises tonal sources without imposing a pitch.
+      for(let i=1;i<samples.length-n;i++) if(samples[i-1]<=0 && samples[i]>0){offset=i;break;}
+    }
+    ctx.strokeStyle='#4a6156';ctx.lineWidth=.6;ctx.beginPath();ctx.moveTo(margin,middle);ctx.lineTo(w-margin,middle);ctx.stroke();
+    ctx.strokeStyle='#cbe5c6';ctx.lineWidth=1.4;ctx.beginPath();
+    for(let i=0;i<n;i++){
+      const v=samples?samples[offset+i]:0,x=margin+i*span/Math.max(1,n-1);
+      const y=middle-clamp(v*3,-1,1)*h*.42;
+      if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  function render(ts) {
+    if (engine!==E) {
+      reset(); engine=E; analyser=E && E.outAn;
+      bins=analyser?new Float32Array(analyser.frequencyBinCount):null;
+      samples=analyser?new Float32Array(analyser.fftSize):null;
+    }
+    const w=canvas.clientWidth,h=canvas.clientHeight;
+    if(!w||!h)return;
+    const scale=Math.min(window.devicePixelRatio||1,2),pw=Math.round(w*scale),ph=Math.round(h*scale);
+    if(canvas.width!==pw || canvas.height!==ph){canvas.width=pw;canvas.height=ph;dirty=true;}
+    const running=analyser && S.playing && analyser.context.state==='running';
+    const canSample=running && (!reduced.matches || !staticFrame) && ts-last>=40;
+    if(!canSample && !dirty)return;
+    if(canSample) {
+      last=ts;
+      analyser.getFloatTimeDomainData(samples);
+      if(ts>=nextRow || !count){
+        head=(head+1)%depth;capture(history[head]);count=Math.min(depth,count+1);nextRow=ts+88;
+      }
+      // After the fade-in, keep one measured frame for reduced motion.
+      if(reduced.matches && history[head].some(v=>v>.1))staticFrame=true;
+    }
+    dirty=false;ctx.setTransform(scale,0,0,scale,0,0);ctx.clearRect(0,0,w,h);
+    if(view==='wave')waveform(w,h);else relief(w,h);
+  }
+  return {render,reset};
+}
+const vibration = sessionVibration();
+
 function draw(ts) {
   requestAnimationFrame(draw);
   if (cv.clientWidth !== W || cv.clientHeight !== H) resize();
@@ -3471,26 +3600,28 @@ function draw(ts) {
       for (let i = 0; i < n; i++) { const hh = Math.max(1.5, wave[wave.length - n + i] * amp), x = rc.left + (i + .5) * bw; g.beginPath(); g.moveTo(x, cy - hh); g.lineTo(x, cy + hh); g.stroke(); } }
     return;
   }
-  const dark = v === 'session', R = Math.min(rc.width, rc.height) * .34;
+  if (v === 'session') {
+    const cue = S.playing ? curBreath.cue : '';
+    if (cue !== cueShown) { cueShown = cue; $('cue').textContent = cue; }
+    const dim = S.mode === 'sueno' && (S.slept || (S.dim && S.playing)) && ts-(S.wakeAt||0)>12000;
+    if (dim !== !!S.dimNow) { S.dimNow=dim; document.documentElement.classList.toggle('dim',dim); }
+    vibration.render(ts);
+    return;
+  }
+  const R = Math.min(rc.width, rc.height) * .34;
   let hs = idleH, hue = 100, e = 0, br = REDUCED ? .5 : .5 + .5 * Math.sin(t * .5), prog = 1, speed = 1;
   if (v === 'home') { if (S.hero) { hs = S.hero.H; hue = S.hero.hue; } }
   else if (v === 'proc') { speed = 4; prog = .12; if (S.sound && S.procOk) { hs = S.sound.H || (S.sound.H = harmonics(S.sound.an.sig, S.sound.an.sym)); hue = S.hue; prog = .12 + .88 * S.progress; } }
   else if (S.sound) {
     hs = S.sound.H || (S.sound.H = harmonics(S.sound.an.sig, S.sound.an.sym)); hue = S.hue;
-    if ((S.playing || origPlaying) && E && (dark || v === 'land' || v === 'ab' || v === 'cmp')) {
+    if ((S.playing || origPlaying) && E && (v === 'land' || v === 'ab' || v === 'cmp')) {
       E.an.getByteFrequencyData(E.freq); let sum = 0; const nyq = S.ctx.sampleRate / 2, nb = E.freq.length;
       for (let b = 0; b < 64; b += 2) sum += E.freq[clamp(Math.round(80 * Math.pow(100, b / 64) / nyq * nb), 1, nb - 1)] / 255;
       e = clamp(sum / 32 * 2.2, 0, 1); if (S.playing) br = curBreath.v;
     }
   }
-  const cue = dark && S.playing ? curBreath.cue : ''; if (cue !== cueShown) { cueShown = cue; $('cue').textContent = cue; }
   energy += (e - energy) * .08;
-  // Sueño: the orb can go dark on its own, and it always does once the session has ended. Any touch brings it back for a moment.
-  const dimNow = dark && S.mode === 'sueno' && (S.slept || (S.dim && S.playing)) && performance.now() - (S.wakeAt || 0) > 12000;
-  if (dimNow !== !!S.dimNow) { S.dimNow = dimNow; document.documentElement.classList.toggle('dim', dimNow); }
-  S.dimA = (S.dimA == null ? 1 : S.dimA) + ((dimNow ? .12 : 1) - (S.dimA == null ? 1 : S.dimA)) * (REDUCED ? 1 : .02);
-  const sat = dark ? 55 : 30, lum = dark ? 72 : 36, da = dark ? S.dimA : 1;
-  drawOrb(g, cx, cy, R, hs, { t: REDUCED ? 0 : t * speed, e: energy, br, prog, lw: dark ? 1 : .9, col: f => `hsla(${hue},${sat}%,${lum}%,${(.4 + .5 * f) * da})` });
+  drawOrb(g, cx, cy, R, hs, { t: REDUCED ? 0 : t * speed, e: energy, br, prog, lw:.9, col: f => `hsla(${hue},30%,36%,${.4 + .5 * f})` });
 }
 requestAnimationFrame(draw);
 
